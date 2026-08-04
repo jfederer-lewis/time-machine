@@ -85,7 +85,6 @@ export default function App() {
       className={[
         'shell',
         hasQueried && result ? 'shell--revealed' : '',
-        view === 'timeline' ? 'shell--timeline' : '',
         view === 'timeline' && timelineAxis === 'horizontal' ? 'shell--timeline-h' : '',
       ]
         .filter(Boolean)
@@ -121,7 +120,7 @@ export default function App() {
             <h1 className="hero-brand">{brand.tagline}</h1>
             <DateDial
               value={date}
-              featured={brand.featuredDates}
+              featured={[]}
               onChange={setDate}
               onSubmit={(d) => void query(d)}
               loading={loading}

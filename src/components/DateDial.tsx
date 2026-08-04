@@ -10,6 +10,21 @@ interface DateDialProps {
   autoFocus?: boolean
 }
 
+const MONTHS = [
+  { value: '01', label: 'January' },
+  { value: '02', label: 'February' },
+  { value: '03', label: 'March' },
+  { value: '04', label: 'April' },
+  { value: '05', label: 'May' },
+  { value: '06', label: 'June' },
+  { value: '07', label: 'July' },
+  { value: '08', label: 'August' },
+  { value: '09', label: 'September' },
+  { value: '10', label: 'October' },
+  { value: '11', label: 'November' },
+  { value: '12', label: 'December' },
+] as const
+
 function pad2(n: number) {
   return String(n).padStart(2, '0')
 }
@@ -82,9 +97,6 @@ export function DateDial({
       <label className="date-prompt" htmlFor={`${baseId}-year`}>
         Enter a date
       </label>
-      <p className="date-prompt-hint">
-        Day and month are optional — only fill what you know.
-      </p>
 
       <div className="date-dial__row">
         <div className="date-fields">
@@ -94,7 +106,7 @@ export function DateDial({
               id={`${baseId}-day`}
               inputMode="numeric"
               autoComplete="off"
-              placeholder="—"
+              placeholder="Any"
               maxLength={2}
               value={day}
               aria-invalid={invalid}
@@ -110,23 +122,27 @@ export function DateDial({
           </div>
           <div className="date-field date-field--month">
             <label htmlFor={`${baseId}-month`}>Month</label>
-            <input
+            <select
               id={`${baseId}-month`}
-              inputMode="numeric"
-              autoComplete="off"
-              placeholder="—"
-              maxLength={2}
               value={month}
               aria-invalid={invalid}
               onChange={(e) => {
-                const next = e.target.value.replace(/\D/g, '').slice(0, 2)
+                const next = e.target.value
                 setMonth(next)
+                if (!next) setDay('')
                 setInvalid(false)
               }}
               onKeyDown={(e) => {
                 if (e.key === 'Enter') trySubmit()
               }}
-            />
+            >
+              <option value="">Any</option>
+              {MONTHS.map((m) => (
+                <option key={m.value} value={m.value}>
+                  {m.label}
+                </option>
+              ))}
+            </select>
           </div>
           <div className="date-field date-field--year">
             <label htmlFor={`${baseId}-year`}>Year</label>
@@ -162,32 +178,32 @@ export function DateDial({
       </div>
 
       {invalid ? (
-        <p className="date-invalid">
-          That date isn’t valid — use a year, month + year, or a full day.
-        </p>
+        <p className="date-invalid">That date isn’t valid.</p>
       ) : null}
 
-      <ul className="featured-dates">
-        {featured.map((f) => (
-          <li key={f.date}>
-            <button
-              type="button"
-              className={value === f.date ? 'is-active' : undefined}
-              onClick={() => {
-                const next = parsePartial(f.date)
-                setYear(next.year)
-                setMonth(next.month)
-                setDay(next.day)
-                setInvalid(false)
-                onChange(f.date)
-                onSubmit(f.date)
-              }}
-            >
-              {f.label}
-            </button>
-          </li>
-        ))}
-      </ul>
+      {featured.length > 0 ? (
+        <ul className="featured-dates">
+          {featured.map((f) => (
+            <li key={f.date}>
+              <button
+                type="button"
+                className={value === f.date ? 'is-active' : undefined}
+                onClick={() => {
+                  const next = parsePartial(f.date)
+                  setYear(next.year)
+                  setMonth(next.month)
+                  setDay(next.day)
+                  setInvalid(false)
+                  onChange(f.date)
+                  onSubmit(f.date)
+                }}
+              >
+                {f.label}
+              </button>
+            </li>
+          ))}
+        </ul>
+      ) : null}
     </section>
   )
 }
