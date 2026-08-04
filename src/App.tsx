@@ -1,23 +1,34 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import type { BrandConfig } from '../shared/brand'
-import type { DateQueryResult, ProviderStatus } from '../shared/provenance'
+import type { CulturalEvent, DateQueryResult } from '../shared/provenance'
 import { converseBrand } from '../shared/brands/converse'
 import { DateDial } from './components/DateDial'
-import { EventCard } from './components/EventCard'
 import { ExportPanel } from './components/ExportPanel'
-import { ProviderRail } from './components/ProviderRail'
-import { TimelineView } from './components/TimelineView'
+import { TimelineView, type TimelineAxis } from './components/TimelineView'
 
-type View = 'date' | 'timeline' | 'sources'
+type View = 'date' | 'timeline'
+
+function firstSentence(text: string) {
+  const trimmed = text.trim()
+  const match = trimmed.match(/^(.+?[.!?])(?:\s|$)/)
+  return match ? match[1] : trimmed
+}
+
+function pickSpotlight(result: DateQueryResult): CulturalEvent | null {
+  const exact = result.events.filter((e) => e.precision === 'exact-day')
+  const around = result.events.filter((e) => e.precision !== 'exact-day')
+  return exact[0] ?? around[0] ?? result.brandMoments[0] ?? null
+}
 
 export default function App() {
   const [brand, setBrand] = useState<BrandConfig>(converseBrand)
   const [view, setView] = useState<View>('date')
+  const [timelineAxis, setTimelineAxis] = useState<TimelineAxis>('vertical')
   const [date, setDate] = useState('2003-07-09')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [result, setResult] = useState<DateQueryResult | null>(null)
-  const [providers, setProviders] = useState<ProviderStatus[]>([])
+  const [hasQueried, setHasQueried] = useState(false)
 
   useEffect(() => {
     document.documentElement.style.setProperty('--ink', brand.palette.ink)
@@ -34,11 +45,6 @@ export default function App() {
       .then((r) => r.json())
       .then((b: BrandConfig) => setBrand(b))
       .catch(() => setBrand(converseBrand))
-
-    fetch('/api/providers')
-      .then((r) => r.json())
-      .then((p: ProviderStatus[]) => setProviders(p))
-      .catch(() => setProviders([]))
   }, [])
 
   const query = useCallback(
@@ -48,6 +54,7 @@ export default function App() {
       if (overrideDate) setDate(overrideDate)
       setLoading(true)
       setError(null)
+      setHasQueried(true)
       try {
         const params = new URLSearchParams({
           date: q,
@@ -59,6 +66,7 @@ export default function App() {
         setResult(data)
       } catch (e) {
         setError(e instanceof Error ? e.message : 'Query failed')
+        setResult(null)
       } finally {
         setLoading(false)
       }
@@ -66,13 +74,23 @@ export default function App() {
     [date, brand.id],
   )
 
-  useEffect(() => {
-    void query()
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
+  const spotlight = useMemo(() => (result ? pickSpotlight(result) : null), [result])
+
+  const formulaHeadline = result
+    ? `${brand.claimFrame} · ${result.displayDate}`
+    : null
 
   return (
-    <div className="shell">
+    <div
+      className={[
+        'shell',
+        hasQueried && result ? 'shell--revealed' : '',
+        view === 'timeline' ? 'shell--timeline' : '',
+        view === 'timeline' && timelineAxis === 'horizontal' ? 'shell--timeline-h' : '',
+      ]
+        .filter(Boolean)
+        .join(' ')}
+    >
       <header className="topbar">
         <div className="brand-lockup">
           <p className="brand-name">{brand.name}</p>
@@ -81,9 +99,8 @@ export default function App() {
         <nav className="view-nav" aria-label="Primary">
           {(
             [
-              ['date', 'Date'],
+              ['date', 'Lookup'],
               ['timeline', 'Timeline'],
-              ['sources', 'Sources'],
             ] as const
           ).map(([id, label]) => (
             <button
@@ -99,61 +116,53 @@ export default function App() {
       </header>
 
       {view === 'date' ? (
-        <main className="main">
+        <main className="main main--entry">
           <section className="hero">
-            <h1 className="hero-title">{brand.tagline}</h1>
-            <p className="hero-claim">{brand.claimFrame}</p>
-
+            <h1 className="hero-brand">{brand.tagline}</h1>
             <DateDial
               value={date}
               featured={brand.featuredDates}
               onChange={setDate}
               onSubmit={(d) => void query(d)}
               loading={loading}
+              autoFocus
             />
           </section>
 
           {error ? <p className="error-banner">{error}</p> : null}
 
-          {result ? (
-            <section className="results" aria-live="polite">
+          {loading && !result ? (
+            <p className="results-pending" aria-live="polite">
+              Fetching…
+            </p>
+          ) : null}
+
+          {result && formulaHeadline ? (
+            <section className="results results--reveal" aria-live="polite">
               <header className="results-head">
-                <div>
-                  <h2>{result.narrative.headline}</h2>
-                  <p className="lede">{result.narrative.lede}</p>
+                <h2 className="result-frame">{formulaHeadline}</h2>
+                <div className="results-export">
+                  <ExportPanel result={result} brand={brand} />
                 </div>
-                <ExportPanel result={result} brand={brand} />
               </header>
 
-              {result.brandMoments.length > 0 ? (
-                <div className="card-stack">
-                  <h3 className="stack-label">{brand.name}</h3>
-                  {result.brandMoments.map((event) => (
-                    <EventCard key={event.id} event={event} accent />
-                  ))}
-                </div>
-              ) : null}
-
-              <div className="card-stack">
-                <h3 className="stack-label">On this day</h3>
-                {result.events.map((event) => (
-                  <EventCard key={event.id} event={event} />
-                ))}
-              </div>
+              {spotlight ? (
+                <article className="spotlight">
+                  <p className="spotlight-label">Fact</p>
+                  <h3 className="spotlight-title">{spotlight.title}</h3>
+                  <p className="spotlight-line">{firstSentence(spotlight.synopsis)}</p>
+                </article>
+              ) : (
+                <p className="empty-day">No fact on record for this date.</p>
+              )}
             </section>
           ) : null}
         </main>
       ) : null}
 
       {view === 'timeline' ? (
-        <main className="main">
-          <TimelineView brand={brand} />
-        </main>
-      ) : null}
-
-      {view === 'sources' ? (
-        <main className="main">
-          <ProviderRail providers={providers} />
+        <main className="main main--timeline">
+          <TimelineView brand={brand} axis={timelineAxis} onAxisChange={setTimelineAxis} />
         </main>
       ) : null}
     </div>

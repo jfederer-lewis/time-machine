@@ -8,7 +8,7 @@ const accessedAt = '2026-08-04T12:00:00.000Z'
 
 /** Curated press-ready cards with traceable URLs — used when APIs are offline or keys missing. */
 export const FALLBACK_EVENTS_BY_DATE: Record<string, CulturalEvent[]> = {
-  '1917-01-01': [
+  '1917': [
     {
       id: 'fb-1917-us-enters-wwi-context',
       year: 1917,
@@ -73,7 +73,7 @@ export const FALLBACK_EVENTS_BY_DATE: Record<string, CulturalEvent[]> = {
       ],
     },
   ],
-  '1999-04-01': [
+  '1999-04': [
     {
       id: 'fb-1999-04-01-nato',
       year: 1999,
@@ -208,7 +208,7 @@ export const PROVIDER_CATALOGUE: ProviderStatus[] = [
 
 export function buildFallbackResult(queryDate: string, brandId: string): DateQueryResult {
   const brand = getBrand(brandId)
-  const rawEvents = FALLBACK_EVENTS_BY_DATE[queryDate] ?? synthesizeGenericFallback(queryDate)
+  const rawEvents = lookupFallbackEvents(queryDate)
   const events = rawEvents.map((e) => sanitizeEventCitations(e))
   const brandMoments: CulturalEvent[] = brand.timeline
     .filter((m) => momentTouchesDate(m.date, queryDate))
@@ -245,24 +245,40 @@ export function buildFallbackResult(queryDate: string, brandId: string): DateQue
     events.some((e) => e.precision === 'exact-day') ||
     brandMoments.some((e) => e.precision === 'exact-day')
 
+  const display = toDisplayDate(queryDate)
+  const spotlight = events[0] ?? brandMoments[0]
+  const lede = spotlight
+    ? spotlight.synopsis.replace(/^(.+?[.!?])(?:\s|$)[\s\S]*$/, '$1')
+    : `No fact on record for ${display}.`
+
   return {
     queryDate,
     datePath: toOnThisDayPath(queryDate),
-    displayDate: toDisplayDate(queryDate),
+    displayDate: display,
     resolvedMode: hasExact ? 'mixed' : 'period-estimate',
     brandId: brand.id,
     narrative: {
-      headline: `${brand.claimFrame} · ${toDisplayDate(queryDate)}`,
-      lede: `On ${toDisplayDate(queryDate)}, the archive returns ${events.length} cultural marker${events.length === 1 ? '' : 's'}${brandMoments.length ? ` and ${brandMoments.length} ${brand.name} moment${brandMoments.length === 1 ? '' : 's'}` : ''}.`,
+      headline: `${brand.claimFrame} · ${display}`,
+      lede,
       voice: 'template',
       disclaimer: '',
     },
-    events,
-    brandMoments,
+    events: events.slice(0, 1),
+    brandMoments: brandMoments.slice(0, 1),
     providersUsed: ['curated-fallback', 'brand-timeline'],
     usingFallback: true,
     generatedAt: new Date().toISOString(),
   }
+}
+
+function lookupFallbackEvents(queryDate: string): CulturalEvent[] {
+  if (FALLBACK_EVENTS_BY_DATE[queryDate]) return FALLBACK_EVENTS_BY_DATE[queryDate]
+  // Year-month query can still hit a year-keyed fallback.
+  if (queryDate.length >= 7) {
+    const yearKey = queryDate.slice(0, 4)
+    if (FALLBACK_EVENTS_BY_DATE[yearKey]) return FALLBACK_EVENTS_BY_DATE[yearKey]
+  }
+  return synthesizeGenericFallback(queryDate)
 }
 
 function momentTouchesDate(momentDate: string, queryDate: string): boolean {
@@ -271,31 +287,7 @@ function momentTouchesDate(momentDate: string, queryDate: string): boolean {
   return momentDate === queryDate || momentDate.slice(0, 4) === queryDate.slice(0, 4)
 }
 
-function synthesizeGenericFallback(queryDate: string): CulturalEvent[] {
-  return [
-    {
-      id: `fb-generic-${queryDate}`,
-      year: Number(queryDate.slice(0, 4)),
-      title: toDisplayDate(queryDate),
-      synopsis:
-        'No exact-day entries are curated for this date yet. Try another date, or check back as the archive grows.',
-      category: 'other',
-      precision: 'period-estimate',
-      discoveredVia: ['internal-curated'],
-      needsHumanReview: true,
-      citations: [
-        withHarvard({
-          title: 'Wikimedia On this day API',
-          url: 'https://api.wikimedia.org/wiki/Feed_API/Reference/On_this_day',
-          publisher: 'Wikimedia Foundation',
-          accessedAt,
-          sourceQuality: 'period-estimate',
-          evidenceKind: 'paraphrase',
-          reference: 'Discovery starts from the Wikimedia On this day feed, then each claim is verified against an allowlisted archive or paper of record.',
-          provider: 'curated-fallback',
-          isExactQuote: false,
-        }),
-      ],
-    },
-  ]
+function synthesizeGenericFallback(_queryDate: string): CulturalEvent[] {
+  // Empty — UI leads with the "quiet day" note; brand timeline moments may still attach.
+  return []
 }

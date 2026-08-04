@@ -1,7 +1,7 @@
 import type { CulturalEvent, DateQueryResult, ProviderId } from '../../shared/provenance'
 import { withHarvard } from '../../shared/provenance'
 import { getBrand } from '../../shared/brands'
-import { toDisplayDate, toOnThisDayPath } from '../../shared/source-registry'
+import { queryDatePrecision, toDisplayDate, toOnThisDayPath } from '../../shared/source-registry'
 import { buildFallbackResult, PROVIDER_CATALOGUE } from '../data/fallback'
 import { composeNarrative } from '../providers/gemini'
 import { fetchOnThisDay } from '../providers/wikipedia'
@@ -36,28 +36,38 @@ export async function assembleDateQuery(
     return buildFallbackResult(queryDate, brandId)
   }
 
-  const [, mm, dd] = queryDate.split('-').map(Number)
+  const precision = queryDatePrecision(queryDate)
   const providersUsed: ProviderId[] = []
 
+  // Day-indexed providers only run when a real calendar day was supplied —
+  // never invent Jan 1 (or any day) for year/month-only queries.
   let wikiEvents: CulturalEvent[] = []
-  try {
-    wikiEvents = await fetchOnThisDay(mm, dd)
-    if (wikiEvents.length) providersUsed.push('wikipedia-onthisday')
-  } catch {
-    // fall through — may still have brand moments / fallback
+  let nyt: CulturalEvent[] = []
+  let guardian: CulturalEvent[] = []
+  let perplexity: CulturalEvent[] = []
+  let chronicling: CulturalEvent[] = []
+
+  if (precision === 'exact-day') {
+    const [, mm, dd] = queryDate.split('-').map(Number)
+    try {
+      wikiEvents = await fetchOnThisDay(mm, dd)
+      if (wikiEvents.length) providersUsed.push('wikipedia-onthisday')
+    } catch {
+      // fall through — may still have brand moments / fallback
+    }
+
+    ;[nyt, guardian, perplexity, chronicling] = await Promise.all([
+      fetchNytForDate(queryDate, env.NYT_API_KEY),
+      fetchGuardianForDate(queryDate, env.GUARDIAN_API_KEY),
+      fetchPerplexityForDate(queryDate, env.PERPLEXITY_API_KEY),
+      fetchChroniclingAmerica(queryDate),
+    ])
+
+    if (nyt.length) providersUsed.push('nyt-archive')
+    if (guardian.length) providersUsed.push('guardian')
+    if (perplexity.length) providersUsed.push('perplexity-search')
+    if (chronicling.length) providersUsed.push('chronicling-america')
   }
-
-  const [nyt, guardian, perplexity, chronicling] = await Promise.all([
-    fetchNytForDate(queryDate, env.NYT_API_KEY),
-    fetchGuardianForDate(queryDate, env.GUARDIAN_API_KEY),
-    fetchPerplexityForDate(queryDate, env.PERPLEXITY_API_KEY),
-    fetchChroniclingAmerica(queryDate),
-  ])
-
-  if (nyt.length) providersUsed.push('nyt-archive')
-  if (guardian.length) providersUsed.push('guardian')
-  if (perplexity.length) providersUsed.push('perplexity-search')
-  if (chronicling.length) providersUsed.push('chronicling-america')
 
   const merged = [...wikiEvents, ...nyt, ...guardian, ...perplexity, ...chronicling].map((e) =>
     sanitizeEventCitations(e),
@@ -66,11 +76,10 @@ export async function assembleDateQuery(
   if (merged.length === 0) {
     const fallback = buildFallbackResult(queryDate, brandId)
     fallback.usingFallback = true
-    fallback.narrative.lede = `Live providers returned no rows for ${toDisplayDate(queryDate)}. Showing curated fallback while keys / archives are wired.`
     return fallback
   }
 
-  // Keep cross-century same-day hits (product idea). Newest first for desk scanning.
+  // Newest first; UI surfaces a single beat.
   merged.sort((a, b) => b.year - a.year)
 
   const brandMoments: CulturalEvent[] = brand.timeline
@@ -110,7 +119,7 @@ export async function assembleDateQuery(
 
   if (brandMoments.length) providersUsed.push('brand-timeline')
 
-  const events = merged.slice(0, 16)
+  const events = merged.slice(0, 1)
   const narrative = await composeNarrative({
     apiKey: env.GEMINI_API_KEY,
     brand,
@@ -129,7 +138,7 @@ export async function assembleDateQuery(
     brandId: brand.id,
     narrative,
     events,
-    brandMoments,
+    brandMoments: brandMoments.slice(0, 1),
     providersUsed,
     usingFallback: false,
     generatedAt: new Date().toISOString(),

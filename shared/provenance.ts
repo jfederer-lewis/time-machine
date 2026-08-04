@@ -99,8 +99,9 @@ export interface NarrativeBlock {
 
 export interface DateQueryResult {
   queryDate: string
-  /** On This Day–style path, e.g. 1999/april/1 */
+  /** On This Day–style path — year, year/month, or year/month/day */
   datePath: string
+  /** Honest display: year, “April 1999”, or “9 July 2003” — never invents missing parts */
   displayDate: string
   resolvedMode: 'exact' | 'period-estimate' | 'mixed'
   brandId: string

@@ -1,5 +1,6 @@
 import type { NarrativeBlock } from '../../shared/provenance'
 import type { BrandConfig } from '../../shared/brand'
+import { toDisplayDate } from '../../shared/source-registry'
 
 /**
  * Gemini narrative voice.
@@ -14,13 +15,17 @@ export async function composeNarrative(opts: {
   const { apiKey, brand, queryDate, eventSummaries } = opts
   const display = formatDisplayDate(queryDate)
 
+  // Formulaic frame keeps the queried date visible in the UI.
+  const headline = `${brand.claimFrame} · ${display}`
+  const fallbackLede =
+    eventSummaries.length > 0
+      ? firstSentence(stripSummaryPrefix(eventSummaries[0]))
+      : `No fact on record for ${display}.`
+
   if (!apiKey) {
     return {
-      headline: `${brand.claimFrame} · ${display}`,
-      lede:
-        eventSummaries.length > 0
-          ? `On this date across the years, ${eventSummaries.length} sourced moment${eventSummaries.length === 1 ? '' : 's'} from the archive.`
-          : `The archive is still thin for ${display}. Brand moments from nearby years appear below.`,
+      headline,
+      lede: fallbackLede,
       voice: 'template',
       disclaimer: '',
     }
@@ -28,13 +33,13 @@ export async function composeNarrative(opts: {
 
   try {
     const prompt = [
-      `Brand frame: ${brand.claimFrame}`,
-      `Product: ${brand.productLine}`,
+      'Task: fact retrieval for a press desk — not a history lesson.',
       `Query date: ${display}`,
-      'Write a 1-line headline and then a blank line and a 2-sentence lede for press.',
-      'Use ONLY these sourced facts — do not invent quotations, dates, or events:',
-      ...eventSummaries.slice(0, 8).map((s, i) => `${i + 1}. ${s}`),
-      'If facts are thin, say the archive is sparse rather than inventing.',
+      'Return ONE short factual sentence from the sourced item below.',
+      'Rules: no storytelling, no context-setting, no “on this day in history” framing, no invented details.',
+      'If the source is thin, say so in one plain sentence.',
+      'Source:',
+      ...eventSummaries.slice(0, 1).map((s, i) => `${i + 1}. ${s}`),
     ].join('\n')
 
     const models = ['gemini-flash-latest', 'gemini-3.5-flash', 'gemini-3.6-flash']
@@ -51,7 +56,7 @@ export async function composeNarrative(opts: {
         },
         body: JSON.stringify({
           contents: [{ role: 'user', parts: [{ text: prompt }] }],
-          generationConfig: { temperature: 0.4, maxOutputTokens: 1024 },
+          generationConfig: { temperature: 0.3, maxOutputTokens: 256 },
         }),
       })
 
@@ -72,34 +77,39 @@ export async function composeNarrative(opts: {
       throw new Error(lastError || 'Empty Gemini response')
     }
 
-    const [firstLine, ...rest] = text
-      .split('\n')
-      .map((l) => l.trim())
-      .filter(Boolean)
-
     return {
-      headline:
-        firstLine.replace(/^#+\s*/, '').replace(/^headline:\s*/i, '') ||
-        `${brand.claimFrame} · ${display}`,
-      lede: rest.join(' ').replace(/^lede:\s*/i, '') || text,
+      headline,
+      lede: firstSentence(text.replace(/^lede:\s*/i, '')),
       voice: 'gemini',
       disclaimer: '',
     }
   } catch (err) {
     console.error('[time-machine] Gemini failed', err)
     return {
-      headline: `${brand.claimFrame} · ${display}`,
-      lede:
-        eventSummaries.length > 0
-          ? `On this date across the years, ${eventSummaries.length} sourced moment${eventSummaries.length === 1 ? '' : 's'} from the archive.`
-          : `The archive is still thin for ${display}.`,
+      headline,
+      lede: fallbackLede,
       voice: 'template',
       disclaimer: '',
     }
   }
 }
 
-function formatDisplayDate(iso: string): string {
-  const d = new Date(`${iso}T12:00:00Z`)
-  return d.toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })
+function stripSummaryPrefix(text: string) {
+  // "2003: Title — synopsis" → prefer the synopsis clause when present
+  const withoutYear = text.replace(/^\d{4}:\s*/, '')
+  const emDash = withoutYear.indexOf(' — ')
+  if (emDash !== -1) return withoutYear.slice(emDash + 3)
+  const hyphen = withoutYear.indexOf(' - ')
+  if (hyphen !== -1) return withoutYear.slice(hyphen + 3)
+  return withoutYear
+}
+
+function firstSentence(text: string) {
+  const trimmed = text.trim()
+  const match = trimmed.match(/^(.+?[.!?])(?:\s|$)/)
+  return match ? match[1] : trimmed
+}
+
+function formatDisplayDate(queryDate: string): string {
+  return toDisplayDate(queryDate)
 }

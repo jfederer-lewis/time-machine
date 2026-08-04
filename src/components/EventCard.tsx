@@ -30,13 +30,11 @@ function injectGlosses(text: string, event: CulturalEvent) {
 
 export function EventCard({ event, accent }: { event: CulturalEvent; accent?: boolean }) {
   const citation = event.citations[0]
-  const showEstimate = event.precision === 'period-estimate' || event.needsHumanReview
 
   return (
     <article className={`event-card${accent ? ' event-card--brand' : ''}`}>
       <header className="event-card__meta">
         <span className="event-year">{event.year}</span>
-        {showEstimate ? <span className="chip chip--quiet">approx.</span> : null}
       </header>
 
       <h3 className="event-title">{event.title}</h3>

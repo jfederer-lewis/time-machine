@@ -35,7 +35,7 @@ export interface BrandConfig {
   /** Short line under the brand — heritage angle, not product hype */
   heritageNote: string
   palette: BrandPalette
-  /** Seed dates journalists can jump to */
+  /** Seed dates journalists can jump to — YYYY, YYYY-MM, or YYYY-MM-DD (never invent a day). */
   featuredDates: Array<{ date: string; label: string }>
   timeline: BrandMoment[]
   exportFilenamePrefix: string

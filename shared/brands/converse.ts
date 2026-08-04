@@ -17,7 +17,7 @@ export const converseBrand: BrandConfig = {
   tagline: 'Good News, Chuck',
   claimFrame: 'Chuck was there.',
   heritageNote:
-    'A century of continuous cultural presence — the claim is not that the news was good, only that the silhouette was already in the room.',
+    'Brand moments by year — only a day when the day is known.',
   palette: {
     ink: '#141414',
     paper: '#F5F4F0',
@@ -28,10 +28,10 @@ export const converseBrand: BrandConfig = {
     estimate: '#7A6E55',
   },
   featuredDates: [
-    { date: '1917-01-01', label: '1917' },
-    { date: '1922-01-01', label: '1922' },
-    { date: '1970-01-01', label: '1970' },
-    { date: '1999-04-01', label: '1999' },
+    { date: '1917', label: '1917' },
+    { date: '1922', label: '1922' },
+    { date: '1970', label: '1970' },
+    { date: '1999-04', label: '1999' },
     { date: '2003-07-09', label: '2003' },
   ],
   timeline: [

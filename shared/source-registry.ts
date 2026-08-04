@@ -190,22 +190,94 @@ function formatAccessed(iso: string): string {
   return d.toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })
 }
 
+/**
+ * Query dates may be year (`1917`), year-month (`1999-04`), or full day (`2003-07-09`).
+ * Never invent missing day/month — display only what was known.
+ */
+export type QueryDatePrecision = 'exact-day' | 'month' | 'year'
+
+export function queryDatePrecision(queryDate: string): QueryDatePrecision {
+  if (/^\d{4}-\d{2}-\d{2}$/.test(queryDate)) return 'exact-day'
+  if (/^\d{4}-\d{2}$/.test(queryDate)) return 'month'
+  return 'year'
+}
+
 /** Human + API date helpers — On This Day style naming without copying their site. */
-export function toOnThisDayPath(isoDate: string): string {
-  const [y, m, d] = isoDate.split('-').map(Number)
-  const month = new Date(Date.UTC(y, m - 1, d)).toLocaleDateString('en-US', {
+export function toOnThisDayPath(queryDate: string): string {
+  const precision = queryDatePrecision(queryDate)
+  const parts = queryDate.split('-').map(Number)
+  const y = parts[0]
+  if (precision === 'year') return String(y)
+
+  const m = parts[1]
+  const month = new Date(Date.UTC(y, m - 1, 1)).toLocaleDateString('en-US', {
     month: 'long',
     timeZone: 'UTC',
   }).toLowerCase()
-  return `${y}/${month}/${d}`
+
+  if (precision === 'month') return `${y}/${month}`
+  return `${y}/${month}/${parts[2]}`
 }
 
-export function toDisplayDate(isoDate: string, locale = 'en-GB'): string {
-  const [y, m, d] = isoDate.split('-').map(Number)
-  return new Date(Date.UTC(y, m - 1, d)).toLocaleDateString(locale, {
+export function toDisplayDate(queryDate: string, locale = 'en-GB'): string {
+  const precision = queryDatePrecision(queryDate)
+  const parts = queryDate.split('-').map(Number)
+  const y = parts[0]
+
+  if (precision === 'year') return String(y)
+
+  if (precision === 'month') {
+    return new Date(Date.UTC(y, parts[1] - 1, 1)).toLocaleDateString(locale, {
+      month: 'long',
+      year: 'numeric',
+      timeZone: 'UTC',
+    })
+  }
+
+  return new Date(Date.UTC(y, parts[1] - 1, parts[2])).toLocaleDateString(locale, {
     day: 'numeric',
     month: 'long',
     year: 'numeric',
     timeZone: 'UTC',
   })
+}
+
+/** Validate YYYY | YYYY-MM | YYYY-MM-DD. Returns normalized string or null. */
+export function parseQueryDate(value: string | null | undefined): string | null {
+  if (!value) return null
+  const trimmed = value.trim()
+
+  if (/^\d{4}$/.test(trimmed)) {
+    const y = Number(trimmed)
+    if (y < 1800 || y > 2099) return null
+    return trimmed
+  }
+
+  if (/^\d{4}-\d{2}$/.test(trimmed)) {
+    const [ys, ms] = trimmed.split('-')
+    const y = Number(ys)
+    const m = Number(ms)
+    if (y < 1800 || y > 2099 || m < 1 || m > 12) return null
+    return `${ys}-${ms}`
+  }
+
+  if (/^\d{4}-\d{2}-\d{2}$/.test(trimmed)) {
+    const [ys, ms, ds] = trimmed.split('-')
+    const y = Number(ys)
+    const m = Number(ms)
+    const d = Number(ds)
+    if (y < 1800 || y > 2099 || m < 1 || m > 12 || d < 1 || d > 31) return null
+    const check = new Date(`${trimmed}T12:00:00Z`)
+    if (
+      Number.isNaN(check.getTime()) ||
+      check.getUTCFullYear() !== y ||
+      check.getUTCMonth() + 1 !== m ||
+      check.getUTCDate() !== d
+    ) {
+      return null
+    }
+    return trimmed
+  }
+
+  return null
 }
