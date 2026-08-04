@@ -25,16 +25,32 @@ const MONTHS = [
   { value: '12', label: 'December' },
 ] as const
 
+const DAYS = Array.from({ length: 31 }, (_, i) => {
+  const value = String(i + 1).padStart(2, '0')
+  return { value, label: String(i + 1) }
+})
+
 function pad2(n: number) {
   return String(n).padStart(2, '0')
 }
 
 function parsePartial(value: string) {
   const parts = value.split('-')
+  const year = parts[0] ?? ''
+  const monthRaw = parts[1] ?? ''
+  const dayRaw = parts[2] ?? ''
+  const monthNum = Number(monthRaw)
+  const dayNum = Number(dayRaw)
   return {
-    year: parts[0] ?? '',
-    month: parts[1] ?? '',
-    day: parts[2] ?? '',
+    year,
+    month:
+      monthRaw && Number.isInteger(monthNum) && monthNum >= 1 && monthNum <= 12
+        ? pad2(monthNum)
+        : '',
+    day:
+      dayRaw && Number.isInteger(dayNum) && dayNum >= 1 && dayNum <= 31
+        ? pad2(dayNum)
+        : '',
   }
 }
 
@@ -98,23 +114,25 @@ export function DateDial({
         <div className="date-fields">
           <div className="date-field date-field--day">
             <label htmlFor={`${baseId}-day`}>Day</label>
-            <input
+            <select
               id={`${baseId}-day`}
-              inputMode="numeric"
-              autoComplete="off"
-              placeholder="Any"
-              maxLength={2}
               value={day}
               aria-invalid={invalid}
               onChange={(e) => {
-                const next = e.target.value.replace(/\D/g, '').slice(0, 2)
-                setDay(next)
+                setDay(e.target.value)
                 setInvalid(false)
               }}
               onKeyDown={(e) => {
                 if (e.key === 'Enter') trySubmit()
               }}
-            />
+            >
+              <option value="">Any</option>
+              {DAYS.map((d) => (
+                <option key={d.value} value={d.value}>
+                  {d.label}
+                </option>
+              ))}
+            </select>
           </div>
           <div className="date-field date-field--month">
             <label htmlFor={`${baseId}-month`}>Month</label>

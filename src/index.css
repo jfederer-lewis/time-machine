@@ -41,7 +41,8 @@ body {
 }
 
 button,
-input {
+input,
+select {
   font: inherit;
 }
 
@@ -202,13 +203,15 @@ a {
   border: 0;
   border-bottom: 1.5px solid var(--ink);
   background: transparent;
-  padding: 0.55rem 0.15rem 0.5rem;
+  padding: 0 0.15rem;
   color: var(--ink);
   font-size: 1.35rem;
+  line-height: 1;
   letter-spacing: -0.02em;
   border-radius: 0;
   outline: none;
   width: 100%;
+  height: 2.6rem;
   transition: border-color 160ms ease;
 }
 
@@ -223,8 +226,8 @@ a {
   background-image: linear-gradient(45deg, transparent 50%, var(--muted) 50%),
     linear-gradient(135deg, var(--muted) 50%, transparent 50%);
   background-position:
-    calc(100% - 0.55rem) 55%,
-    calc(100% - 0.25rem) 55%;
+    calc(100% - 0.55rem) 50%,
+    calc(100% - 0.25rem) 50%;
   background-size:
     0.3rem 0.3rem,
     0.3rem 0.3rem;
@@ -250,7 +253,7 @@ a {
 }
 
 .date-field--day {
-  width: 3.4rem;
+  width: 4.25rem;
 }
 
 .date-field--month {
@@ -261,10 +264,6 @@ a {
   flex: 1;
   min-width: 5.5rem;
   max-width: 7.5rem;
-}
-
-.date-field--year input {
-  font-size: 1.55rem;
 }
 
 .date-invalid {
