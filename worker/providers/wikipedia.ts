@@ -1,4 +1,5 @@
 import type { CulturalEvent, Gloss } from '../../shared/provenance'
+import { withHarvard } from '../../shared/provenance'
 
 const USER_AGENT = 'TimeMachinePressPrototype/0.1 (heritage press tool; research@local)'
 
@@ -49,8 +50,11 @@ export async function fetchOnThisDay(month: number, day: number): Promise<Cultur
     const glosses: Gloss[] = page?.titles?.display
       ? [
           {
-            term: page.titles.display.replace(/_/g, ' '),
-            gloss: truncate(page.extract || page.description || 'Wikipedia article linked from this event.', 220),
+            term: stripHtml(page.titles.display.replace(/_/g, ' ')),
+            gloss: truncate(
+              page.extract || page.description || 'Wikipedia article linked from this event.',
+              220,
+            ),
             url: pageUrl,
             source: 'wikipedia',
             sourceLabel: 'Wikipedia',
@@ -68,22 +72,24 @@ export async function fetchOnThisDay(month: number, day: number): Promise<Cultur
       synopsis: event.text,
       category: 'other' as const,
       precision: 'exact-day' as const,
-      needsHumanReview: false,
+      discoveredVia: ['wikipedia-onthisday'],
+      // Wiki is a bridge cite — desks should upgrade to archive / paper of record before export
+      needsHumanReview: true,
       citations: [
-        {
+        withHarvard({
           title: cleanTitle || title,
           url: pageUrl,
           publisher: 'Wikipedia',
           publishedAt: String(event.year),
           accessedAt,
-          sourceQuality: 'trusted-source-snippet' as const,
-          evidenceKind: 'paraphrase' as const,
+          sourceQuality: 'trusted-source-snippet',
+          evidenceKind: 'paraphrase',
           reference: event.text,
-          provider: 'wikipedia-onthisday' as const,
+          provider: 'wikipedia-onthisday',
           isExactQuote: false,
-        },
+        }),
       ],
-      glosses: glosses.map((g) => ({ ...g, term: stripHtml(g.term) })),
+      glosses,
     }
   })
 }

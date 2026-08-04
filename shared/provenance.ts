@@ -1,5 +1,8 @@
 /** Shared provenance contract — adapted from Bloom's citation honesty model. */
 
+import type { DiscoveryChannel } from './source-registry'
+import { formatHarvardCitation } from './source-registry'
+
 export type SourceQuality =
   | 'trusted-source-quote'
   | 'trusted-source-snippet'
@@ -14,6 +17,18 @@ export type GlossSource = 'wikipedia' | 'curated' | 'ai'
 
 export type DatePrecision = 'exact-day' | 'month' | 'year' | 'period-estimate'
 
+export type EventFacet =
+  | 'culture'
+  | 'politics'
+  | 'sport'
+  | 'science'
+  | 'music'
+  | 'charts'
+  | 'design'
+  | 'fashion'
+  | 'brand'
+  | 'other'
+
 export type ProviderId =
   | 'wikipedia-onthisday'
   | 'wikipedia-summary'
@@ -23,6 +38,7 @@ export type ProviderId =
   | 'guardian'
   | 'gdelt'
   | 'chronicling-america'
+  | 'national-archives'
   | 'curated-fallback'
   | 'brand-timeline'
 
@@ -39,6 +55,10 @@ export interface Citation {
   reference: string
   provider: ProviderId
   isExactQuote: boolean
+  /** Full Harvard-style string for press export. */
+  harvard?: string
+  /** A / B / C / bridge — from source registry when known. */
+  tier?: string
 }
 
 export interface Gloss {
@@ -55,11 +75,17 @@ export interface CulturalEvent {
   year: number
   title: string
   synopsis: string
-  category: 'culture' | 'politics' | 'sport' | 'science' | 'music' | 'design' | 'brand' | 'other'
+  /** Primary facet (On This Day–style breadth: charts, sport, culture…). */
+  category: EventFacet
   locale?: string
   precision: DatePrecision
   citations: Citation[]
   glosses?: Gloss[]
+  /**
+   * Internal only — which aggregator/index suggested this event.
+   * Must never be shown as the public citation.
+   */
+  discoveredVia?: DiscoveryChannel[]
   /** When true, claim must not ship to press without editor sign-off. */
   needsHumanReview: boolean
 }
@@ -73,6 +99,9 @@ export interface NarrativeBlock {
 
 export interface DateQueryResult {
   queryDate: string
+  /** On This Day–style path, e.g. 1999/april/1 */
+  datePath: string
+  displayDate: string
   resolvedMode: 'exact' | 'period-estimate' | 'mixed'
   brandId: string
   narrative: NarrativeBlock
@@ -89,4 +118,20 @@ export interface ProviderStatus {
   role: string
   status: 'live' | 'stub' | 'fallback' | 'needs-key'
   notes: string
+}
+
+export function withHarvard(citation: Omit<Citation, 'harvard'> & { harvard?: string }): Citation {
+  if (citation.harvard) return citation as Citation
+  return {
+    ...citation,
+    harvard: formatHarvardCitation({
+      author: citation.author,
+      year: citation.publishedAt?.slice(0, 4),
+      title: citation.title,
+      publisher: citation.publisher,
+      publishedDisplay: citation.publishedAt,
+      url: citation.url,
+      accessedAt: citation.accessedAt,
+    }),
+  }
 }

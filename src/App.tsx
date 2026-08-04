@@ -144,6 +144,11 @@ export default function App() {
                 <div>
                   <p className="eyebrow">{modeLabel}</p>
                   <h2>{result.narrative.headline}</h2>
+                  <p className="date-path">
+                    {result.displayDate}
+                    <span aria-hidden="true"> · </span>
+                    <code>{result.datePath}</code>
+                  </p>
                   <p className="lede">{result.narrative.lede}</p>
                   <p className="disclaimer">{result.narrative.disclaimer}</p>
                 </div>

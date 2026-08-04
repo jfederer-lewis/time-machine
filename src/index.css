@@ -273,11 +273,29 @@ a {
   line-height: 1.55;
 }
 
+.date-path {
+  margin: 0.55rem 0 0;
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+
+.date-path code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.8rem;
+}
+
 .disclaimer {
   margin: 0.85rem 0 0;
   color: var(--muted);
   font-size: 0.82rem;
   line-height: 1.45;
+}
+
+.citation-harvard {
+  margin: 0;
+  font-size: 0.84rem;
+  line-height: 1.45;
+  max-width: 42rem;
 }
 
 .results-meta {

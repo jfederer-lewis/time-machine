@@ -1,5 +1,7 @@
 import type { CulturalEvent, DateQueryResult, ProviderId } from '../../shared/provenance'
+import { withHarvard } from '../../shared/provenance'
 import { getBrand } from '../../shared/brands'
+import { toDisplayDate, toOnThisDayPath } from '../../shared/source-registry'
 import { buildFallbackResult, PROVIDER_CATALOGUE } from '../data/fallback'
 import { composeNarrative } from '../providers/gemini'
 import { fetchOnThisDay } from '../providers/wikipedia'
@@ -9,6 +11,7 @@ import {
   fetchNytForDate,
   fetchPerplexityForDate,
 } from '../providers/archives'
+import { sanitizeEventCitations } from './verify'
 
 export interface Env {
   GEMINI_API_KEY?: string
@@ -56,18 +59,19 @@ export async function assembleDateQuery(
   if (perplexity.length) providersUsed.push('perplexity-search')
   if (chronicling.length) providersUsed.push('chronicling-america')
 
-  const events = [...wikiEvents, ...nyt, ...guardian, ...perplexity, ...chronicling]
+  const merged = [...wikiEvents, ...nyt, ...guardian, ...perplexity, ...chronicling].map((e) =>
+    sanitizeEventCitations(e),
+  )
 
-  if (events.length === 0) {
+  if (merged.length === 0) {
     const fallback = buildFallbackResult(queryDate, brandId)
     fallback.usingFallback = true
-    fallback.narrative.lede = `Live providers returned no rows for ${queryDate}. Showing curated fallback while keys / archives are wired.`
+    fallback.narrative.lede = `Live providers returned no rows for ${toDisplayDate(queryDate)}. Showing curated fallback while keys / archives are wired.`
     return fallback
   }
 
-  // Filter wiki events to prefer the query year ± window, but keep cross-century same-day hits
-  // (that's the product idea). Sort newest first for desk scanning.
-  events.sort((a, b) => b.year - a.year)
+  // Keep cross-century same-day hits (product idea). Newest first for desk scanning.
+  merged.sort((a, b) => b.year - a.year)
 
   const brandMoments: CulturalEvent[] = brand.timeline
     .filter((m) => {
@@ -75,50 +79,61 @@ export async function assembleDateQuery(
       if (m.date.length === 7) return m.date === queryDate.slice(0, 7)
       return m.date === queryDate || m.date.slice(0, 4) === queryDate.slice(0, 4)
     })
-    .map((m) => ({
-      id: m.id,
-      year: Number(m.date.slice(0, 4)),
-      title: m.title,
-      synopsis: m.synopsis,
-      category: 'brand',
-      precision: m.precision,
-      needsHumanReview: m.precision === 'period-estimate',
-      citations: [
-        {
-          title: m.citation.title,
-          url: m.citation.url,
-          publisher: m.citation.publisher,
-          author: m.citation.author,
-          publishedAt: m.citation.publishedAt,
-          accessedAt: new Date().toISOString(),
-          sourceQuality:
-            m.precision === 'period-estimate' ? 'needs-human-review' : 'curated-fallback',
-          evidenceKind: m.isExactQuote ? 'quote' : 'paraphrase',
-          reference: m.reference,
-          provider: 'brand-timeline',
-          isExactQuote: m.isExactQuote,
-        },
-      ],
-    }))
+    .map((m) =>
+      sanitizeEventCitations({
+        id: m.id,
+        year: Number(m.date.slice(0, 4)),
+        title: m.title,
+        synopsis: m.synopsis,
+        category: 'brand',
+        precision: m.precision,
+        discoveredVia: ['internal-curated'],
+        needsHumanReview: m.precision === 'period-estimate',
+        citations: [
+          withHarvard({
+            title: m.citation.title,
+            url: m.citation.url,
+            publisher: m.citation.publisher,
+            author: m.citation.author,
+            publishedAt: m.citation.publishedAt,
+            accessedAt: new Date().toISOString(),
+            sourceQuality:
+              m.precision === 'period-estimate' ? 'needs-human-review' : 'curated-fallback',
+            evidenceKind: m.isExactQuote ? 'quote' : 'paraphrase',
+            reference: m.reference,
+            provider: 'brand-timeline',
+            isExactQuote: m.isExactQuote,
+          }),
+        ],
+      }),
+    )
 
   if (brandMoments.length) providersUsed.push('brand-timeline')
 
+  const events = merged.slice(0, 16)
   const narrative = await composeNarrative({
     apiKey: env.GEMINI_API_KEY,
     brand,
     queryDate,
-    eventSummaries: events.slice(0, 8).map((e) => `${e.year}: ${e.title} — ${e.synopsis}`),
+    eventSummaries: events.map((e) => `${e.year}: ${e.title} — ${e.synopsis}`),
   })
   if (narrative.voice === 'gemini') providersUsed.push('gemini')
+
+  narrative.disclaimer = [
+    narrative.disclaimer,
+    'Citations must be allowlisted Tier A/B/C sources (Harvard export). Aggregators are discovery-only.',
+  ].join(' ')
 
   const hasExact = events.some((e) => e.precision === 'exact-day')
 
   return {
     queryDate,
+    datePath: toOnThisDayPath(queryDate),
+    displayDate: toDisplayDate(queryDate),
     resolvedMode: hasExact ? 'exact' : 'period-estimate',
     brandId: brand.id,
     narrative,
-    events: events.slice(0, 16),
+    events,
     brandMoments,
     providersUsed,
     usingFallback: false,

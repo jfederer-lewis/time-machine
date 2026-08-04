@@ -30,6 +30,7 @@ export const converseBrand: BrandConfig = {
   featuredDates: [
     { date: '1917-01-01', label: '1917 · Non-Skid / All Star era begins' },
     { date: '1922-01-01', label: '1922 · Chuck Taylor joins' },
+    { date: '1999-04-01', label: '1999/april/1 · full-date doorway demo' },
     { date: '1970-01-01', label: '1970 · Chuck 70 lineage' },
     { date: '2003-07-09', label: '2003 · Nike acquisition' },
   ],
