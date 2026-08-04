@@ -298,6 +298,18 @@ a {
   max-width: 42rem;
 }
 
+.citation-inline-link {
+  color: var(--ink);
+  text-decoration: none;
+  border-bottom: 1px solid var(--rule);
+  word-break: break-all;
+}
+
+.citation-inline-link:hover {
+  color: var(--accent);
+  border-bottom-color: var(--accent);
+}
+
 .results-meta {
   font-size: 0.85rem;
   color: var(--muted);

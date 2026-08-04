@@ -9,6 +9,38 @@ function hostname(url: string): string {
   }
 }
 
+/** Split Harvard text so the Available at: URL is a real hyperlink. */
+function HarvardWithLink({ text, url }: { text: string; url: string }) {
+  const marker = 'Available at: '
+  const start = text.indexOf(marker)
+  if (start === -1) {
+    return (
+      <p className="citation-harvard">
+        {text}{' '}
+        <a className="citation-inline-link" href={url} target="_blank" rel="noreferrer">
+          {url}
+        </a>
+      </p>
+    )
+  }
+
+  const before = text.slice(0, start + marker.length)
+  const afterMarker = text.slice(start + marker.length)
+  const accessedAt = afterMarker.indexOf(' (Accessed:')
+  const linkedUrl = accessedAt === -1 ? afterMarker.trim() : afterMarker.slice(0, accessedAt).trim()
+  const after = accessedAt === -1 ? '' : afterMarker.slice(accessedAt)
+
+  return (
+    <p className="citation-harvard">
+      {before}
+      <a className="citation-inline-link" href={url} target="_blank" rel="noreferrer">
+        {linkedUrl || url}
+      </a>
+      {after}
+    </p>
+  )
+}
+
 export function CitationLine({ citation }: { citation: Citation }) {
   const blocked = isCitationBlocked(citation.url)
   const harvard =
@@ -23,7 +55,7 @@ export function CitationLine({ citation }: { citation: Citation }) {
         </p>
       ) : (
         <>
-          <p className="citation-harvard">{harvard}</p>
+          <HarvardWithLink text={harvard} url={citation.url} />
           <a className="citation-open" href={citation.url} target="_blank" rel="noreferrer">
             open {hostname(citation.url)} →
           </a>
