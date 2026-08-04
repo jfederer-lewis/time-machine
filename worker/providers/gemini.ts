@@ -15,8 +15,8 @@ export async function composeNarrative(opts: {
   const { apiKey, brand, queryDate, eventSummaries } = opts
   const display = formatDisplayDate(queryDate)
 
-  // Formulaic frame keeps the queried date visible in the UI.
-  const headline = `${brand.claimFrame} · ${display}`
+  // Formulaic frame keeps the brand claim; date is shown separately in the UI.
+  const headline = brand.claimFrame
   const fallbackLede =
     eventSummaries.length > 0
       ? firstSentence(stripSummaryPrefix(eventSummaries[0]))

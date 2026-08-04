@@ -2,8 +2,8 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import type { BrandConfig } from '../shared/brand'
 import type { CulturalEvent, DateQueryResult } from '../shared/provenance'
 import { converseBrand } from '../shared/brands/converse'
+import { CitationLine } from './components/CitationLine'
 import { DateDial } from './components/DateDial'
-import { ExportPanel } from './components/ExportPanel'
 import { TimelineView, type TimelineAxis } from './components/TimelineView'
 
 type View = 'date' | 'timeline'
@@ -76,10 +76,6 @@ export default function App() {
 
   const spotlight = useMemo(() => (result ? pickSpotlight(result) : null), [result])
 
-  const formulaHeadline = result
-    ? `${brand.claimFrame} · ${result.displayDate}`
-    : null
-
   return (
     <div
       className={[
@@ -118,6 +114,7 @@ export default function App() {
         <main className="main main--entry">
           <section className="hero">
             <h1 className="hero-brand">{brand.tagline}</h1>
+            <p className="hero-lede">{brand.lookupIntro}</p>
             <DateDial
               value={date}
               featured={[]}
@@ -136,20 +133,25 @@ export default function App() {
             </p>
           ) : null}
 
-          {result && formulaHeadline ? (
+          {result ? (
             <section className="results results--reveal" aria-live="polite">
               <header className="results-head">
-                <h2 className="result-frame">{formulaHeadline}</h2>
-                <div className="results-export">
-                  <ExportPanel result={result} brand={brand} />
-                </div>
+                <h2 className="result-frame">
+                  <span className="result-frame__claim">{brand.claimFrame}</span>
+                  <span className="result-frame__date">{result.displayDate}</span>
+                </h2>
               </header>
 
               {spotlight ? (
                 <article className="spotlight">
-                  <p className="spotlight-label">Fact</p>
                   <h3 className="spotlight-title">{spotlight.title}</h3>
                   <p className="spotlight-line">{firstSentence(spotlight.synopsis)}</p>
+                  {spotlight.citations[0] ? (
+                    <div className="spotlight-source">
+                      <p className="spotlight-label">Source</p>
+                      <CitationLine citation={spotlight.citations[0]} />
+                    </div>
+                  ) : null}
                 </article>
               ) : (
                 <p className="empty-day">No fact on record for this date.</p>

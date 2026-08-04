@@ -258,7 +258,7 @@ export function buildFallbackResult(queryDate: string, brandId: string): DateQue
     resolvedMode: hasExact ? 'mixed' : 'period-estimate',
     brandId: brand.id,
     narrative: {
-      headline: `${brand.claimFrame} · ${display}`,
+      headline: brand.claimFrame,
       lede,
       voice: 'template',
       disclaimer: '',

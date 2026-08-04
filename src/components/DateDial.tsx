@@ -94,10 +94,6 @@ export function DateDial({
 
   return (
     <section className="date-dial" aria-label="Enter a date">
-      <label className="date-prompt" htmlFor={`${baseId}-year`}>
-        Enter a date
-      </label>
-
       <div className="date-dial__row">
         <div className="date-fields">
           <div className="date-field date-field--day">

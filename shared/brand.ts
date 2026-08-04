@@ -32,6 +32,8 @@ export interface BrandConfig {
   productLine: string
   tagline: string
   claimFrame: string
+  /** Supporting line under the lookup hero — what the date tool does */
+  lookupIntro: string
   /** Short line under the brand — heritage angle, not product hype */
   heritageNote: string
   palette: BrandPalette

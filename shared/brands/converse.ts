@@ -9,6 +9,14 @@ import type { BrandConfig } from '../brand'
  * - Chuck Taylor joins as salesman: Converse official history says 1922.
  * - Signature on the ankle patch: sources disagree (often cited as early 1920s / 1932).
  *   Contested claims are marked period-estimate / needs-human-review in the data layer.
+ *
+ * Open product question — date range / “time capsule” framing:
+ * Wondering whether to reposition lookup so it only covers what has happened *since*
+ * Converse existed — e.g. floor the selectable range at founding (1908) or the first
+ * shoe, and treat the tool as a capsule of the Converse era rather than all of history.
+ * That could sharpen the concept (Chuck’s world, not arbitrary antiquity), but may dull
+ * the open “time machine” fun of jumping anywhere. Not decided; leave unconstrained
+ * for now.
  */
 export const converseBrand: BrandConfig = {
   id: 'converse',
@@ -16,6 +24,8 @@ export const converseBrand: BrandConfig = {
   productLine: 'Chuck Taylor All Star',
   tagline: 'Good News, Chuck',
   claimFrame: 'Chuck was there.',
+  lookupIntro:
+    'Pick a year, a month, or a day — and see what was happening in the world.',
   heritageNote:
     'Brand moments by year — only a day when the day is known.',
   palette: {
