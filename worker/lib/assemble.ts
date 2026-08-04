@@ -119,11 +119,6 @@ export async function assembleDateQuery(
   })
   if (narrative.voice === 'gemini') providersUsed.push('gemini')
 
-  narrative.disclaimer = [
-    narrative.disclaimer,
-    'Citations must be allowlisted Tier A/B/C sources (Harvard export). Aggregators are discovery-only.',
-  ].join(' ')
-
   const hasExact = events.some((e) => e.precision === 'exact-day')
 
   return {
@@ -147,7 +142,7 @@ export function listProviders(env: Env) {
       return { ...p, status: env.GEMINI_API_KEY ? ('live' as const) : p.status }
     }
     if (p.id === 'perplexity-search') {
-      return { ...p, status: env.PERPLEXITY_API_KEY ? ('stub' as const) : p.status }
+      return { ...p, status: env.PERPLEXITY_API_KEY ? ('live' as const) : p.status }
     }
     if (p.id === 'nyt-archive') {
       return { ...p, status: env.NYT_API_KEY ? ('stub' as const) : p.status }

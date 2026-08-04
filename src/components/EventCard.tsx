@@ -28,31 +28,22 @@ function injectGlosses(text: string, event: CulturalEvent) {
   return parts.length ? parts : text
 }
 
-const precisionLabel: Record<CulturalEvent['precision'], string> = {
-  'exact-day': 'exact day',
-  month: 'month',
-  year: 'year',
-  'period-estimate': 'period estimate',
-}
-
 export function EventCard({ event, accent }: { event: CulturalEvent; accent?: boolean }) {
   const citation = event.citations[0]
+  const showEstimate = event.precision === 'period-estimate' || event.needsHumanReview
 
   return (
     <article className={`event-card${accent ? ' event-card--brand' : ''}`}>
       <header className="event-card__meta">
-        <span className="chip">{event.category}</span>
-        <span className="chip chip--quiet">{precisionLabel[event.precision]}</span>
-        {event.needsHumanReview ? <span className="chip chip--warn">needs human review</span> : null}
         <span className="event-year">{event.year}</span>
+        {showEstimate ? <span className="chip chip--quiet">approx.</span> : null}
       </header>
 
       <h3 className="event-title">{event.title}</h3>
       <p className="event-synopsis">{injectGlosses(event.synopsis, event)}</p>
 
-      {citation ? (
+      {citation?.reference ? (
         <div className="reference-block">
-          <span className="reference-label">reference</span>
           <ReferenceText text={citation.reference} />
         </div>
       ) : null}

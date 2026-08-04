@@ -28,11 +28,11 @@ export const converseBrand: BrandConfig = {
     estimate: '#7A6E55',
   },
   featuredDates: [
-    { date: '1917-01-01', label: '1917 · Non-Skid / All Star era begins' },
-    { date: '1922-01-01', label: '1922 · Chuck Taylor joins' },
-    { date: '1999-04-01', label: '1999/april/1 · full-date doorway demo' },
-    { date: '1970-01-01', label: '1970 · Chuck 70 lineage' },
-    { date: '2003-07-09', label: '2003 · Nike acquisition' },
+    { date: '1917-01-01', label: '1917' },
+    { date: '1922-01-01', label: '1922' },
+    { date: '1970-01-01', label: '1970' },
+    { date: '1999-04-01', label: '1999' },
+    { date: '2003-07-09', label: '2003' },
   ],
   timeline: [
     {

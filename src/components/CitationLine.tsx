@@ -1,14 +1,6 @@
 import type { Citation } from '../../shared/provenance'
 import { isCitationBlocked } from '../../shared/source-registry'
 
-function hostname(url: string): string {
-  try {
-    return new URL(url).hostname.replace(/^www\./, '')
-  } catch {
-    return url
-  }
-}
-
 /** Split Harvard text so the Available at: URL is a real hyperlink. */
 function HarvardWithLink({ text, url }: { text: string; url: string }) {
   const marker = 'Available at: '
@@ -47,25 +39,17 @@ export function CitationLine({ citation }: { citation: Citation }) {
     citation.harvard ||
     `${citation.publisher} (${citation.publishedAt?.slice(0, 4) || 'n.d.'}) '${citation.title}'. Available at: ${citation.url}`
 
+  if (blocked) {
+    return (
+      <footer className="citation-line">
+        <p className="citation-blocked">Source unavailable for citation</p>
+      </footer>
+    )
+  }
+
   return (
     <footer className="citation-line">
-      {blocked ? (
-        <p className="citation-quality chip--warn">
-          citation blocked — discovery host cannot be used as source
-        </p>
-      ) : (
-        <>
-          <HarvardWithLink text={harvard} url={citation.url} />
-          <a className="citation-open" href={citation.url} target="_blank" rel="noreferrer">
-            open {hostname(citation.url)} →
-          </a>
-          <p className="citation-quality">
-            {citation.tier ? `tier ${citation.tier} · ` : ''}
-            {citation.sourceQuality.replace(/-/g, ' ')}
-            {citation.isExactQuote ? ' · quoted' : ' · paraphrase'}
-          </p>
-        </>
-      )}
+      <HarvardWithLink text={harvard} url={citation.url} />
     </footer>
   )
 }

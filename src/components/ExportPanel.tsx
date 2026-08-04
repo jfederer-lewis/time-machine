@@ -21,7 +21,6 @@ export function ExportPanel({
     narrative: result.narrative,
     events: result.events.map((e) => ({
       ...e,
-      // Internal discovery channels stay in JSON for editors; never treat as the cite
       citations: e.citations.map((c) => ({
         harvard: c.harvard,
         url: c.url,
@@ -34,8 +33,7 @@ export function ExportPanel({
     brandMoments: result.brandMoments,
     providersUsed: result.providersUsed,
     generatedAt: result.generatedAt,
-    verificationNote:
-      'Human verification required before press distribution. Harvard strings below are the citable form. Never cite onthisday.com, youdidntnotice.com, bdayrecap.com, or similar aggregators.',
+    verificationNote: 'Human verification required before press distribution.',
   }
 
   const download = () => {
@@ -52,7 +50,6 @@ export function ExportPanel({
     const lines = [
       result.narrative.headline,
       result.displayDate,
-      `Path: ${result.datePath}`,
       '',
       result.narrative.lede,
       '',
@@ -66,11 +63,11 @@ export function ExportPanel({
 
   return (
     <div className="export-panel">
-      <button type="button" className="btn-ghost" onClick={copy}>
-        Copy press brief
+      <button type="button" className="btn-text" onClick={copy}>
+        Copy
       </button>
-      <button type="button" className="btn-ghost" onClick={download}>
-        Export JSON pack
+      <button type="button" className="btn-text" onClick={download}>
+        Export
       </button>
     </div>
   )

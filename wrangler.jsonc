@@ -8,6 +8,6 @@
 	},
 	"vars": {
 		"BRAND_ID": "converse",
-		"USE_FALLBACK": "true"
+		"USE_FALLBACK": "false"
 	}
 }

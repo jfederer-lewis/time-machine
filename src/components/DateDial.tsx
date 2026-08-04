@@ -14,14 +14,12 @@ export function DateDial({ value, featured, onChange, onSubmit, loading }: DateD
   useEffect(() => setDraft(value), [value])
 
   return (
-    <section className="date-dial" aria-label="Date query">
-      <label className="date-dial__label" htmlFor="tm-date">
-        Enter a date
-      </label>
+    <section className="date-dial" aria-label="Choose a date">
       <div className="date-dial__row">
         <input
           id="tm-date"
           type="date"
+          aria-label="Date"
           value={draft}
           min="1800-01-01"
           max="2099-12-31"
@@ -39,7 +37,7 @@ export function DateDial({ value, featured, onChange, onSubmit, loading }: DateD
           onClick={() => onSubmit(draft)}
           disabled={loading || !draft}
         >
-          {loading ? 'Searching…' : 'Open doorway'}
+          {loading ? 'Loading…' : 'Go'}
         </button>
       </div>
 

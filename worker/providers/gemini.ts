@@ -2,9 +2,8 @@ import type { NarrativeBlock } from '../../shared/provenance'
 import type { BrandConfig } from '../../shared/brand'
 
 /**
- * Gemini narrative voice — stub until GEMINI_API_KEY is provided.
- * Contract: Gemini may write lede/headline only from supplied event cards.
- * It must not invent facts, years, or quotations.
+ * Gemini narrative voice.
+ * Contract: phrase lede/headline ONLY from supplied event cards — never invent facts.
  */
 export async function composeNarrative(opts: {
   apiKey?: string
@@ -20,63 +19,82 @@ export async function composeNarrative(opts: {
       headline: `${brand.claimFrame} · ${display}`,
       lede:
         eventSummaries.length > 0
-          ? `Across the same calendar day in other years, the record holds ${eventSummaries.length} sourced marker${eventSummaries.length === 1 ? '' : 's'} — material for a local desk to cut into a launch story without inventing heritage.`
-          : `No exact-day cultural markers resolved yet for ${display}. Period estimates and brand timeline moments remain available below.`,
+          ? `On this date across the years, ${eventSummaries.length} sourced moment${eventSummaries.length === 1 ? '' : 's'} from the archive.`
+          : `The archive is still thin for ${display}. Brand moments from nearby years appear below.`,
       voice: 'template',
-      disclaimer:
-        'Template voice active. Add GEMINI_API_KEY to enable LLM press phrasing. Citations remain authoritative either way.',
+      disclaimer: '',
     }
   }
 
-  // Placeholder for @google/genai call — kept offline until key lands.
-  // When wired: send only eventSummaries + brand.claimFrame; forbid novel facts.
   try {
     const prompt = [
       `Brand frame: ${brand.claimFrame}`,
       `Product: ${brand.productLine}`,
       `Query date: ${display}`,
-      'Write a 1-line headline and 2-sentence lede for press. Use ONLY these sourced facts:',
-      ...eventSummaries.map((s, i) => `${i + 1}. ${s}`),
-      'Do not invent quotations. If facts are thin, say so.',
+      'Write a 1-line headline and then a blank line and a 2-sentence lede for press.',
+      'Use ONLY these sourced facts — do not invent quotations, dates, or events:',
+      ...eventSummaries.slice(0, 8).map((s, i) => `${i + 1}. ${s}`),
+      'If facts are thin, say the archive is sparse rather than inventing.',
     ].join('\n')
 
-    const res = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`,
-      {
+    const models = ['gemini-flash-latest', 'gemini-3.5-flash', 'gemini-3.6-flash']
+    let text = ''
+    let lastError = ''
+
+    for (const model of models) {
+      const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`
+      const res = await fetch(endpoint, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'x-goog-api-key': apiKey,
+        },
         body: JSON.stringify({
-          contents: [{ parts: [{ text: prompt }] }],
-          generationConfig: { temperature: 0.4, maxOutputTokens: 280 },
+          contents: [{ role: 'user', parts: [{ text: prompt }] }],
+          generationConfig: { temperature: 0.4, maxOutputTokens: 1024 },
         }),
-      },
-    )
+      })
 
-    if (!res.ok) {
-      throw new Error(`Gemini ${res.status}`)
+      if (!res.ok) {
+        lastError = `${model} ${res.status} ${await res.text().catch(() => '')}`
+        continue
+      }
+
+      const data = (await res.json()) as {
+        candidates?: Array<{ content?: { parts?: Array<{ text?: string }> } }>
+      }
+      const parts = data.candidates?.[0]?.content?.parts ?? []
+      text = parts.map((p) => p.text || '').join('').trim()
+      if (text) break
     }
 
-    const data = (await res.json()) as {
-      candidates?: Array<{ content?: { parts?: Array<{ text?: string }> } }>
+    if (!text) {
+      throw new Error(lastError || 'Empty Gemini response')
     }
-    const text = data.candidates?.[0]?.content?.parts?.[0]?.text?.trim()
-    if (!text) throw new Error('Empty Gemini response')
 
-    const [firstLine, ...rest] = text.split('\n').map((l) => l.trim()).filter(Boolean)
+    const [firstLine, ...rest] = text
+      .split('\n')
+      .map((l) => l.trim())
+      .filter(Boolean)
 
     return {
-      headline: firstLine.replace(/^#+\s*/, '').replace(/^headline:\s*/i, '') || `${brand.claimFrame} · ${display}`,
+      headline:
+        firstLine.replace(/^#+\s*/, '').replace(/^headline:\s*/i, '') ||
+        `${brand.claimFrame} · ${display}`,
       lede: rest.join(' ').replace(/^lede:\s*/i, '') || text,
       voice: 'gemini',
-      disclaimer:
-        'Gemini phrasing only. All factual claims must remain attached to the source cards below — do not publish narrative without human verification.',
+      disclaimer: '',
     }
-  } catch {
+  } catch (err) {
+    console.error('[time-machine] Gemini failed', err)
     return {
       headline: `${brand.claimFrame} · ${display}`,
-      lede: `Gemini request failed; falling back to template voice. ${eventSummaries.length} sourced cards remain available for the desk.`,
+      lede:
+        eventSummaries.length > 0
+          ? `On this date across the years, ${eventSummaries.length} sourced moment${eventSummaries.length === 1 ? '' : 's'} from the archive.`
+          : `The archive is still thin for ${display}.`,
       voice: 'template',
-      disclaimer: 'Gemini unavailable — template voice in use. Citations unchanged.',
+      disclaimer: '',
     }
   }
 }

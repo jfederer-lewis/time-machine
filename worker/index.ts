@@ -34,7 +34,14 @@ export default {
     }
 
     if (url.pathname === '/api/health') {
-      return json({ ok: true, service: 'time-machine', brand: env.BRAND_ID || 'converse' })
+      return json({
+        ok: true,
+        service: 'time-machine',
+        brand: env.BRAND_ID || 'converse',
+        useFallback: env.USE_FALLBACK === 'true',
+        hasGemini: Boolean(env.GEMINI_API_KEY),
+        hasPerplexity: Boolean(env.PERPLEXITY_API_KEY),
+      })
     }
 
     if (url.pathname === '/api/brand') {
@@ -56,16 +63,16 @@ export default {
         return json({ error: 'Provide ?date=YYYY-MM-DD' }, 400)
       }
       const brandId = url.searchParams.get('brand') || env.BRAND_ID || 'converse'
-      const forceFallback =
-        url.searchParams.get('fallback') === '1' ||
-        url.searchParams.get('fallback') === 'true' ||
-        env.USE_FALLBACK === 'true'
+      const fallbackParam = url.searchParams.get('fallback')
 
-      // Live Wikipedia path: ?fallback=0 overrides env default
-      const live = url.searchParams.get('fallback') === '0'
+      // Explicit query param wins; otherwise env USE_FALLBACK (default live when false)
+      let forceFallback = env.USE_FALLBACK === 'true'
+      if (fallbackParam === '0' || fallbackParam === 'false') forceFallback = false
+      if (fallbackParam === '1' || fallbackParam === 'true') forceFallback = true
+
       const result = await assembleDateQuery(date, env, {
         brandId,
-        forceFallback: live ? false : forceFallback,
+        forceFallback,
       })
       return json(result)
     }

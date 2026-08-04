@@ -31,12 +31,8 @@ export function TimelineView({ brand }: { brand: BrandConfig }) {
   return (
     <section className="timeline-view" aria-label={`${brand.name} timeline`}>
       <header className="section-head">
-        <p className="eyebrow">Brand timeline</p>
-        <h2>{brand.name} · continuous presence</h2>
-        <p className="section-lede">
-          Extended idea — a vertical archive of brand moments with the same citation contract as date
-          queries. Swap brands by changing the brand pack.
-        </p>
+        <h2>{brand.name}</h2>
+        <p className="section-lede">{brand.heritageNote}</p>
       </header>
       <ol className="timeline-rail">
         {events.map((event) => (

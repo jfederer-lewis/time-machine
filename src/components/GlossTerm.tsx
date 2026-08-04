@@ -73,7 +73,7 @@ export function GlossTerm({ gloss, children }: { gloss: Gloss; children: ReactNo
               <p className="gloss-body">{gloss.gloss}</p>
               {gloss.source !== 'ai' && gloss.url ? (
                 <a href={gloss.url} target="_blank" rel="noreferrer" className="gloss-link">
-                  open {gloss.sourceLabel || gloss.source} →
+                  {gloss.sourceLabel || gloss.source}
                 </a>
               ) : null}
             </div>,
