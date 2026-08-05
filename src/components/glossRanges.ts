@@ -113,22 +113,24 @@ function wordsMatch(w1: string, w2: string) {
   return allowedEndings.has(r1) && allowedEndings.has(r2)
 }
 
-export type GlossRange = {
+export type GlossLike = { term: string; gloss: string }
+
+export type GlossRange<T extends GlossLike = GlossLike> = {
   start: number
   end: number
-  gloss: { term: string; gloss: string; [key: string]: unknown }
+  gloss: T
 }
 
 /** Bloom-style non-overlapping gloss spans — longest phrases first, then singles / surnames. */
-export function buildGlossRanges(
+export function buildGlossRanges<T extends GlossLike>(
   text: string,
-  glosses: Array<{ term: string; gloss: string; [key: string]: unknown }> = [],
-): GlossRange[] {
+  glosses: T[] = [],
+): GlossRange<T>[] {
   const source = String(text || '')
   if (!source || !Array.isArray(glosses) || glosses.length === 0) return []
 
   const used: Array<{ start: number; end: number }> = []
-  const ranges: GlossRange[] = []
+  const ranges: GlossRange<T>[] = []
 
   const words: Array<{ text: string; start: number; end: number }> = []
   const wordRegex = /[a-zA-Z0-9\x7f-\xff]+/g

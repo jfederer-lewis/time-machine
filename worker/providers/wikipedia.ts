@@ -55,7 +55,7 @@ export async function fetchOnThisDay(month: number, day: number): Promise<Cultur
           {
             term: pageDisplay,
             gloss: truncate(
-              page.extract || page.description || 'Wikipedia article linked from this event.',
+              page?.extract || page?.description || 'Wikipedia article linked from this event.',
               220,
             ),
             url: pageUrl,

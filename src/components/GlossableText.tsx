@@ -13,7 +13,7 @@ export function GlossableText({ text, glosses = [] }: { text: string; glosses?: 
   ranges.forEach((range, index) => {
     const textBefore = range.start > cursor ? text.slice(cursor, range.start) : ''
     const termEl = (
-      <GlossTerm key={`${range.gloss.term}-${range.start}-${index}`} gloss={range.gloss as Gloss}>
+      <GlossTerm key={`${range.gloss.term}-${range.start}-${index}`} gloss={range.gloss}>
         {text.slice(range.start, range.end)}
       </GlossTerm>
     )
