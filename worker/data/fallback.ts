@@ -1,4 +1,9 @@
-import type { CulturalEvent, DateQueryResult, ProviderStatus } from '../../shared/provenance'
+import type {
+  CulturalEvent,
+  DateQueryResult,
+  ProviderStatus,
+  ResearchMode,
+} from '../../shared/provenance'
 import { withHarvard } from '../../shared/provenance'
 import { getBrand } from '../../shared/brands'
 import { toDisplayDate, toOnThisDayPath } from '../../shared/source-registry'
@@ -206,7 +211,11 @@ export const PROVIDER_CATALOGUE: ProviderStatus[] = [
   },
 ]
 
-export function buildFallbackResult(queryDate: string, brandId: string): DateQueryResult {
+export function buildFallbackResult(
+  queryDate: string,
+  brandId: string,
+  researchMode: ResearchMode = 'full',
+): DateQueryResult {
   const brand = getBrand(brandId)
   const rawEvents = lookupFallbackEvents(queryDate)
   const events = rawEvents.map((e) => sanitizeEventCitations(e))
@@ -256,6 +265,7 @@ export function buildFallbackResult(queryDate: string, brandId: string): DateQue
     datePath: toOnThisDayPath(queryDate),
     displayDate: display,
     resolvedMode: hasExact ? 'mixed' : 'period-estimate',
+    researchMode,
     brandId: brand.id,
     narrative: {
       headline: brand.claimFrame,

@@ -1,4 +1,4 @@
-import type { CulturalEvent, DateQueryResult, ProviderId } from '../../shared/provenance'
+import type { CulturalEvent, DateQueryResult, ProviderId, ResearchMode } from '../../shared/provenance'
 import { withHarvard } from '../../shared/provenance'
 import { getBrand } from '../../shared/brands'
 import { queryDatePrecision, toDisplayDate, toOnThisDayPath } from '../../shared/source-registry'
@@ -26,14 +26,16 @@ export interface Env {
 export async function assembleDateQuery(
   queryDate: string,
   env: Env,
-  opts?: { forceFallback?: boolean; brandId?: string },
+  opts?: { forceFallback?: boolean; brandId?: string; researchMode?: ResearchMode },
 ): Promise<DateQueryResult> {
   const brandId = opts?.brandId || env.BRAND_ID || 'converse'
   const brand = getBrand(brandId)
   const forceFallback = opts?.forceFallback ?? env.USE_FALLBACK === 'true'
+  const researchMode: ResearchMode = opts?.researchMode === 'lite' ? 'lite' : 'full'
+  const isLite = researchMode === 'lite'
 
   if (forceFallback) {
-    return buildFallbackResult(queryDate, brandId)
+    return buildFallbackResult(queryDate, brandId, researchMode)
   }
 
   const precision = queryDatePrecision(queryDate)
@@ -56,17 +58,21 @@ export async function assembleDateQuery(
       // fall through — may still have brand moments / fallback
     }
 
-    ;[nyt, guardian, perplexity, chronicling] = await Promise.all([
-      fetchNytForDate(queryDate, env.NYT_API_KEY),
-      fetchGuardianForDate(queryDate, env.GUARDIAN_API_KEY),
-      fetchPerplexityForDate(queryDate, env.PERPLEXITY_API_KEY),
-      fetchChroniclingAmerica(queryDate),
-    ])
+    // Full mode fans out to paid / archive providers. Lite stays on Wikipedia only
+    // so local testing does not burn Perplexity / Gemini credits.
+    if (!isLite) {
+      ;[nyt, guardian, perplexity, chronicling] = await Promise.all([
+        fetchNytForDate(queryDate, env.NYT_API_KEY),
+        fetchGuardianForDate(queryDate, env.GUARDIAN_API_KEY),
+        fetchPerplexityForDate(queryDate, env.PERPLEXITY_API_KEY),
+        fetchChroniclingAmerica(queryDate),
+      ])
 
-    if (nyt.length) providersUsed.push('nyt-archive')
-    if (guardian.length) providersUsed.push('guardian')
-    if (perplexity.length) providersUsed.push('perplexity-search')
-    if (chronicling.length) providersUsed.push('chronicling-america')
+      if (nyt.length) providersUsed.push('nyt-archive')
+      if (guardian.length) providersUsed.push('guardian')
+      if (perplexity.length) providersUsed.push('perplexity-search')
+      if (chronicling.length) providersUsed.push('chronicling-america')
+    }
   }
 
   const merged = [...wikiEvents, ...nyt, ...guardian, ...perplexity, ...chronicling].map((e) =>
@@ -74,7 +80,7 @@ export async function assembleDateQuery(
   )
 
   if (merged.length === 0) {
-    const fallback = buildFallbackResult(queryDate, brandId)
+    const fallback = buildFallbackResult(queryDate, brandId, researchMode)
     fallback.usingFallback = true
     return fallback
   }
@@ -121,7 +127,7 @@ export async function assembleDateQuery(
 
   const events = merged.slice(0, 1)
   const narrative = await composeNarrative({
-    apiKey: env.GEMINI_API_KEY,
+    apiKey: isLite ? undefined : env.GEMINI_API_KEY,
     brand,
     queryDate,
     eventSummaries: events.map((e) => `${e.year}: ${e.title} — ${e.synopsis}`),
@@ -135,6 +141,7 @@ export async function assembleDateQuery(
     datePath: toOnThisDayPath(queryDate),
     displayDate: toDisplayDate(queryDate),
     resolvedMode: hasExact ? 'exact' : 'period-estimate',
+    researchMode,
     brandId: brand.id,
     narrative,
     events,

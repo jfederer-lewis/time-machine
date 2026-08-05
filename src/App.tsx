@@ -1,12 +1,37 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import type { BrandConfig } from '../shared/brand'
-import type { CulturalEvent, DateQueryResult } from '../shared/provenance'
+import type { CulturalEvent, DateQueryResult, ResearchMode } from '../shared/provenance'
 import { converseBrand } from '../shared/brands/converse'
 import { CitationLine } from './components/CitationLine'
 import { DateDial } from './components/DateDial'
 import { TimelineView, type TimelineAxis } from './components/TimelineView'
 
 type View = 'date' | 'timeline'
+
+const MODE_STORAGE_KEY = 'tm-research-mode'
+
+const MODE_OPTIONS: { id: ResearchMode; label: string; description: string }[] = [
+  {
+    id: 'lite',
+    label: 'Lite',
+    description: 'Wikipedia On This Day only — free, no API credits.',
+  },
+  {
+    id: 'full',
+    label: 'Full',
+    description: 'Perplexity discovery + Gemini phrasing — uses paid keys.',
+  },
+]
+
+function readStoredMode(): ResearchMode {
+  try {
+    const stored = localStorage.getItem(MODE_STORAGE_KEY)
+    if (stored === 'lite' || stored === 'full') return stored
+  } catch {
+    // ignore — private mode / SSR
+  }
+  return 'lite'
+}
 
 function firstSentence(text: string) {
   const trimmed = text.trim()
@@ -20,15 +45,30 @@ function pickSpotlight(result: DateQueryResult): CulturalEvent | null {
   return exact[0] ?? around[0] ?? result.brandMoments[0] ?? null
 }
 
+/** Local calendar date as YYYY-MM-DD (not UTC — avoids off-by-one near midnight). */
+function todayQueryDate() {
+  const now = new Date()
+  const y = now.getFullYear()
+  const m = String(now.getMonth() + 1).padStart(2, '0')
+  const d = String(now.getDate()).padStart(2, '0')
+  return `${y}-${m}-${d}`
+}
+
 export default function App() {
   const [brand, setBrand] = useState<BrandConfig>(converseBrand)
   const [view, setView] = useState<View>('date')
   const [timelineAxis, setTimelineAxis] = useState<TimelineAxis>('vertical')
-  const [date, setDate] = useState('2003-07-09')
+  const [date, setDate] = useState(todayQueryDate)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [result, setResult] = useState<DateQueryResult | null>(null)
   const [hasQueried, setHasQueried] = useState(false)
+  const [researchMode, setResearchMode] = useState<ResearchMode>('lite')
+  const [settingsOpen, setSettingsOpen] = useState(false)
+
+  useEffect(() => {
+    setResearchMode(readStoredMode())
+  }, [])
 
   useEffect(() => {
     document.documentElement.style.setProperty('--ink', brand.palette.ink)
@@ -47,6 +87,15 @@ export default function App() {
       .catch(() => setBrand(converseBrand))
   }, [])
 
+  const selectMode = useCallback((mode: ResearchMode) => {
+    setResearchMode(mode)
+    try {
+      localStorage.setItem(MODE_STORAGE_KEY, mode)
+    } catch {
+      // ignore
+    }
+  }, [])
+
   const query = useCallback(
     async (overrideDate?: string) => {
       const q = overrideDate ?? date
@@ -59,6 +108,7 @@ export default function App() {
         const params = new URLSearchParams({
           date: q,
           brand: brand.id,
+          mode: researchMode,
         })
         const res = await fetch(`/api/query?${params}`)
         if (!res.ok) throw new Error(`Query failed (${res.status})`)
@@ -71,7 +121,7 @@ export default function App() {
         setLoading(false)
       }
     },
-    [date, brand.id],
+    [date, brand.id, researchMode],
   )
 
   const spotlight = useMemo(() => (result ? pickSpotlight(result) : null), [result])
@@ -91,24 +141,61 @@ export default function App() {
           <p className="brand-name">{brand.name}</p>
           <p className="product-line">{brand.productLine}</p>
         </div>
-        <nav className="view-nav" aria-label="Primary">
-          {(
-            [
-              ['date', 'Lookup'],
-              ['timeline', 'Timeline'],
-            ] as const
-          ).map(([id, label]) => (
-            <button
-              key={id}
-              type="button"
-              className={view === id ? 'is-active' : undefined}
-              onClick={() => setView(id)}
-            >
-              {label}
-            </button>
-          ))}
-        </nav>
+        <div className="topbar-actions">
+          <nav className="view-nav" aria-label="Primary">
+            {(
+              [
+                ['date', 'Lookup'],
+                ['timeline', 'Timeline'],
+              ] as const
+            ).map(([id, label]) => (
+              <button
+                key={id}
+                type="button"
+                className={view === id ? 'is-active' : undefined}
+                onClick={() => setView(id)}
+              >
+                {label}
+              </button>
+            ))}
+          </nav>
+          <button
+            type="button"
+            className={['settings-toggle', settingsOpen ? 'is-open' : ''].filter(Boolean).join(' ')}
+            aria-expanded={settingsOpen}
+            aria-controls="research-settings"
+            onClick={() => setSettingsOpen((o) => !o)}
+          >
+            Settings
+          </button>
+        </div>
       </header>
+
+      {settingsOpen ? (
+        <div className="settings-bar" id="research-settings">
+          <p className="settings-bar__label">Research mode</p>
+          <div className="settings-modes" role="radiogroup" aria-label="Research mode">
+            {MODE_OPTIONS.map((opt) => (
+              <button
+                key={opt.id}
+                type="button"
+                role="radio"
+                aria-checked={researchMode === opt.id}
+                className={[
+                  'settings-mode',
+                  researchMode === opt.id ? 'is-active' : '',
+                ]
+                  .filter(Boolean)
+                  .join(' ')}
+                onClick={() => selectMode(opt.id)}
+              >
+                <span className="settings-mode__name">{opt.label}</span>
+                <span className="settings-mode__desc">{opt.description}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+      ) : null}
 
       {view === 'date' ? (
         <main className="main main--entry">
@@ -140,6 +227,9 @@ export default function App() {
                   <span className="result-frame__claim">{brand.claimFrame}</span>
                   <span className="result-frame__date">{result.displayDate}</span>
                 </h2>
+                <p className="mode-chip" data-mode={result.researchMode}>
+                  {result.researchMode === 'lite' ? 'Lite · Wikipedia' : 'Full · Perplexity + Gemini'}
+                </p>
               </header>
 
               {spotlight ? (

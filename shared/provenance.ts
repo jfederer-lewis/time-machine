@@ -97,6 +97,9 @@ export interface NarrativeBlock {
   disclaimer: string
 }
 
+/** Lite = Wikipedia only (no paid APIs). Full = Perplexity discovery + Gemini voice. */
+export type ResearchMode = 'lite' | 'full'
+
 export interface DateQueryResult {
   queryDate: string
   /** On This Day–style path — year, year/month, or year/month/day */
@@ -104,6 +107,8 @@ export interface DateQueryResult {
   /** Honest display: year, “April 1999”, or “9 July 2003” — never invents missing parts */
   displayDate: string
   resolvedMode: 'exact' | 'period-estimate' | 'mixed'
+  /** Which provider stack was requested for this lookup. */
+  researchMode: ResearchMode
   brandId: string
   narrative: NarrativeBlock
   events: CulturalEvent[]
