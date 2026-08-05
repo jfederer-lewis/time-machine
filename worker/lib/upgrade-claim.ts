@@ -2,6 +2,9 @@
  * Pass 2 — verify a Wikipedia-discovered claim and prefer a Tier A/B cite.
  * Gemini judges legitimacy; Perplexity (+ Gemini grounding) supply candidate URLs.
  * Gemini itself is never the public citation.
+ *
+ * Candidates must be *about the claim* — Tier A alone is not enough
+ * (e.g. a National Archives copyright guide must not cite a UK #1 single).
  */
 
 import {
@@ -64,15 +67,86 @@ function isUpgradeCite(url: string): boolean {
   return entry?.role === 'citation' && (entry.tier === 'A' || entry.tier === 'B')
 }
 
+/** Generic research-guide / help pages that are almost never about a day fact. */
+function isGenericResearchGuide(url: string): boolean {
+  return /help-with-your-research|research-guides|copyright-records|stationers-hall|\/faq\/|\/about\//i.test(
+    url,
+  )
+}
+
+const STOP = new Set([
+  'the','a','an','and','or','of','on','in','to','for','at','by','from','with','this','that',
+  'date','song','single','album','chart','charts','uk','us','number','one','was','were','is',
+  'are','its','it','as','into','over','after','before','during','about','available','http','https',
+])
+
+function significantTokens(text: string): Set<string> {
+  return new Set(
+    cleanPressText(text)
+      .toLowerCase()
+      .replace(/[^a-z0-9\s]/g, ' ')
+      .split(/\s+/)
+      .filter((t) => t.length >= 3 && !STOP.has(t)),
+  )
+}
+
+/** How well a candidate page title/snippet matches the day claim. */
+export function claimCiteRelevance(
+  claimText: string,
+  candidate: Pick<ClaimCandidate, 'title' | 'snippet' | 'url'>,
+): number {
+  if (isGenericResearchGuide(candidate.url)) return 0
+
+  const claim = significantTokens(claimText)
+  if (!claim.size) return 0
+
+  const cand = significantTokens(`${candidate.title || ''} ${candidate.snippet || ''}`)
+  let hit = 0
+  for (const t of claim) {
+    if (cand.has(t)) hit += 1
+  }
+  // Prefer at least two content tokens, or one distinctive long token
+  const longHits = [...claim].filter((t) => t.length >= 6 && cand.has(t)).length
+  if (hit < 2 && longHits < 1) return 0
+  return hit + longHits * 2
+}
+
+function preferredChartHost(url: string): boolean {
+  return /officialcharts\.com|billboard\.com/i.test(url)
+}
+
+function isChartish(event: CulturalEvent): boolean {
+  if (event.category === 'charts' || event.category === 'music') return true
+  return /#\s*1|chart|billboard|official charts|number[\s-]one/i.test(
+    `${event.title} ${event.synopsis}`,
+  )
+}
+
 function pickBestCandidate(
   candidates: ClaimCandidate[],
+  event: CulturalEvent,
 ): ClaimCandidate | undefined {
-  const eligible = candidates.filter((c) => c.url && isUpgradeCite(c.url))
-  eligible.sort(
-    (a, b) =>
-      (TIER_RANK[citationTier(b.url)] ?? 0) - (TIER_RANK[citationTier(a.url)] ?? 0),
-  )
-  return eligible[0]
+  const claimText = `${event.year} ${event.title} ${event.synopsis}`
+  const chartish = isChartish(event)
+
+  const scored = candidates
+    .filter((c) => c.url && isUpgradeCite(c.url))
+    .map((c) => {
+      let relevance = claimCiteRelevance(claimText, c)
+      if (chartish && preferredChartHost(c.url)) relevance += 6
+      // Soft-penalise national archives / museums when the claim is a chart hit
+      if (chartish && /nationalarchives|moma\.org|vam\.ac|si\.edu/i.test(c.url) && relevance < 4) {
+        relevance = 0
+      }
+      return { c, relevance, tier: TIER_RANK[citationTier(c.url)] ?? 0 }
+    })
+    .filter((row) => row.relevance > 0)
+
+  scored.sort((a, b) => {
+    if (b.relevance !== a.relevance) return b.relevance - a.relevance
+    return b.tier - a.tier
+  })
+  return scored[0]?.c
 }
 
 export async function upgradeWikipediaClaim(
@@ -109,6 +183,7 @@ export async function upgradeWikipediaClaim(
     year: event.year,
     title: event.title,
     synopsis: event.synopsis,
+    category: event.category,
   })
   if (pplxCandidates.length) providersUsed.push('perplexity-search')
 
@@ -129,7 +204,7 @@ export async function upgradeWikipediaClaim(
     ...(verification?.groundedSources ?? []),
   ]
 
-  const best = pickBestCandidate(pool)
+  const best = pickBestCandidate(pool, event)
 
   if (verification && !verification.legit) {
     return {
@@ -153,7 +228,7 @@ export async function upgradeWikipediaClaim(
   }
 
   if (!best) {
-    // Claim may be fine, but no Tier A/B URL found — keep Wiki bridge, flag review.
+    // Claim may be fine, but no *relevant* Tier A/B URL found — keep Wiki bridge, flag review.
     return {
       event: {
         ...event,

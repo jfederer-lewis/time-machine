@@ -1,7 +1,7 @@
 import type { NarrativeBlock } from '../../shared/provenance'
 import type { BrandConfig } from '../../shared/brand'
 import { toDisplayDate } from '../../shared/source-registry'
-import { cleanPressText, looksLikeDateOnlyTitle, titleEchoesBody, titleIsCutFromBody, looksLikeBareName, isIncompleteHeadline, toSentenceCaseHeadline, clipToShortProse, looksLikeHeadlineDump, descriptiveFallbackTitle, firstSentence, splitSentences } from '../lib/clean-text'
+import { cleanPressText, looksLikeDateOnlyTitle, titleEchoesBody, titleIsCutFromBody, titleTooCloseToBody, looksLikeBareName, isIncompleteHeadline, toSentenceCaseHeadline, clipToShortProse, looksLikeHeadlineDump, descriptiveFallbackTitle, firstSentence, splitSentences } from '../lib/clean-text'
 import { COPY_KNOBS, polishedCopyJsonSchemaHint, validateCopyContract, keepWholeSentences } from '../lib/copy-contract'
 
 const GEMINI_MODELS = ['gemini-flash-latest', 'gemini-3.5-flash', 'gemini-3.6-flash']
@@ -138,6 +138,7 @@ export async function polishEventCopy(opts: {
     '- Length aims above are recommendations, not quotas to force or pad toward.',
     '- Voice: always past tense. Never present-tense breaking news or open questions.',
     '- title must NOT copy the synopsis, and must NOT be a truncated prefix / “Following… / After…” clause of the synopsis.',
+    '- title must NOT be a trivial rephrase of the same fact (e.g. “UK #1: Song” vs “UK #1 song on this date: Song”) — expand the synopsis into real prose.',
     '- Put “why / era / stakes” material in whyItMatters, not synopsis.',
     COPY_KNOBS.contextRequired
       ? '- Never return null or empty for whyItMatters under any circumstances.'
@@ -174,7 +175,7 @@ export async function polishEventCopy(opts: {
     if (looksLikeDateOnlyTitle(nextTitle)) return null
     if (looksLikeBareName(nextTitle)) return null
     if (isIncompleteHeadline(nextTitle)) return null
-    if (titleEchoesBody(nextTitle, nextSynopsis)) {
+    if (titleEchoesBody(nextTitle, nextSynopsis) || titleTooCloseToBody(nextTitle, nextSynopsis)) {
       nextTitle = descriptiveFallbackTitle(nextSynopsis, cleanPage)
     }
     if (titleIsCutFromBody(nextTitle, nextSynopsis)) {
@@ -185,6 +186,7 @@ export async function polishEventCopy(opts: {
       looksLikeBareName(nextTitle) ||
       isIncompleteHeadline(nextTitle) ||
       titleEchoesBody(nextTitle, nextSynopsis) ||
+      titleTooCloseToBody(nextTitle, nextSynopsis) ||
       titleIsCutFromBody(nextTitle, nextSynopsis)
     ) {
       return null
@@ -196,6 +198,7 @@ export async function polishEventCopy(opts: {
       if (
         rebuilt &&
         !isIncompleteHeadline(rebuilt) &&
+        !titleTooCloseToBody(rebuilt, nextSynopsis) &&
         !titleIsCutFromBody(rebuilt, nextSynopsis)
       ) {
         nextTitle = rebuilt
@@ -281,7 +284,7 @@ export async function pickMostInterestingEvent(opts: {
   apiKey: string
   queryDate: string
   targetYear: number
-  candidates: Array<{ title: string; synopsis: string; year: number }>
+  candidates: Array<{ title: string; synopsis: string; year: number; sourceHint?: string }>
 }): Promise<number | null> {
   const { apiKey, queryDate, targetYear, candidates } = opts
   if (candidates.length === 0) return null
@@ -289,10 +292,10 @@ export async function pickMostInterestingEvent(opts: {
 
   const list = candidates
     .slice(0, 8)
-    .map(
-      (c, i) =>
-        `${i}. [${c.year}] ${cleanPressText(c.title)} — ${clipToShortProse(c.synopsis, 180)}`,
-    )
+    .map((c, i) => {
+      const src = c.sourceHint ? ` {source: ${c.sourceHint}}` : ''
+      return `${i}. [${c.year}]${src} ${cleanPressText(c.title)} — ${clipToShortProse(c.synopsis, 180)}`
+    })
     .join('\n')
 
   const prompt = [
@@ -300,8 +303,9 @@ export async function pickMostInterestingEvent(opts: {
     `Lookup date: ${queryDate} (prefer events in ${targetYear} when they are genuinely interesting historical moments).`,
     '',
     'Pick the SINGLE most interesting, poignant, or culturally resonant settled historical event for a British / international reader.',
-    'Prefer: major geopolitics, war & peace, culture, music charts, sport finals, science, design, human-rights moments, UK/Europe/global stakes.',
-    'Deprioritise: remote administrative changes (new territories/provinces), local municipal trivia, routine NBA/MLB milestone counts, live wire roundups, reaction stories that are not the day event itself.',
+    'Prefer culturally relevant news: arts, music, film, fashion, design, sport, science, human-rights, major geopolitics — with real prose.',
+    'When a candidate already carries a paper-of-record source (NYT / TimesMachine, BBC, Guardian, Reuters, FT, Telegraph, AP), strongly prefer it over aggregator-only discovery stubs.',
+    'Deprioritise: thin chart stubs that only name a #1 song with no story; remote administrative changes (new territories/provinces); local municipal trivia; routine NBA/MLB milestone counts; live wire roundups; reaction stories that are not the day event itself.',
     'Do not invent events — choose only by index from the list.',
     '',
     'Candidates:',

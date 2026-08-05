@@ -183,6 +183,32 @@ export function titleEchoesBody(title: string, body: string): boolean {
 }
 
 /**
+ * Title and body are the same fact with trivial wording tweaks
+ * (e.g. “UK #1: Song” vs “UK #1 song on this date: Song”).
+ * These must not ship — title should be a tight outcome hed, synopsis fuller prose.
+ */
+export function titleTooCloseToBody(title: string, body: string): boolean {
+  if (titleEchoesBody(title, body)) return true
+
+  const stripChartNoise = (s: string) =>
+    normalizeCopy(s)
+      .replace(/^(uk|us|australia|australia'?s?)\s*#?\s*1\s*(song|single|album)?\s*(on this date)?\s*[:\-–—]?\s*/i, '')
+      .replace(/\s+/g, ' ')
+      .trim()
+
+  const t = stripChartNoise(title)
+  const b = stripChartNoise(body)
+  if (t && b && t === b && t.length >= 8) return true
+
+  const tn = normalizeCopy(title)
+  const bn = normalizeCopy(body)
+  if (tn.length >= 12 && bn.includes(tn) && tn.length >= bn.length * 0.72) return true
+  if (bn.length >= 12 && tn.includes(bn) && bn.length >= tn.length * 0.72) return true
+
+  return false
+}
+
+/**
  * Title is just a chopped lead-in from the synopsis — e.g. synopsis
  * “Following X, Hasina resigns…” with title “Following X”.
  * Headlines must state the outcome, not the subordinate clause alone.

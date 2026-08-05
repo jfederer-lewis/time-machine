@@ -24,6 +24,18 @@ const PERPLEXITY_DOMAINS = CITATION_ALLOWLIST.filter(
   .map((e) => e.host)
   .slice(0, 20)
 
+const CHART_CITE_DOMAINS = ['officialcharts.com', 'billboard.com']
+
+function domainsForClaim(category?: string, title = '', synopsis = ''): string[] {
+  const chartish =
+    category === 'charts' ||
+    category === 'music' ||
+    /#\s*1|chart|billboard|official charts|number[\s-]one/i.test(`${title} ${synopsis}`)
+  if (!chartish) return PERPLEXITY_DOMAINS
+  // Charts: put Official Charts / Billboard first; still allow press, drop unrelated museums.
+  return [...new Set([...CHART_CITE_DOMAINS, ...PERPLEXITY_DOMAINS])].slice(0, 20)
+}
+
 export async function fetchNytForDate(_date: string, _apiKey?: string): Promise<CulturalEvent[]> {
   if (!_apiKey) return []
   return []
@@ -128,7 +140,7 @@ export async function fetchPerplexityForDate(
         `Press cutting surfaced for ${display} via allowlisted search. Verify before export.`,
       category: 'other',
       precision: 'exact-day',
-      discoveredVia: ['unknown'],
+      discoveredVia: ['perplexity-search'],
       needsHumanReview: true,
       citations: [
         withHarvard({
@@ -164,12 +176,19 @@ export async function searchAllowlistedCiteForClaim(opts: {
   year: number
   title: string
   synopsis: string
+  category?: string
 }): Promise<Array<{ url: string; title: string; snippet: string; publisher: string }>> {
-  const { apiKey, year, title, synopsis } = opts
+  const { apiKey, year, title, synopsis, category } = opts
   if (!apiKey) return []
 
   const claim = `${year}: ${title}. ${synopsis}`.slice(0, 400)
-  const query = `primary source or reputable news archive confirming: ${claim}`
+  const chartish =
+    category === 'charts' ||
+    category === 'music' ||
+    /#\s*1|chart|billboard|official charts|number[\s-]one/i.test(`${title} ${synopsis}`)
+  const query = chartish
+    ? `Official Charts or Billboard primary listing confirming UK or US number one: ${claim}`
+    : `primary source or reputable news archive confirming: ${claim}`
 
   let res: Response
   try {
@@ -182,7 +201,7 @@ export async function searchAllowlistedCiteForClaim(opts: {
       body: JSON.stringify({
         query,
         max_results: 8,
-        search_domain_filter: PERPLEXITY_DOMAINS,
+        search_domain_filter: domainsForClaim(category, title, synopsis),
       }),
     })
   } catch (err) {

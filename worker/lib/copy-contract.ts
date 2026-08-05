@@ -17,6 +17,7 @@ import {
   splitSentences,
   titleEchoesBody,
   titleIsCutFromBody,
+  titleTooCloseToBody,
 } from './clean-text'
 
 export type PolishedCopy = {
@@ -107,6 +108,13 @@ export function validateCopyContract(input: PolishedCopy): CopyValidationResult 
         field: 'title',
         code: 'title.echoes_body',
         message: 'Title must not be an exact copy of the synopsis.',
+      })
+    }
+    if (synopsis && titleTooCloseToBody(title, synopsis)) {
+      issues.push({
+        field: 'title',
+        code: 'title.too_close',
+        message: 'Title must not be a trivial rephrase of the synopsis — write a tight outcome hed.',
       })
     }
     if (synopsis && titleIsCutFromBody(title, synopsis)) {

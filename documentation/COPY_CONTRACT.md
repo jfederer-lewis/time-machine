@@ -31,8 +31,8 @@ Length aims below are **recommendations**, not quotas. Prefer leaving a slightly
 | Job | One tight line / sentence-synopsis of the **outcome** |
 | Aim | ~**90** characters (soft) |
 | Must | Who/what + action; complete thought; sentence case |
-| Must not | Bare name; date-only; ALL CAPS; `?`; ellipsis; exact synopsis copy; chopped “Following…” lead-in |
-| Near-duplicates | OK if wording differs and outcome is clear |
+| Must not | Bare name; date-only; ALL CAPS; `?`; ellipsis; exact synopsis copy; trivial rephrase of the same fact (“UK #1: Song” / “UK #1 song on this date: Song”); chopped “Following…” lead-in |
+| Near-duplicates | OK if wording differs *and* synopsis is fuller prose than the title |
 
 ### 2. `synopsis`
 
@@ -57,6 +57,8 @@ Length aims below are **recommendations**, not quotas. Prefer leaving a slightly
 
 Harvard + allowlisted URL; don’t double the year in the cite string.
 
+The cite must be **about the claim**. Tier A alone is not enough — reject generic research guides (e.g. National Archives copyright help pages) and prefer claim-relevant hosts (Official Charts for UK #1s).
+
 ---
 
 ## Adjustable knobs
@@ -71,10 +73,12 @@ export const COPY_KNOBS = {
   contextRequired: true,
   nearDuplicateTitleOk: true,
   preferUkGlobalInterest: true,
+  preferPremiumPress: true,
   recentLiveWireSkipDays: 548,
 } as const
 ```
 
+Interest ranking also lifts candidates that already carry **NYT / BBC / Guardian / Reuters / FT** (etc.) cites above aggregator-only discovery.
 ---
 
 ## Validation

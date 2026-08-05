@@ -28,12 +28,14 @@ import {
   descriptiveFallbackTitle,
   titleEchoesBody,
   titleIsCutFromBody,
+  titleTooCloseToBody,
   looksLikeBareName,
   isIncompleteHeadline,
   toSentenceCaseHeadline,
   looksLikeHeadlineDump,
   clipToShortProse,
 } from './clean-text'
+import { validateCopyContract } from './copy-contract'
 import { rankByInterest, scoreCulturalInterest, isTooRecentForLiveWire } from './interest'
 
 export interface Env {
@@ -154,7 +156,9 @@ export async function assembleDateQuery(
       ? sameYearRanked
       : rankByInterest(merged, targetYear)
 
-  const shortlist = poolForPick.slice(0, 8)
+  // Prefer substance for the shortlist — thin chart stubs (#1: Song / same fact twice) lose.
+  const substanceFirst = poolForPick.filter((e) => !isThinDiscoveryStub(e))
+  const shortlist = (substanceFirst.length ? substanceFirst : poolForPick).slice(0, 8)
 
   const brandMoments: CulturalEvent[] = brand.timeline
     .filter((m) => {
@@ -193,8 +197,8 @@ export async function assembleDateQuery(
 
   if (brandMoments.length) providersUsed.push('brand-timeline')
 
-  let events = shortlist.slice(0, 1)
-
+  // Ordered try list: Gemini pick first, then remaining shortlist by interest rank.
+  let ordered = [...shortlist]
   if (env.GEMINI_API_KEY && shortlist.length > 1) {
     const picked = await pickMostInterestingEvent({
       apiKey: env.GEMINI_API_KEY,
@@ -204,50 +208,88 @@ export async function assembleDateQuery(
         title: e.title,
         synopsis: e.synopsis,
         year: e.year,
+        sourceHint:
+          e.citations[0]?.publisher ||
+          e.citations[0]?.provider ||
+          e.discoveredVia?.[0] ||
+          undefined,
       })),
     })
     if (picked != null && shortlist[picked]) {
-      events = [shortlist[picked]]
+      ordered = [shortlist[picked], ...shortlist.filter((_, i) => i !== picked)]
       if (!providersUsed.includes('gemini')) providersUsed.push('gemini')
     }
   }
 
-  // Full mode: verify discovery / Wiki-bridge claims and upgrade to news/gov cites.
-  if (!isLite && events[0] && needsCiteUpgrade(events[0])) {
-    const upgraded = await upgradeWikipediaClaim(events[0], env)
-    events = [sanitizeEventCitations(upgraded.event)]
-    for (const id of upgraded.providersUsed) {
-      if (!providersUsed.includes(id)) providersUsed.push(id)
-    }
-  }
+  // Polish → validate → (full) cite upgrade. Never ship a card that fails the copy contract.
+  // Cap tries so a bad pick doesn't burn the quota on every shortlist row.
+  let events: CulturalEvent[] = []
+  for (const candidate of ordered.slice(0, 3)) {
+    let next = candidate
 
-  // Both modes: Gemini rewrites truncated wiki titles into a complete headline + body.
-  // Lite stays Wikipedia-sourced; full also gets cite upgrades above.
-  if (env.GEMINI_API_KEY && events[0]) {
-    const event = events[0]
-    const polished = await polishEventCopy({
-      apiKey: env.GEMINI_API_KEY,
-      year: event.year,
-      title: event.title,
-      synopsis: event.synopsis,
-      pageTitle: event.citations[0]?.title,
-      mode: isLite ? 'lite' : 'full',
-    })
-    if (polished) {
-      events = [
-        {
-          ...event,
-          title: polished.title,
-          synopsis: polished.synopsis,
-          ...(polished.whyItMatters ? { whyItMatters: polished.whyItMatters } : {}),
-        },
-      ]
+    if (env.GEMINI_API_KEY) {
+      const polished = await polishEventCopy({
+        apiKey: env.GEMINI_API_KEY,
+        year: candidate.year,
+        title: candidate.title,
+        synopsis: candidate.synopsis,
+        pageTitle: candidate.citations[0]?.title,
+        mode: isLite ? 'lite' : 'full',
+      })
+      if (!polished) continue
+      next = {
+        ...candidate,
+        title: polished.title,
+        synopsis: polished.synopsis,
+        ...(polished.whyItMatters ? { whyItMatters: polished.whyItMatters } : {}),
+      }
       if (!providersUsed.includes('gemini')) providersUsed.push('gemini')
     } else {
-      events = [fallbackDistinctCopy(event)]
+      next = fallbackDistinctCopy(candidate)
+      const gate = validateCopyContract({
+        title: next.title,
+        synopsis: next.synopsis,
+        ...(next.whyItMatters ? { whyItMatters: next.whyItMatters } : {}),
+      })
+      if (!gate.ok) continue
     }
-  } else if (events[0]) {
-    events = [fallbackDistinctCopy(events[0])]
+
+    if (!isLite && needsCiteUpgrade(next)) {
+      const upgraded = await upgradeWikipediaClaim(next, env)
+      next = sanitizeEventCitations(upgraded.event)
+      for (const id of upgraded.providersUsed) {
+        if (!providersUsed.includes(id)) providersUsed.push(id)
+      }
+    }
+
+    const shipped = validateCopyContract({
+      title: next.title,
+      synopsis: next.synopsis,
+      ...(next.whyItMatters ? { whyItMatters: next.whyItMatters } : {}),
+    })
+    if (!shipped.ok) {
+      console.warn(
+        '[time-machine] skipping candidate after polish/cite — contract failed',
+        shipped.issues.map((i) => i.code).join(', '),
+      )
+      continue
+    }
+
+    events = [
+      {
+        ...next,
+        title: shipped.value.title,
+        synopsis: shipped.value.synopsis,
+        ...(shipped.value.whyItMatters ? { whyItMatters: shipped.value.whyItMatters } : {}),
+      },
+    ]
+    break
+  }
+
+  if (!events.length) {
+    const fallback = buildFallbackResult(queryDate, brandId, researchMode)
+    fallback.usingFallback = true
+    return fallback
   }
 
   // Bloom-style entity glosses on the claim sentence (Wikipedia summary).
@@ -319,6 +361,7 @@ function fallbackDistinctCopy(event: CulturalEvent): CulturalEvent {
     looksLikeBareName(title) ||
     isIncompleteHeadline(title) ||
     titleEchoesBody(title, synopsis) ||
+    titleTooCloseToBody(title, synopsis) ||
     titleIsCutFromBody(title, synopsis)
 
   if (bad) {
@@ -326,6 +369,14 @@ function fallbackDistinctCopy(event: CulturalEvent): CulturalEvent {
   }
 
   return { ...event, title, synopsis }
+}
+
+/** Discovery stubs with title ≈ synopsis (esp. chart #1 labels) — not shippable as-is. */
+function isThinDiscoveryStub(event: CulturalEvent): boolean {
+  if (titleTooCloseToBody(event.title, event.synopsis)) return true
+  if (event.category === 'charts' && event.synopsis.length < 100) return true
+  if (event.synopsis.length < 48) return true
+  return false
 }
 
 /** Collapse near-duplicate day facts from multiple discovery hosts. */
