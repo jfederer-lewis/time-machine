@@ -116,12 +116,17 @@ a {
   border: 0;
   background: transparent;
   color: var(--muted);
-  padding: 0.4rem 0.15rem;
+  padding: 0.35rem;
   cursor: pointer;
-  font-size: 0.72rem;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   border-bottom: 1px solid transparent;
+  transition: color 160ms ease, border-color 160ms ease;
+}
+
+.settings-toggle__icon {
+  display: block;
 }
 
 .settings-toggle:hover,
