@@ -28,10 +28,28 @@ const TIER_RANK: Record<SourceTier | 'unknown', number> = {
   unknown: 0,
 }
 
+const DISCOVERY_CHANNELS = new Set([
+  'wikipedia-onthisday',
+  'onthisday-com',
+  'history-com',
+  'bbc-onthisday',
+])
+
+/** True when the public cite is missing, Wiki-bridge, or discovery-index only. */
 export function isWikipediaBridgeEvent(event: CulturalEvent): boolean {
-  if (event.discoveredVia?.includes('wikipedia-onthisday')) return true
+  return needsCiteUpgrade(event)
+}
+
+/** Discovery / bridge cards that must be upgraded before press export. */
+export function needsCiteUpgrade(event: CulturalEvent): boolean {
+  if (event.discoveredVia?.some((d) => DISCOVERY_CHANNELS.has(d))) return true
+  if (!event.citations.length) return true
   const cite = event.citations[0]
-  return cite?.publisher === 'Wikipedia' || citationTier(cite?.url ?? '') === 'bridge'
+  if (cite?.publisher === 'Wikipedia' || citationTier(cite?.url ?? '') === 'bridge') return true
+  if (cite?.sourceQuality === 'trusted-discovery-only' || cite?.sourceQuality === 'needs-human-review') {
+    return citationTier(cite.url) === 'bridge' || citationTier(cite.url) === 'unknown'
+  }
+  return false
 }
 
 export function citationPreferability(event: CulturalEvent): number {

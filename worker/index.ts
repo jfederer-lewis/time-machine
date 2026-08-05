@@ -59,6 +59,7 @@ export default {
       const fallbackParam = url.searchParams.get('fallback')
       const modeParam = url.searchParams.get('mode')
       const researchMode = modeParam === 'lite' ? ('lite' as const) : ('full' as const)
+      const anyYear = url.searchParams.get('anyYear') === 'true'
 
       // Explicit query param wins; otherwise env USE_FALLBACK (default live when false)
       let forceFallback = env.USE_FALLBACK === 'true'
@@ -69,6 +70,7 @@ export default {
         brandId,
         forceFallback,
         researchMode,
+        anyYear,
       })
       return json(result)
     }

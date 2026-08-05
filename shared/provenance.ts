@@ -32,6 +32,8 @@ export type EventFacet =
 export type ProviderId =
   | 'wikipedia-onthisday'
   | 'wikipedia-summary'
+  | 'onthisday-com'
+  | 'history-com'
   | 'gemini'
   | 'perplexity-search'
   | 'nyt-archive'

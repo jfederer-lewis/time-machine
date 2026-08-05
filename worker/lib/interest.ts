@@ -1,4 +1,5 @@
 import type { CulturalEvent } from '../../shared/provenance'
+import { COPY_KNOBS } from '../../shared/copy-knobs'
 import { looksLikeHeadlineDump } from './clean-text'
 
 /**
@@ -44,8 +45,13 @@ export function scoreCulturalInterest(event: CulturalEvent): number {
   if (ADMIN_TRIVIA.test(text)) score -= 10
   if (LOCAL_US_CANADA.test(text) && !BOOST.test(text) && !POIGNANT.test(text)) score -= 4
 
-  // Prefer Wikipedia On This Day claim text over raw press search rows
-  if (event.discoveredVia?.includes('wikipedia-onthisday')) score += 5
+  // Editorial day-indexes (discovery only) — slight lift over raw wire / wiki dumps
+  if (event.discoveredVia?.includes('history-com')) score += 4
+  if (event.discoveredVia?.includes('onthisday-com')) score += 3
+  // Wikipedia remains a useful bridge, but must not dominate the shortlist
+  if (event.discoveredVia?.includes('wikipedia-onthisday')) score += 1
+
+  if (event.category === 'charts') score += 3
 
   // Prefer a bit of substance in the blurb — but not a dump
   if (event.synopsis.length >= 80 && event.synopsis.length < 400) score += 1
@@ -65,19 +71,27 @@ export function isTooRecentForLiveWire(queryDate: string, now = new Date()): boo
   const daysAhead = (q - today) / 86_400_000
   const daysBehind = (today - q) / 86_400_000
   // Future dates, or roughly the last 18 months
-  return daysAhead >= 0 || daysBehind < 548
+  return daysAhead >= 0 || daysBehind < COPY_KNOBS.recentLiveWireSkipDays
 }
 
-/** Sort: closer year first, then higher interest; wiki slightly preferred within a year. */
-export function rankByInterest(events: CulturalEvent[], targetYear: number): CulturalEvent[] {
+function discoveryRank(event: CulturalEvent): number {
+  if (event.discoveredVia?.includes('history-com')) return 3
+  if (event.discoveredVia?.includes('onthisday-com')) return 2
+  if (event.discoveredVia?.includes('wikipedia-onthisday')) return 1
+  return 0
+}
+
+/** Sort: closer year first (unless anyYear is true), then higher interest; editorial indexes beat wiki ties. */
+export function rankByInterest(events: CulturalEvent[], targetYear: number, anyYear = false): CulturalEvent[] {
   return [...events].sort((a, b) => {
-    const yearDiff = Math.abs(a.year - targetYear) - Math.abs(b.year - targetYear)
-    if (yearDiff !== 0) return yearDiff
+    if (!anyYear) {
+      const yearDiff = Math.abs(a.year - targetYear) - Math.abs(b.year - targetYear)
+      if (yearDiff !== 0) return yearDiff
+    }
     const interestDiff = scoreCulturalInterest(b) - scoreCulturalInterest(a)
     if (interestDiff !== 0) return interestDiff
-    const wikiA = a.discoveredVia?.includes('wikipedia-onthisday') ? 1 : 0
-    const wikiB = b.discoveredVia?.includes('wikipedia-onthisday') ? 1 : 0
-    if (wikiB !== wikiA) return wikiB - wikiA
+    const discDiff = discoveryRank(b) - discoveryRank(a)
+    if (discDiff !== 0) return discDiff
     return b.year - a.year
   })
 }

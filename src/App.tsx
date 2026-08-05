@@ -15,7 +15,7 @@ const MODE_OPTIONS: { id: ResearchMode; label: string; description: string }[] =
   {
     id: 'lite',
     label: 'Lite',
-    description: 'Wikipedia discovery + Gemini phrasing — no Perplexity / cite upgrades.',
+    description: 'On This Day + History.com + Wikipedia discovery; Gemini phrasing — no Perplexity cite upgrades.',
   },
   {
     id: 'full',
@@ -167,11 +167,14 @@ export default function App() {
     }
   }, [])
 
+  const [anyYear, setAnyYear] = useState(false)
+
   const query = useCallback(
-    async (overrideDate?: string) => {
+    async (overrideDate?: string, overrideAnyYear?: boolean) => {
       const q = overrideDate ?? date
       if (!q) return
       if (overrideDate) setDate(overrideDate)
+      const targetAnyYear = overrideAnyYear ?? anyYear
       setLoading(true)
       setError(null)
       setHasQueried(true)
@@ -180,6 +183,7 @@ export default function App() {
           date: q,
           brand: brand.id,
           mode: researchMode,
+          anyYear: String(targetAnyYear),
         })
         const res = await fetch(`/api/query?${params}`)
         if (!res.ok) throw new Error(`Query failed (${res.status})`)
@@ -192,7 +196,7 @@ export default function App() {
         setLoading(false)
       }
     },
-    [date, brand.id, researchMode],
+    [date, brand.id, researchMode, anyYear],
   )
 
   const spotlight = useMemo(() => (result ? pickSpotlight(result) : null), [result])
@@ -292,6 +296,36 @@ export default function App() {
                     </button>
                   ))}
                 </div>
+
+                <p className="settings-dropdown__label" style={{ marginTop: '0.85rem' }}>Year preference</p>
+                <div className="settings-modes" role="radiogroup" aria-label="Year preference">
+                  {[
+                    { id: false, label: 'Specific Year', desc: 'Prioritize events from the selected year.' },
+                    { id: true, label: 'Any Year', desc: 'Surface the absolute best event across all of history.' },
+                  ].map((opt) => (
+                    <button
+                      key={String(opt.id)}
+                      type="button"
+                      role="radio"
+                      aria-checked={anyYear === opt.id}
+                      className={[
+                        'settings-mode',
+                        anyYear === opt.id ? 'is-active' : '',
+                      ]
+                        .filter(Boolean)
+                        .join(' ')}
+                      onClick={() => {
+                        setAnyYear(opt.id)
+                        if (hasQueried) {
+                          void query(undefined, opt.id)
+                        }
+                      }}
+                    >
+                      <span className="settings-mode__name">{opt.label}</span>
+                      <span className="settings-mode__desc">{opt.desc}</span>
+                    </button>
+                  ))}
+                </div>
               </div>
             ) : null}
           </div>
@@ -329,7 +363,7 @@ export default function App() {
                 </h2>
                 {result.researchMode === 'lite' ? (
                   <p className="mode-chip" data-mode="lite">
-                    Lite · Wikipedia
+                    Lite · day indexes
                   </p>
                 ) : null}
               </header>

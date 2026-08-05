@@ -146,9 +146,23 @@ export const PROVIDER_CATALOGUE: ProviderStatus[] = [
   {
     id: 'wikipedia-onthisday',
     label: 'Wikipedia On This Day',
-    role: 'Calendar-day discovery across centuries',
+    role: 'Calendar-day discovery bridge (not preferred shortlist lead)',
     status: 'live',
     notes: '',
+  },
+  {
+    id: 'onthisday-com',
+    label: 'On This Day',
+    role: 'Year+day editorial discovery — never a public citation',
+    status: 'live',
+    notes: 'Discovery only.',
+  },
+  {
+    id: 'history-com',
+    label: 'History.com This Day',
+    role: 'Month/day editorial heroes — never a public citation',
+    status: 'live',
+    notes: 'Discovery only.',
   },
   {
     id: 'wikipedia-summary',

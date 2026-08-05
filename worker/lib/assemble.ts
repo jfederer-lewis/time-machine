@@ -6,6 +6,11 @@ import { buildFallbackResult, PROVIDER_CATALOGUE } from '../data/fallback'
 import { composeNarrative, polishEventCopy, pickMostInterestingEvent } from '../providers/gemini'
 import { fetchOnThisDay } from '../providers/wikipedia'
 import {
+  fetchOnThisDayCom,
+  fetchOnThisDayComAnyYear,
+  fetchHistoryComDay,
+} from '../providers/day-indexes'
+import {
   fetchChroniclingAmerica,
   fetchGuardianForDate,
   fetchNytForDate,
@@ -13,7 +18,7 @@ import {
 } from '../providers/archives'
 import { sanitizeEventCitations } from './verify'
 import {
-  isWikipediaBridgeEvent,
+  needsCiteUpgrade,
   upgradeWikipediaClaim,
 } from './upgrade-claim'
 import { attachGlosses } from './gloss-service'
@@ -44,13 +49,14 @@ export interface Env {
 export async function assembleDateQuery(
   queryDate: string,
   env: Env,
-  opts?: { forceFallback?: boolean; brandId?: string; researchMode?: ResearchMode },
+  opts?: { forceFallback?: boolean; brandId?: string; researchMode?: ResearchMode; anyYear?: boolean },
 ): Promise<DateQueryResult> {
   const brandId = opts?.brandId || env.BRAND_ID || 'converse'
   const brand = getBrand(brandId)
   const forceFallback = opts?.forceFallback ?? env.USE_FALLBACK === 'true'
   const researchMode: ResearchMode = opts?.researchMode === 'lite' ? 'lite' : 'full'
   const isLite = researchMode === 'lite'
+  const anyYear = opts?.anyYear ?? false
 
   if (forceFallback) {
     return buildFallbackResult(queryDate, brandId, researchMode)
@@ -62,22 +68,38 @@ export async function assembleDateQuery(
   // Day-indexed providers only run when a real calendar day was supplied —
   // never invent Jan 1 (or any day) for year/month-only queries.
   let wikiEvents: CulturalEvent[] = []
+  let onThisDayCom: CulturalEvent[] = []
+  let historyCom: CulturalEvent[] = []
   let nyt: CulturalEvent[] = []
   let guardian: CulturalEvent[] = []
   let perplexity: CulturalEvent[] = []
   let chronicling: CulturalEvent[] = []
 
   if (precision === 'exact-day') {
-    const [, mm, dd] = queryDate.split('-').map(Number)
-    try {
-      wikiEvents = await fetchOnThisDay(mm, dd)
-      if (wikiEvents.length) providersUsed.push('wikipedia-onthisday')
-    } catch {
-      // fall through — may still have brand moments / fallback
-    }
+    const [yyyy, mm, dd] = queryDate.split('-').map(Number)
 
-    // Full mode fans out to paid / archive providers. Lite stays on Wikipedia only
-    // so local testing does not burn Perplexity / Gemini credits.
+    // Multi-source discovery: editorial day-indexes + Wikipedia bridge.
+    // On This Day / History.com are never public citations.
+    const discoverySettled = await Promise.allSettled([
+      fetchOnThisDay(mm, dd),
+      fetchOnThisDayCom(yyyy, mm, dd),
+      anyYear
+        ? fetchOnThisDayComAnyYear(mm, dd, { preferNearYear: yyyy, limit: 18 })
+        : Promise.resolve([] as CulturalEvent[]),
+      fetchHistoryComDay(mm, dd),
+    ])
+
+    wikiEvents = discoverySettled[0].status === 'fulfilled' ? discoverySettled[0].value : []
+    const otdYear = discoverySettled[1].status === 'fulfilled' ? discoverySettled[1].value : []
+    const otdAny = discoverySettled[2].status === 'fulfilled' ? discoverySettled[2].value : []
+    historyCom = discoverySettled[3].status === 'fulfilled' ? discoverySettled[3].value : []
+    onThisDayCom = [...otdYear, ...otdAny]
+
+    if (wikiEvents.length) providersUsed.push('wikipedia-onthisday')
+    if (onThisDayCom.length) providersUsed.push('onthisday-com')
+    if (historyCom.length) providersUsed.push('history-com')
+
+    // Full mode fans out to paid / archive providers.
     // Skip live wire date-search for recent/future dates — this product reads as past.
     if (!isLite) {
       const skipLiveWire = isTooRecentForLiveWire(queryDate)
@@ -95,7 +117,15 @@ export async function assembleDateQuery(
     }
   }
 
-  const merged = [...wikiEvents, ...nyt, ...guardian, ...perplexity, ...chronicling]
+  const merged = dedupeDiscoveryEvents([
+    ...onThisDayCom,
+    ...historyCom,
+    ...wikiEvents,
+    ...nyt,
+    ...guardian,
+    ...perplexity,
+    ...chronicling,
+  ])
     .map((e) => sanitizeEventCitations(e))
     .filter((e) => !looksLikeHeadlineDump(e.synopsis))
     .map((e) =>
@@ -112,20 +142,17 @@ export async function assembleDateQuery(
 
   // Prefer the queried year when it has something press-worthy; otherwise
   // allow a more poignant same-calendar-day event (UI shows “Also on this day”).
-  // Recent / future dates: prefer historical Wikipedia over live wire.
+  // Do NOT force a Wikipedia-only pool — editorial indexes compete equally.
   const targetYear = Number(queryDate.slice(0, 4))
   const sameYear = merged.filter((e) => e.year === targetYear)
   const sameYearRanked = rankByInterest(sameYear, targetYear)
   const bestSameScore = sameYearRanked[0] ? scoreCulturalInterest(sameYearRanked[0]) : -99
-  const wikiOnly = merged.filter((e) => e.discoveredVia?.includes('wikipedia-onthisday'))
-  const preferHistorical = isTooRecentForLiveWire(queryDate) || bestSameScore < 2
 
-  const poolForPick =
-    preferHistorical && wikiOnly.length > 0
-      ? rankByInterest(wikiOnly, targetYear)
-      : bestSameScore >= 2 && sameYearRanked.length > 0
-        ? sameYearRanked
-        : rankByInterest(merged, targetYear)
+  const poolForPick = anyYear
+    ? rankByInterest(merged, targetYear, true)
+    : bestSameScore >= 2 && sameYearRanked.length > 0
+      ? sameYearRanked
+      : rankByInterest(merged, targetYear)
 
   const shortlist = poolForPick.slice(0, 8)
 
@@ -185,8 +212,8 @@ export async function assembleDateQuery(
     }
   }
 
-  // Full mode: verify Wikipedia bridge claims and upgrade to news/gov cites when possible.
-  if (!isLite && events[0] && isWikipediaBridgeEvent(events[0])) {
+  // Full mode: verify discovery / Wiki-bridge claims and upgrade to news/gov cites.
+  if (!isLite && events[0] && needsCiteUpgrade(events[0])) {
     const upgraded = await upgradeWikipediaClaim(events[0], env)
     events = [sanitizeEventCitations(upgraded.event)]
     for (const id of upgraded.providersUsed) {
@@ -299,4 +326,40 @@ function fallbackDistinctCopy(event: CulturalEvent): CulturalEvent {
   }
 
   return { ...event, title, synopsis }
+}
+
+/** Collapse near-duplicate day facts from multiple discovery hosts. */
+function dedupeDiscoveryEvents(events: CulturalEvent[]): CulturalEvent[] {
+  const out: CulturalEvent[] = []
+  const byKey = new Map<string, number>()
+
+  for (const event of events) {
+    const norm = cleanPressText(event.synopsis || event.title)
+      .toLowerCase()
+      .replace(/[^a-z0-9\s]/g, ' ')
+      .replace(/\s+/g, ' ')
+      .trim()
+      .slice(0, 96)
+    const key = `${event.year}:${norm}`
+    const existingIdx = byKey.get(key)
+    if (existingIdx == null) {
+      byKey.set(key, out.length)
+      out.push(event)
+      continue
+    }
+    const prev = out[existingIdx]
+    const mergedVia = [
+      ...new Set([...(prev.discoveredVia ?? []), ...(event.discoveredVia ?? [])]),
+    ]
+    // Prefer the copy with a real citation, else the higher-interest editorial host
+    const prevCite = prev.citations.length
+    const nextCite = event.citations.length
+    if (nextCite > prevCite) {
+      out[existingIdx] = { ...event, discoveredVia: mergedVia }
+    } else {
+      out[existingIdx] = { ...prev, discoveredVia: mergedVia }
+    }
+  }
+
+  return out
 }

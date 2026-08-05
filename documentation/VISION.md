@@ -7,7 +7,7 @@
 **Working title:** Good News, Chuck  
 **Live:** https://time-machine.jasminefederer.workers.dev  
 **Stack:** Cloudflare Workers + Vite React (Wrangler)  
-**Also read:** `documentation/SOURCES_AND_LANDSCAPE.md` (citation law)
+**Also read:** `documentation/SOURCES_AND_LANDSCAPE.md` (citation law), `documentation/COPY_CONTRACT.md` (day-card format)
 
 ---
 

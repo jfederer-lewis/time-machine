@@ -2,6 +2,7 @@ import type { NarrativeBlock } from '../../shared/provenance'
 import type { BrandConfig } from '../../shared/brand'
 import { toDisplayDate } from '../../shared/source-registry'
 import { cleanPressText, looksLikeDateOnlyTitle, titleEchoesBody, titleIsCutFromBody, looksLikeBareName, isIncompleteHeadline, toSentenceCaseHeadline, clipToShortProse, looksLikeHeadlineDump, descriptiveFallbackTitle, firstSentence, splitSentences } from '../lib/clean-text'
+import { COPY_KNOBS, polishedCopyJsonSchemaHint, validateCopyContract } from '../lib/copy-contract'
 
 const GEMINI_MODELS = ['gemini-flash-latest', 'gemini-3.5-flash', 'gemini-3.6-flash']
 
@@ -120,21 +121,25 @@ export async function polishEventCopy(opts: {
     `Source text: ${cleanSynopsis || cleanTitle}`,
     '',
     'Return JSON only:',
-    '{"title":string,"synopsis":string,"whyItMatters":string}',
+    polishedCopyJsonSchemaHint(),
     '',
     'Field jobs:',
-    '1) title — short sentence-case hed stating the OUTCOME of the day (under 80 chars). Must include who/what + the action. Complete thought. No ?, no ellipsis, no ALL CAPS.',
+    `1) title — short sentence-case hed stating the OUTCOME of the day (soft aim under ${COPY_KNOBS.titleSoftMaxChars} chars, never over ${COPY_KNOBS.titleHardMaxChars}). Must include who/what + the action. Complete thought. No ?, no ellipsis, no ALL CAPS.`,
     '   Bad: “Following the non-cooperation movement against the government of Bangladesh” (lead-in only).',
     '   Good: “Sheikh Hasina resigns and flees Bangladesh”.',
     '   Never chop the opening subordinate clause off the synopsis and call it a title.',
-    '2) synopsis — ONLY the day fact. Guideline: about 1–4 complete sentences, as long as the source honestly supports — never pad to hit a count, never cut mid-thought for a character quota. What happened that day, from the source only. No era essay, no wire roundup.',
-    '3) whyItMatters — SEPARATE background for a general reader: the larger era, who the actors were, how long it had been going, why the day had weight. 1–2 short sentences. This is a REQUIRED field and must NEVER be empty or null; always provide historical context, background, or explanation of the event\'s significance or legacy.',
+    `2) synopsis — ONLY the day fact. Guideline: about ${COPY_KNOBS.synopsisSentenceGuideMin}–${COPY_KNOBS.synopsisSentenceGuideMax} complete sentences, as long as the source honestly supports — never pad to hit a count, never cut mid-thought for a character quota. What happened that day, from the source only. No era essay, no wire roundup.`,
+    COPY_KNOBS.contextRequired
+      ? `3) whyItMatters — REQUIRED Context field (1–${COPY_KNOBS.contextSentenceGuideMax} short sentences): larger era, actors, how long it had been going, why the day had weight. Never empty. Do not invent contested day-specific details or quotations.`
+      : `3) whyItMatters — SEPARATE Context for a general reader (1–${COPY_KNOBS.contextSentenceGuideMax} short sentences). Use null ONLY if the day fact is already fully self-explanatory. Do not invent contested day-specific details or quotations.`,
     '',
     'Rules:',
     '- Voice: always past tense. Never present-tense breaking news or open questions.',
     '- title must NOT copy the synopsis, and must NOT be a truncated prefix / “Following… / After…” clause of the synopsis.',
     '- Put “why / era / stakes” material in whyItMatters, not synopsis.',
-    '- Never return null or empty for whyItMatters under any circumstances. Always write a meaningful 1-2 sentence context of the era or significance of the event.',
+    COPY_KNOBS.contextRequired
+      ? '- Never return null or empty for whyItMatters under any circumstances.'
+      : '- whyItMatters may be null when the day fact needs no background.',
     `- Write as of ${year}: name people by the role they held then. Never “former/current/ex-” relative to today.`,
     '- No “on this day”, no brand voice, no storytelling flourishes.',
   ]
@@ -183,10 +188,10 @@ export async function polishEventCopy(opts: {
       return null
     }
 
-    if (nextTitle.length > 120) {
-      const cut = nextTitle.slice(0, 120)
+    if (nextTitle.length > COPY_KNOBS.titleHardMaxChars) {
+      const cut = nextTitle.slice(0, COPY_KNOBS.titleHardMaxChars)
       const at = cut.lastIndexOf(' ')
-      nextTitle = (at > 60 ? cut.slice(0, at) : cut).trim()
+      nextTitle = (at > COPY_KNOBS.titleHardMaxChars * 0.5 ? cut.slice(0, at) : cut).trim()
       if (
         isIncompleteHeadline(nextTitle) ||
         looksLikeBareName(nextTitle) ||
@@ -207,40 +212,53 @@ export async function polishEventCopy(opts: {
     const whyRaw =
       typeof raw.whyItMatters === 'string' ? cleanPressText(raw.whyItMatters) : ''
 
-    // Keep day fact to ~1–4 sentences; peel true overflow into context.
     const split = splitFactAndContext(nextSynopsis, whyRaw)
-
-    return {
+    const checked = validateCopyContract({
       title: nextTitle,
       synopsis: split.synopsis,
       ...(split.whyItMatters ? { whyItMatters: split.whyItMatters } : {}),
+    })
+
+    if (!checked.ok) {
+      console.warn(
+        '[time-machine] copy contract failed',
+        checked.issues.map((i) => i.code).join(', '),
+      )
+      return null
     }
+    if (checked.warnings.length) {
+      console.info(
+        '[time-machine] copy contract warnings',
+        checked.warnings.map((w) => w.code).join(', '),
+      )
+    }
+
+    return checked.value
   } catch (err) {
     console.error('[time-machine] Gemini event polish failed', err)
     return null
   }
 }
 
-/** Day fact ~1–4 sentences; leftover beyond that can become context. */
+/** Day fact within sentence guide; leftover beyond max can become context. */
 function splitFactAndContext(
   synopsis: string,
   whyRaw: string,
 ): { synopsis: string; whyItMatters?: string } {
-  const sentences =
-    cleanPressText(synopsis)
-      .match(/[^.!?]+[.!?]+|[^.!?]+$/g)
-      ?.map((s) => s.trim())
-      .filter(Boolean) ?? [cleanPressText(synopsis)]
+  const sentences = splitSentences(cleanPressText(synopsis))
+  const max = COPY_KNOBS.synopsisSentenceGuideMax
 
-  // Guideline ceiling: 4 sentences. Soft runaway guard only (not a harsh length quota).
-  let day = sentences.slice(0, 4).join(' ').trim()
-  let overflow = sentences.slice(4).join(' ').trim()
+  let day = sentences.slice(0, max).join(' ').trim()
+  const overflow = sentences.slice(max).join(' ').trim()
 
-  day = clampProse(day, 4, 1200)
+  day = clampProse(day, max, COPY_KNOBS.synopsisRunawayMaxChars)
 
-  let why = whyRaw && !looksLikeHeadlineDump(whyRaw) ? clampProse(whyRaw, 3, 500) : ''
+  let why =
+    whyRaw && !looksLikeHeadlineDump(whyRaw)
+      ? clampProse(whyRaw, COPY_KNOBS.contextSentenceGuideMax + 1, COPY_KNOBS.contextRunawayMaxChars)
+      : ''
   if (!why && overflow) {
-    why = clampProse(overflow, 3, 500)
+    why = clampProse(overflow, COPY_KNOBS.contextSentenceGuideMax + 1, COPY_KNOBS.contextRunawayMaxChars)
   }
 
   if (why && (titleEchoesBody(why, day) || normalizeLoose(why) === normalizeLoose(day))) {
@@ -290,8 +308,8 @@ export async function pickMostInterestingEvent(opts: {
     `Lookup date: ${queryDate} (prefer events in ${targetYear} when they are genuinely interesting historical moments).`,
     '',
     'Pick the SINGLE most interesting, poignant, or culturally resonant settled historical event for a British / international reader.',
-    'Prefer: major geopolitics, war & peace, culture, sport, science, music, design, human-rights moments, UK/Europe/global stakes.',
-    'Deprioritise: remote administrative changes, local municipal trivia, live wire roundups, breaking-news question headlines, obscure territorial reorganisations.',
+    'Prefer: major geopolitics, war & peace, culture, music charts, sport finals, science, design, human-rights moments, UK/Europe/global stakes.',
+    'Deprioritise: remote administrative changes (new territories/provinces), local municipal trivia, routine NBA/MLB milestone counts, live wire roundups, reaction stories that are not the day event itself.',
     'Do not invent events — choose only by index from the list.',
     '',
     'Candidates:',
