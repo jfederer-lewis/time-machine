@@ -45,12 +45,17 @@ export function isWikipediaBridgeEvent(event: CulturalEvent): boolean {
 
 /** Discovery / bridge cards that must be upgraded before press export. */
 export function needsCiteUpgrade(event: CulturalEvent): boolean {
+  const cite = event.citations[0]
+  const tier = cite?.url ? citationTier(cite.url) : 'unknown'
+  // Already verified with a credible public cite — no upgrade pass needed.
+  if (cite && (tier === 'A' || tier === 'B') && cite.publisher !== 'Wikipedia') {
+    return false
+  }
   if (event.discoveredVia?.some((d) => DISCOVERY_CHANNELS.has(d))) return true
   if (!event.citations.length) return true
-  const cite = event.citations[0]
-  if (cite?.publisher === 'Wikipedia' || citationTier(cite?.url ?? '') === 'bridge') return true
+  if (cite?.publisher === 'Wikipedia' || tier === 'bridge') return true
   if (cite?.sourceQuality === 'trusted-discovery-only' || cite?.sourceQuality === 'needs-human-review') {
-    return citationTier(cite.url) === 'bridge' || citationTier(cite.url) === 'unknown'
+    return tier === 'unknown' || tier === 'C'
   }
   return false
 }

@@ -120,6 +120,7 @@ export type DiscoveryChannel =
   | 'guardian'
   | 'perplexity-search'
   | 'chronicling-america'
+  | 'gemini'
   | 'internal-curated'
   | 'gdelt'
   | 'unknown'

@@ -45,11 +45,11 @@ function stripTags(html: string): string {
 
 function guessFacet(text: string): EventFacet {
   const t = text.toLowerCase()
-  if (/\b(#1 song|chart|single|album|billboard)\b/.test(t)) return 'charts'
   if (/\b(nba|nfl|mlb|fifa|olympic|world cup|tennis|football|cricket|rugby|goal|match|championship)\b/.test(t))
     return 'sport'
   if (/\b(film|movie|cinema|oscar|theatre|novel|art|museum|fashion|design)\b/.test(t)) return 'culture'
-  if (/\b(song|singer|band|music|jazz|rock|rap|hip[- ]?hop)\b/.test(t)) return 'music'
+  if (/\b(song|singer|band|music|jazz|rock|rap|hip[- ]?hop|album|single|chart|billboard)\b/.test(t))
+    return 'music'
   if (/\b(scientist|discovery|invent|space|nasa|launch|telescope)\b/.test(t)) return 'science'
   if (/\b(war|treaty|election|president|prime minister|parliament|coup|invasion|bomb|nato|un )\b/.test(t))
     return 'politics'
@@ -68,6 +68,9 @@ function isLowValueDiscovery(text: string): boolean {
   const t = text.toLowerCase()
   // Skip pure sports trivia milestones unless also culturally huge
   if (/\b(900th|1,?000th|1,000|1000)\b/.test(t) && /\bgames?\b/.test(t)) return true
+  // Aggregator “#1 song on this date” labels — not research cards
+  if (/\b#\s*1\s*(song|single|album)\b/i.test(t) && t.length < 120) return true
+  if (/^(uk|us)\s*#\s*1\b/i.test(t.trim()) && t.length < 120) return true
   if (t.length < 28) return true
   return false
 }
@@ -138,38 +141,6 @@ export async function fetchOnThisDayCom(
       citations: [],
     })
   })
-
-  // Music charts — cultural facet, discovery only
-  const chartsMatch = html.match(
-    /<h2>(?:[\s\S]*?)Music Charts(?:[\s\S]*?)<\/h2>[\s\S]*?<ul class="event-list[^"]*">([\s\S]*?)<\/ul>/i,
-  )
-  if (chartsMatch?.[1]) {
-    const chartItems = [...chartsMatch[1].matchAll(/<li class="event"[^>]*>([\s\S]*?)<\/li>/gi)]
-    chartItems.forEach((m, index) => {
-      const text = cleanPressText(stripTags(m[1]).replace(/\s+/g, ' ').trim())
-      if (!text || text.length < 8) return
-      const market = /\bUS\b/i.test(m[1]) ? 'US' : /\bUK\b|united-kingdom/i.test(m[1]) ? 'UK' : ''
-      const song = text
-        .replace(/^#?\s*1\s*Song:\s*/i, '')
-        .replace(/^#1 Song:\s*/i, '')
-        .trim()
-      if (!song) return
-      const synopsis = market
-        ? `${market} #1 song on this date: ${song}`
-        : `#1 song on this date: ${song}`
-      events.push({
-        id: `otd-chart-${year}-${month}-${day}-${index}`,
-        year,
-        title: market ? `${market} #1: ${song}` : `#1: ${song}`,
-        synopsis,
-        category: 'charts',
-        precision: 'exact-day',
-        discoveredVia: ['onthisday-com'],
-        needsHumanReview: true,
-        citations: [],
-      })
-    })
-  }
 
   return events.slice(0, 12)
 }

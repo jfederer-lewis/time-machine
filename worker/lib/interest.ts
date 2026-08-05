@@ -66,6 +66,8 @@ export function premiumPressBoost(event: CulturalEvent): number {
   if (via.includes('guardian')) best = Math.max(best, 11)
   if (via.includes('bbc-onthisday')) best = Math.max(best, 10)
   if (via.includes('chronicling-america')) best = Math.max(best, 7)
+  // Gemini grounded discovery already cite-gated — modest lift when cite is premium (above).
+  if (via.includes('gemini') && best === 0) best = Math.max(best, 4)
   // Perplexity date-search only counts when a premium cite is already attached (above).
   if (via.includes('perplexity-search') && best === 0) best = Math.max(best, 3)
 
@@ -105,14 +107,9 @@ export function scoreCulturalInterest(event: CulturalEvent): number {
   // Wikipedia remains a useful bridge, but must not dominate the shortlist
   if (event.discoveredVia?.includes('wikipedia-onthisday')) score += 1
 
-  // Charts are a cultural facet — but only when there is real prose (stubs penalised below)
-  if (event.category === 'charts') score += 1
-
-  // Thin chart stubs (“UK #1: Song” / “UK #1 song on this date: Song”) are discovery only —
-  // they must not win the day card without real prose.
+  // Label-only / title≈synopsis discoveries are not research cards
   if (titleTooCloseToBody(event.title, event.synopsis)) score -= 18
   if (event.synopsis.length < 60) score -= 8
-  if (event.category === 'charts' && event.synopsis.length < 100) score -= 10
 
   // Prefer a bit of substance in the blurb — but not a dump
   if (event.synopsis.length >= 80 && event.synopsis.length < 400) score += 1

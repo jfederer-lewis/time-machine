@@ -106,7 +106,7 @@ export interface NarrativeBlock {
   disclaimer: string
 }
 
-/** Lite = Wikipedia only (no paid APIs). Full = Perplexity discovery + Gemini voice. */
+/** Lite = Wikipedia (+ polish). Full = archives + Gemini grounded retrieval + cite upgrade. */
 export type ResearchMode = 'lite' | 'full'
 
 export interface DateQueryResult {

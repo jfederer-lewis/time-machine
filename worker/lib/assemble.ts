@@ -3,7 +3,7 @@ import { withHarvard } from '../../shared/provenance'
 import { getBrand } from '../../shared/brands'
 import { queryDatePrecision, toDisplayDate, toOnThisDayPath } from '../../shared/source-registry'
 import { buildFallbackResult, PROVIDER_CATALOGUE } from '../data/fallback'
-import { composeNarrative, polishEventCopy, pickMostInterestingEvent } from '../providers/gemini'
+import { composeNarrative, polishEventCopy, pickMostInterestingEvent, discoverEventsWithGemini } from '../providers/gemini'
 import { fetchOnThisDay } from '../providers/wikipedia'
 import {
   fetchOnThisDayCom,
@@ -76,6 +76,7 @@ export async function assembleDateQuery(
   let guardian: CulturalEvent[] = []
   let perplexity: CulturalEvent[] = []
   let chronicling: CulturalEvent[] = []
+  let geminiDiscovery: CulturalEvent[] = []
 
   if (precision === 'exact-day') {
     const [yyyy, mm, dd] = queryDate.split('-').map(Number)
@@ -101,25 +102,35 @@ export async function assembleDateQuery(
     if (onThisDayCom.length) providersUsed.push('onthisday-com')
     if (historyCom.length) providersUsed.push('history-com')
 
-    // Full mode fans out to paid / archive providers.
+    // Full mode: paid archives + Gemini grounded retrieval (cite-gated).
     // Skip live wire date-search for recent/future dates — this product reads as past.
     if (!isLite) {
       const skipLiveWire = isTooRecentForLiveWire(queryDate)
-      ;[nyt, guardian, perplexity, chronicling] = await Promise.all([
+      const [nytR, guardianR, perplexityR, chroniclingR, geminiR] = await Promise.all([
         fetchNytForDate(queryDate, env.NYT_API_KEY),
         fetchGuardianForDate(queryDate, env.GUARDIAN_API_KEY),
         skipLiveWire ? Promise.resolve([]) : fetchPerplexityForDate(queryDate, env.PERPLEXITY_API_KEY),
         fetchChroniclingAmerica(queryDate),
+        env.GEMINI_API_KEY
+          ? discoverEventsWithGemini({ apiKey: env.GEMINI_API_KEY, queryDate })
+          : Promise.resolve([] as CulturalEvent[]),
       ])
+      nyt = nytR
+      guardian = guardianR
+      perplexity = perplexityR
+      chronicling = chroniclingR
+      geminiDiscovery = geminiR
 
       if (nyt.length) providersUsed.push('nyt-archive')
       if (guardian.length) providersUsed.push('guardian')
       if (perplexity.length) providersUsed.push('perplexity-search')
       if (chronicling.length) providersUsed.push('chronicling-america')
+      if (geminiDiscovery.length && !providersUsed.includes('gemini')) providersUsed.push('gemini')
     }
   }
 
   const merged = dedupeDiscoveryEvents([
+    ...geminiDiscovery,
     ...onThisDayCom,
     ...historyCom,
     ...wikiEvents,
@@ -129,7 +140,10 @@ export async function assembleDateQuery(
     ...chronicling,
   ])
     .map((e) => sanitizeEventCitations(e))
+    // Aggregator #1-song labels and other non-cards never enter the pool
+    .filter((e) => e.category !== 'charts')
     .filter((e) => !looksLikeHeadlineDump(e.synopsis))
+    .filter((e) => !isThinDiscoveryStub(e))
     .map((e) =>
       e.synopsis.length > 320
         ? { ...e, synopsis: clipToShortProse(e.synopsis, 280) }
@@ -371,10 +385,10 @@ function fallbackDistinctCopy(event: CulturalEvent): CulturalEvent {
   return { ...event, title, synopsis }
 }
 
-/** Discovery stubs with title ≈ synopsis (esp. chart #1 labels) — not shippable as-is. */
+/** Discovery labels with title ≈ synopsis — not shippable research cards. */
 function isThinDiscoveryStub(event: CulturalEvent): boolean {
+  if (event.category === 'charts') return true
   if (titleTooCloseToBody(event.title, event.synopsis)) return true
-  if (event.category === 'charts' && event.synopsis.length < 100) return true
   if (event.synopsis.length < 48) return true
   return false
 }

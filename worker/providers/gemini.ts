@@ -1,6 +1,12 @@
-import type { NarrativeBlock } from '../../shared/provenance'
+import type { NarrativeBlock, CulturalEvent } from '../../shared/provenance'
+import { withHarvard } from '../../shared/provenance'
 import type { BrandConfig } from '../../shared/brand'
-import { toDisplayDate } from '../../shared/source-registry'
+import {
+  toDisplayDate,
+  citationTier,
+  findRegistryEntry,
+  isCitationBlocked,
+} from '../../shared/source-registry'
 import { cleanPressText, looksLikeDateOnlyTitle, titleEchoesBody, titleIsCutFromBody, titleTooCloseToBody, looksLikeBareName, isIncompleteHeadline, toSentenceCaseHeadline, clipToShortProse, looksLikeHeadlineDump, descriptiveFallbackTitle, firstSentence, splitSentences } from '../lib/clean-text'
 import { COPY_KNOBS, polishedCopyJsonSchemaHint, validateCopyContract, keepWholeSentences } from '../lib/copy-contract'
 
@@ -25,6 +31,7 @@ export type ClaimVerification = {
 /**
  * Gemini narrative voice.
  * Contract: phrase lede/headline ONLY from supplied event cards — never invent facts.
+ * (Retrieval lives in discoverEventsWithGemini — Gemini may find events, but only with a credible cite.)
  */
 export async function composeNarrative(opts: {
   apiKey?: string
@@ -305,7 +312,7 @@ export async function pickMostInterestingEvent(opts: {
     'Pick the SINGLE most interesting, poignant, or culturally resonant settled historical event for a British / international reader.',
     'Prefer culturally relevant news: arts, music, film, fashion, design, sport, science, human-rights, major geopolitics — with real prose.',
     'When a candidate already carries a paper-of-record source (NYT / TimesMachine, BBC, Guardian, Reuters, FT, Telegraph, AP), strongly prefer it over aggregator-only discovery stubs.',
-    'Deprioritise: thin chart stubs that only name a #1 song with no story; remote administrative changes (new territories/provinces); local municipal trivia; routine NBA/MLB milestone counts; live wire roundups; reaction stories that are not the day event itself.',
+    'Deprioritise: remote administrative changes (new territories/provinces); local municipal trivia; routine NBA/MLB milestone counts; live wire roundups; reaction stories that are not the day event itself; bare “#1 song” labels without a story.',
     'Do not invent events — choose only by index from the list.',
     '',
     'Candidates:',
@@ -332,6 +339,214 @@ export async function pickMostInterestingEvent(opts: {
   } catch (err) {
     console.error('[time-machine] Gemini event pick failed', err)
     return null
+  }
+}
+
+/**
+ * Grounded discovery: Gemini + Google Search may propose day facts.
+ * Hard gate — every candidate must carry an allowlisted Tier A/B URL from
+ * grounding (or an explicit cite in the JSON that also appears in grounding).
+ * Gemini is never the public citation host; the cite exists so users can
+ * verify the date and read more (and so we don't ship hallucinations).
+ */
+export async function discoverEventsWithGemini(opts: {
+  apiKey: string
+  queryDate: string
+}): Promise<CulturalEvent[]> {
+  const { apiKey, queryDate } = opts
+  const m = queryDate.match(/^(\d{4})-(\d{2})-(\d{2})$/)
+  if (!m) return []
+  const year = Number(m[1])
+  const display = toDisplayDate(queryDate)
+
+  const prompt = [
+    'You are a UK press-desk researcher for a heritage brand time machine (“Chuck was there”).',
+    `Find culturally resonant, settled historical events that happened on ${display} (${queryDate}).`,
+    'Prefer arts, music, film, fashion, design, sport, science, human rights, and major geopolitics of interest to a British / international reader.',
+    '',
+    'Rules:',
+    '- Use Google Search grounding. Do not invent events, dates, or URLs.',
+    '- Every event MUST be corroborated by at least one credible primary or paper-of-record page (NYT, BBC, Guardian, Reuters, AP, FT, Telegraph, national archives, museums, Official Charts week pages, etc.).',
+    '- The source must support that this happened on that calendar date (or clearly on that day in that year).',
+    '- Never cite onthisday.com, history.com this-day indexes, hobby birthday sites, or Wikipedia as the public citation (Wikipedia footnotes OK only to find the underlying primary).',
+    '- Prefer the queried year when there is a strong story that day; otherwise a poignant same-calendar-day event in another year is fine if the source is clear.',
+    '',
+    'Return JSON only (no markdown):',
+    '{"events":[{"year":number,"title":string,"synopsis":string,"sourceUrl":string,"sourceTitle":string,"publisher":string}]}',
+    'Return 1–3 events max. synopsis = day fact only, 2–4 sentences, past tense. Empty events array if nothing credible is grounded.',
+  ].join('\n')
+
+  try {
+    const { text, groundedSources } = await generateGeminiGrounded({
+      apiKey,
+      prompt,
+      temperature: 0.2,
+      maxOutputTokens: 900,
+      json: false,
+      useSearch: true,
+    })
+
+    if (!text) return []
+
+    const parsed = parseDiscoveryJson(text)
+    if (!parsed.length) return []
+
+    const groundedUrls = new Set(groundedSources.map((g) => normalizeUrlKey(g.url)))
+    const accessedAt = new Date().toISOString()
+    const out: CulturalEvent[] = []
+
+    for (const [index, row] of parsed.entries()) {
+      const sourceUrl = (row.sourceUrl || '').trim()
+      if (!sourceUrl || isCitationBlocked(sourceUrl)) continue
+      if (!isCredibleCiteUrl(sourceUrl)) continue
+
+      // Prefer URLs that appeared in grounding; also accept if a grounded chunk shares the same host+path family
+      const urlKey = normalizeUrlKey(sourceUrl)
+      const groundedHit =
+        groundedUrls.has(urlKey) ||
+        groundedSources.some((g) => sameAllowlistedHost(g.url, sourceUrl))
+      if (!groundedHit && groundedSources.length > 0) {
+        // Fall back: pick best grounded allowlisted URL for this claim text
+        const fallback = pickBestGroundedCite(groundedSources, `${row.title} ${row.synopsis}`)
+        if (!fallback) continue
+        row.sourceUrl = fallback.url
+        row.sourceTitle = fallback.title || row.sourceTitle
+        row.publisher = fallback.publisher || row.publisher
+      } else if (!groundedHit) {
+        continue
+      }
+
+      const citeUrl = row.sourceUrl!.trim()
+      if (!isCredibleCiteUrl(citeUrl)) continue
+
+      const title = toSentenceCaseHeadline(row.title || '')
+      const synopsis = cleanPressText(row.synopsis || '')
+      if (!title || !synopsis || synopsis.length < 48) continue
+      if (looksLikeHeadlineDump(synopsis)) continue
+
+      const entry = findRegistryEntry(citeUrl)
+      const publisher =
+        cleanPressText(row.publisher || '') || entry?.label || hostnameOf(citeUrl)
+      const citeTitle =
+        cleanPressText(row.sourceTitle || '') || title
+
+      out.push({
+        id: `gemini-${queryDate}-${index}`,
+        year: Number.isFinite(row.year) ? row.year : year,
+        title,
+        synopsis,
+        category: 'other',
+        precision: 'exact-day',
+        discoveredVia: ['gemini'],
+        needsHumanReview: false,
+        citations: [
+          withHarvard({
+            title: citeTitle && !looksLikeDateOnlyTitle(citeTitle) ? citeTitle : title,
+            url: citeUrl,
+            publisher,
+            publishedAt: String(Number.isFinite(row.year) ? row.year : year),
+            accessedAt,
+            sourceQuality: 'trusted-source-snippet',
+            evidenceKind: 'paraphrase',
+            reference: synopsis,
+            provider: 'gemini',
+            isExactQuote: false,
+            tier: citationTier(citeUrl),
+          }),
+        ],
+      })
+    }
+
+    return out.slice(0, 3)
+  } catch (err) {
+    console.error('[time-machine] Gemini discovery failed', err)
+    return []
+  }
+}
+
+function isCredibleCiteUrl(url: string): boolean {
+  if (isCitationBlocked(url)) return false
+  const entry = findRegistryEntry(url)
+  return entry?.role === 'citation' && (entry.tier === 'A' || entry.tier === 'B')
+}
+
+function pickBestGroundedCite(
+  grounded: ClaimCandidate[],
+  claimText: string,
+): ClaimCandidate | undefined {
+  const claim = claimText.toLowerCase()
+  const scored = grounded
+    .filter((g) => isCredibleCiteUrl(g.url))
+    .map((g) => {
+      const hay = `${g.title || ''} ${g.url}`.toLowerCase()
+      let score = citationTier(g.url) === 'A' ? 4 : 3
+      for (const token of claim.split(/[^a-z0-9]+/).filter((t) => t.length >= 5)) {
+        if (hay.includes(token)) score += 1
+      }
+      return { g, score }
+    })
+    .sort((a, b) => b.score - a.score)
+  return scored[0]?.g
+}
+
+function normalizeUrlKey(url: string): string {
+  try {
+    const u = new URL(url)
+    return `${u.hostname.replace(/^www\./, '').toLowerCase()}${u.pathname.replace(/\/$/, '')}`
+  } catch {
+    return url.toLowerCase()
+  }
+}
+
+function sameAllowlistedHost(a: string, b: string): boolean {
+  try {
+    const ha = new URL(a).hostname.replace(/^www\./, '').toLowerCase()
+    const hb = new URL(b).hostname.replace(/^www\./, '').toLowerCase()
+    return ha === hb || ha.endsWith(`.${hb}`) || hb.endsWith(`.${ha}`)
+  } catch {
+    return false
+  }
+}
+
+function hostnameOf(url: string): string {
+  try {
+    return new URL(url).hostname.replace(/^www\./, '')
+  } catch {
+    return url
+  }
+}
+
+function parseDiscoveryJson(
+  text: string,
+): Array<{
+  year: number
+  title: string
+  synopsis: string
+  sourceUrl?: string
+  sourceTitle?: string
+  publisher?: string
+}> {
+  try {
+    const cleaned = text.replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/i, '').trim()
+    const start = cleaned.indexOf('{')
+    const end = cleaned.lastIndexOf('}')
+    if (start < 0 || end <= start) return []
+    const raw = JSON.parse(cleaned.slice(start, end + 1)) as {
+      events?: Array<Record<string, unknown>>
+    }
+    if (!Array.isArray(raw.events)) return []
+    return raw.events
+      .map((e) => ({
+        year: typeof e.year === 'number' ? e.year : Number(e.year),
+        title: typeof e.title === 'string' ? e.title : '',
+        synopsis: typeof e.synopsis === 'string' ? e.synopsis : '',
+        sourceUrl: typeof e.sourceUrl === 'string' ? e.sourceUrl : undefined,
+        sourceTitle: typeof e.sourceTitle === 'string' ? e.sourceTitle : undefined,
+        publisher: typeof e.publisher === 'string' ? e.publisher : undefined,
+      }))
+      .filter((e) => e.title && e.synopsis)
+  } catch {
+    return []
   }
 }
 

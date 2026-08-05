@@ -174,9 +174,9 @@ export const PROVIDER_CATALOGUE: ProviderStatus[] = [
   {
     id: 'gemini',
     label: 'Google Gemini',
-    role: 'Claim verification + narrative phrasing from verified cards',
+    role: 'Grounded discovery + phrasing — never the public citation',
     status: 'needs-key',
-    notes: '',
+    notes: 'Candidates only ship with an allowlisted Tier A/B URL that corroborates the date.',
   },
   {
     id: 'perplexity-search',
