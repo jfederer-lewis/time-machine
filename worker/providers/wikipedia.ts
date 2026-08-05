@@ -86,7 +86,7 @@ export async function fetchOnThisDay(month: number, day: number): Promise<Cultur
           accessedAt,
           sourceQuality: 'needs-human-review',
           evidenceKind: 'paraphrase',
-          reference: event.text,
+          reference: stripHtml(event.text).replace(/\s+/g, ' ').trim(),
           provider: 'wikipedia-onthisday',
           isExactQuote: false,
         }),
@@ -115,11 +115,12 @@ function truncate(text: string, max: number): string {
 
 /**
  * Prefer the linked Wikipedia article title when it reads like a topic/event
- * (not a bare person/place name). Never mid-sentence ellipsis-truncate the body.
+ * (not a bare person/place name). Never mid-sentence truncate the body —
+ * a short complete clause beats a long cut-off fragment.
  */
 function headlineFromOnThisDay(text: string, pageTitle: string): string {
   const page = pageTitle.trim()
-  if (page.length > 20 && page.length <= 88 && !looksLikeBareName(page)) {
+  if (page.length > 20 && page.length <= 100 && !looksLikeBareName(page)) {
     return page
   }
 
@@ -131,14 +132,21 @@ function headlineFromOnThisDay(text: string, pageTitle: string): string {
     .trim()
 
   if (!sentence) return page || 'Untitled event'
-  if (sentence.length <= 88) return sentence
+  if (sentence.length <= 100) return sentence
 
-  const clause = sentence.match(/^(.{16,88}?)(?:,| — | – |:)\s/)
-  if (clause) return clause[1].trim()
+  // Prefer a natural clause break over a hard character cut.
+  const clause = sentence.match(/^(.{24,100}?)(?:,| — | – |:)\s/)
+  if (clause && !endsDangling(clause[1])) return clause[1].trim()
 
-  const cut = sentence.slice(0, 88)
-  const at = cut.lastIndexOf(' ')
-  return (at > 40 ? cut.slice(0, at) : cut).trim()
+  // Fall back to the page title rather than a truncated fragment.
+  if (page) return page
+
+  // Last resort: keep the full sentence (better long than mid-cut).
+  return sentence
+}
+
+function endsDangling(text: string): boolean {
+  return /\b(the|a|an|of|in|on|at|to|for|from|by|with|and|or|as)$/i.test(text.trim())
 }
 
 function looksLikeBareName(title: string): boolean {

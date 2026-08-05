@@ -179,9 +179,34 @@ export function formatHarvardCitation(input: HarvardCitationInput): string {
     ? `${input.author.trim()} (${year})`
     : `${input.publisher} (${year})`
 
-  const publishedBit = input.publishedDisplay ? `, ${input.publishedDisplay}` : ''
+  // Skip publishedDisplay when it only repeats the year already in (YYYY).
+  const publishedBit = publishedDisplayBit(input.publishedDisplay, year)
 
   return `${authorBit} '${input.title}', ${input.publisher}${publishedBit}. Available at: ${input.url}`
+}
+
+function publishedDisplayBit(publishedDisplay: string | undefined, year: string): string {
+  if (!publishedDisplay?.trim()) return ''
+  const raw = publishedDisplay.trim()
+
+  // Year-only or ISO year-only → already covered by (YYYY)
+  if (/^\d{4}$/.test(raw) || raw === year) return ''
+
+  // ISO day → human date; if that still collapses to the year alone, omit
+  if (/^\d{4}-\d{2}-\d{2}$/.test(raw)) {
+    const display = toDisplayDate(raw)
+    if (display === year) return ''
+    return `, ${display}`
+  }
+
+  if (/^\d{4}-\d{2}$/.test(raw)) {
+    const display = toDisplayDate(raw)
+    if (display === year) return ''
+    return `, ${display}`
+  }
+
+  // "April 1, 1999" / "1 April 1999" still useful as a day stamp beside (1999)
+  return `, ${raw}`
 }
 
 /**

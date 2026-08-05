@@ -17,6 +17,7 @@ import {
 } from '../../shared/source-registry'
 import { searchAllowlistedCiteForClaim } from '../providers/archives'
 import { verifyClaimWithGemini, type ClaimCandidate } from '../providers/gemini'
+import { cleanPressText, looksLikeDateOnlyTitle } from './clean-text'
 
 const TIER_RANK: Record<SourceTier | 'unknown', number> = {
   A: 4,
@@ -153,17 +154,20 @@ export async function upgradeWikipediaClaim(
 
   const entry = findRegistryEntry(best.url)
   const publisher = best.publisher || entry?.label || hostname(best.url)
-  const snippet = best.snippet?.trim()
+  const snippet = cleanPressText(best.snippet || '')
+  const citeTitle = cleanPressText(best.title || event.title)
   const accessedAt = new Date().toISOString()
 
   return {
     event: {
       ...event,
-      // Still discovered via Wiki; cite is upgraded.
+      // Still discovered via Wiki; cite is upgraded. Keep Wiki claim text —
+      // never replace synopsis with a scrape dump from the new cite.
       needsHumanReview: false,
       citations: [
         withHarvard({
-          title: best.title || event.title,
+          title:
+            citeTitle && !looksLikeDateOnlyTitle(citeTitle) ? citeTitle : event.title,
           url: best.url,
           publisher,
           publishedAt: best.publishedAt || String(event.year),

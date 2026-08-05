@@ -18,6 +18,7 @@ import {
   upgradeWikipediaClaim,
 } from './upgrade-claim'
 import { attachGlosses } from './gloss-service'
+import { cleanPressText, looksLikeDateOnlyTitle, endsDangling, firstCompleteClause, titleEchoesBody } from './clean-text'
 
 export interface Env {
   GEMINI_API_KEY?: string
@@ -99,6 +100,11 @@ export async function assembleDateQuery(
   pool.sort((a, b) => {
     const yearDiff = Math.abs(a.year - targetYear) - Math.abs(b.year - targetYear)
     if (yearDiff !== 0) return yearDiff
+    // Prefer Wikipedia On This Day for the claim text (clean prose). Perplexity
+    // date-search snippets often dump HTML / nav chrome and win on cite tier alone.
+    const wikiA = a.discoveredVia?.includes('wikipedia-onthisday') ? 1 : 0
+    const wikiB = b.discoveredVia?.includes('wikipedia-onthisday') ? 1 : 0
+    if (wikiB !== wikiA) return wikiB - wikiA
     const tierDiff = citationPreferability(b) - citationPreferability(a)
     if (tierDiff !== 0) return tierDiff
     return b.year - a.year
@@ -152,9 +158,9 @@ export async function assembleDateQuery(
     }
   }
 
-  // Full mode: rewrite truncated/wiki-ish titles into a proper headline + distinct summary.
-  // Run before gloss attach so terms match the polished claim sentence.
-  if (!isLite && env.GEMINI_API_KEY && events[0]) {
+  // Both modes: Gemini rewrites truncated wiki titles into a complete headline + body.
+  // Lite stays Wikipedia-sourced; full also gets cite upgrades above.
+  if (env.GEMINI_API_KEY && events[0]) {
     const event = events[0]
     const polished = await polishEventCopy({
       apiKey: env.GEMINI_API_KEY,
@@ -162,11 +168,16 @@ export async function assembleDateQuery(
       title: event.title,
       synopsis: event.synopsis,
       pageTitle: event.citations[0]?.title,
+      mode: isLite ? 'lite' : 'full',
     })
     if (polished) {
       events = [{ ...event, title: polished.title, synopsis: polished.synopsis }]
       if (!providersUsed.includes('gemini')) providersUsed.push('gemini')
+    } else {
+      events = [fallbackDistinctCopy(event)]
     }
+  } else if (events[0]) {
+    events = [fallbackDistinctCopy(events[0])]
   }
 
   // Bloom-style entity glosses on the claim sentence (Wikipedia summary).
@@ -177,14 +188,17 @@ export async function assembleDateQuery(
     }
   }
 
+  // Display copy comes from polishEventCopy in full mode — skip a second Gemini
+  // pass for narrative.lede (unused in the spotlight UI today).
   const narrative = await composeNarrative({
-    apiKey: isLite ? undefined : env.GEMINI_API_KEY,
+    apiKey: undefined,
     brand,
     queryDate,
     eventSummaries: events.map((e) => `${e.year}: ${e.title} — ${e.synopsis}`),
   })
-  if (narrative.voice === 'gemini' && !providersUsed.includes('gemini')) {
-    providersUsed.push('gemini')
+  if (events[0]?.synopsis) {
+    narrative.lede = events[0].synopsis
+    if (providersUsed.includes('gemini')) narrative.voice = 'gemini'
   }
 
   const hasExact = events.some((e) => e.precision === 'exact-day')
@@ -221,4 +235,37 @@ export function listProviders(env: Env) {
     }
     return p
   })
+}
+
+/** Scrub chrome and avoid title === body when Gemini polish is unavailable. */
+function fallbackDistinctCopy(event: CulturalEvent): CulturalEvent {
+  const synopsis = cleanPressText(event.synopsis)
+  const pageTitle = cleanPressText(event.citations[0]?.title || '')
+  let title = cleanPressText(event.title)
+
+  const bad =
+    !title ||
+    looksLikeDateOnlyTitle(title) ||
+    endsDangling(title) ||
+    titleEchoesBody(title, synopsis)
+
+  if (bad) {
+    if (
+      pageTitle &&
+      pageTitle.length >= 3 &&
+      !looksLikeDateOnlyTitle(pageTitle) &&
+      !titleEchoesBody(pageTitle, synopsis)
+    ) {
+      title = pageTitle
+    } else {
+      // Last resort: keep a short lead from the synopsis only if it doesn't echo the full body.
+      const lead = firstCompleteClause(synopsis)
+      title =
+        lead && !titleEchoesBody(lead, synopsis) && lead.length <= 90
+          ? lead
+          : pageTitle || title || 'Untitled event'
+    }
+  }
+
+  return { ...event, title, synopsis }
 }

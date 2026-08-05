@@ -6,6 +6,7 @@
 
 import { withHarvard, type CulturalEvent } from '../../shared/provenance'
 import { CITATION_ALLOWLIST, isCitationBlocked } from '../../shared/source-registry'
+import { cleanPressText } from '../lib/clean-text'
 
 const PERPLEXITY_SEARCH_URL = 'https://api.perplexity.ai/search'
 
@@ -108,14 +109,14 @@ export async function fetchPerplexityForDate(
     const url = row.url?.trim()
     if (!url || isCitationBlocked(url)) continue
 
-    const title = (row.title || 'Untitled').trim()
-    const snippet = (row.snippet || '').trim()
+    const title = cleanPressText(row.title || 'Untitled').slice(0, 120)
+    const snippet = cleanPressText(row.snippet || '')
     const publishedAt = row.date || row.last_updated || date
 
     events.push({
       id: `pplx-${date}-${index}`,
       year: y,
-      title: title.slice(0, 120),
+      title: title || 'Untitled',
       synopsis:
         snippet ||
         `Press cutting surfaced for ${display} via allowlisted search. Verify before export.`,
@@ -125,7 +126,7 @@ export async function fetchPerplexityForDate(
       needsHumanReview: true,
       citations: [
         withHarvard({
-          title,
+          title: title || 'Untitled',
           url,
           publisher: hostname(url),
           publishedAt: publishedAt.slice(0, 10),
@@ -196,8 +197,8 @@ export async function searchAllowlistedCiteForClaim(opts: {
     if (!url || isCitationBlocked(url)) continue
     out.push({
       url,
-      title: (row.title || 'Untitled').trim(),
-      snippet: (row.snippet || '').trim(),
+      title: cleanPressText(row.title || 'Untitled') || 'Untitled',
+      snippet: cleanPressText(row.snippet || ''),
       publisher: hostname(url),
     })
   }

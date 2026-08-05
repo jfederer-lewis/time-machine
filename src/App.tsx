@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type { BrandConfig } from '../shared/brand'
 import type { CulturalEvent, DateQueryResult, ResearchMode } from '../shared/provenance'
 import { converseBrand } from '../shared/brands/converse'
@@ -15,12 +15,12 @@ const MODE_OPTIONS: { id: ResearchMode; label: string; description: string }[] =
   {
     id: 'lite',
     label: 'Lite',
-    description: 'Wikipedia On This Day only — free, no API credits.',
+    description: 'Wikipedia discovery + Gemini phrasing — no Perplexity / cite upgrades.',
   },
   {
     id: 'full',
     label: 'Full',
-    description: 'Verify claims, polish titles, upgrade cites via Gemini + Perplexity.',
+    description: 'Verify claims, write prose, upgrade cites via Gemini + Perplexity.',
   },
 ]
 
@@ -50,14 +50,14 @@ function normalizeCopy(text: string) {
 }
 
 /** Hide synopsis when it is just the title repeated (common on unpolished Wiki text). */
-function distinctSynopsis(title: string, synopsis: string): string | null {
-  const line = firstSentence(synopsis)
+function distinctSynopsis(title: string, synopsis: string, opts?: { fullProse?: boolean }): string | null {
+  const line = opts?.fullProse ? synopsis.trim() : firstSentence(synopsis)
   const t = normalizeCopy(title)
-  const s = normalizeCopy(line)
+  const s = normalizeCopy(opts?.fullProse ? firstSentence(synopsis) : line)
   if (!s || s === t) return null
   if (s.startsWith(t) && s.length < t.length + 24) return null
-  if (t.startsWith(s)) return null
-  return line
+  if (t.startsWith(s) && !opts?.fullProse) return null
+  return line || null
 }
 
 function pickSpotlight(result: DateQueryResult): CulturalEvent | null {
@@ -86,10 +86,29 @@ export default function App() {
   const [hasQueried, setHasQueried] = useState(false)
   const [researchMode, setResearchMode] = useState<ResearchMode>('lite')
   const [settingsOpen, setSettingsOpen] = useState(false)
+  const settingsRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     setResearchMode(readStoredMode())
   }, [])
+
+  useEffect(() => {
+    if (!settingsOpen) return
+    const onPointerDown = (e: MouseEvent) => {
+      if (settingsRef.current && !settingsRef.current.contains(e.target as Node)) {
+        setSettingsOpen(false)
+      }
+    }
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setSettingsOpen(false)
+    }
+    document.addEventListener('mousedown', onPointerDown)
+    document.addEventListener('keydown', onKeyDown)
+    return () => {
+      document.removeEventListener('mousedown', onPointerDown)
+      document.removeEventListener('keydown', onKeyDown)
+    }
+  }, [settingsOpen])
 
   useEffect(() => {
     document.documentElement.style.setProperty('--ink', brand.palette.ink)
@@ -147,8 +166,15 @@ export default function App() {
 
   const spotlight = useMemo(() => (result ? pickSpotlight(result) : null), [result])
   const spotlightLine = useMemo(
-    () => (spotlight ? distinctSynopsis(spotlight.title, spotlight.synopsis) : null),
-    [spotlight],
+    () =>
+      spotlight
+        ? distinctSynopsis(spotlight.title, spotlight.synopsis, {
+            // Both modes get complete sentences from Gemini polish;
+            // full keeps the multi-sentence paragraph, lite keeps one sentence.
+            fullProse: result?.researchMode === 'full',
+          })
+        : null,
+    [spotlight, result?.researchMode],
   )
   const queryYear = result ? Number(result.queryDate.slice(0, 4)) : null
   const yearMismatch =
@@ -187,58 +213,60 @@ export default function App() {
               </button>
             ))}
           </nav>
-          <button
-            type="button"
-            className={['settings-toggle', settingsOpen ? 'is-open' : ''].filter(Boolean).join(' ')}
-            aria-label="Settings"
-            aria-expanded={settingsOpen}
-            aria-controls="research-settings"
-            onClick={() => setSettingsOpen((o) => !o)}
-          >
-            <svg
-              className="settings-toggle__icon"
-              width="18"
-              height="18"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="1.6"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              aria-hidden="true"
+          <div className="settings-menu" ref={settingsRef}>
+            <button
+              type="button"
+              className={['settings-toggle', settingsOpen ? 'is-open' : ''].filter(Boolean).join(' ')}
+              aria-label="Settings"
+              aria-expanded={settingsOpen}
+              aria-haspopup="true"
+              aria-controls="research-settings"
+              onClick={() => setSettingsOpen((o) => !o)}
             >
-              <circle cx="12" cy="12" r="3" />
-              <path d="M12 2.5v2.2M12 19.3v2.2M4.9 4.9l1.6 1.6M17.5 17.5l1.6 1.6M2.5 12h2.2M19.3 12h2.2M4.9 19.1l1.6-1.6M17.5 6.5l1.6-1.6" />
-            </svg>
-          </button>
-        </div>
-      </header>
-
-      {settingsOpen ? (
-        <div className="settings-bar" id="research-settings">
-          <p className="settings-bar__label">Research mode</p>
-          <div className="settings-modes" role="radiogroup" aria-label="Research mode">
-            {MODE_OPTIONS.map((opt) => (
-              <button
-                key={opt.id}
-                type="button"
-                role="radio"
-                aria-checked={researchMode === opt.id}
-                className={[
-                  'settings-mode',
-                  researchMode === opt.id ? 'is-active' : '',
-                ]
-                  .filter(Boolean)
-                  .join(' ')}
-                onClick={() => selectMode(opt.id)}
+              <svg
+                className="settings-toggle__icon"
+                width="18"
+                height="18"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.6"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                aria-hidden="true"
               >
-                <span className="settings-mode__name">{opt.label}</span>
-                <span className="settings-mode__desc">{opt.description}</span>
-              </button>
-            ))}
+                <circle cx="12" cy="12" r="3" />
+                <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1Z" />
+              </svg>
+            </button>
+            {settingsOpen ? (
+              <div className="settings-dropdown" id="research-settings" role="menu">
+                <p className="settings-dropdown__label">Research mode</p>
+                <div className="settings-modes" role="radiogroup" aria-label="Research mode">
+                  {MODE_OPTIONS.map((opt) => (
+                    <button
+                      key={opt.id}
+                      type="button"
+                      role="radio"
+                      aria-checked={researchMode === opt.id}
+                      className={[
+                        'settings-mode',
+                        researchMode === opt.id ? 'is-active' : '',
+                      ]
+                        .filter(Boolean)
+                        .join(' ')}
+                      onClick={() => selectMode(opt.id)}
+                    >
+                      <span className="settings-mode__name">{opt.label}</span>
+                      <span className="settings-mode__desc">{opt.description}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            ) : null}
           </div>
         </div>
-      ) : null}
+      </header>
 
       {view === 'date' ? (
         <main className="main main--entry">
@@ -269,20 +297,18 @@ export default function App() {
                   <span className="result-frame__claim">{brand.claimFrame}</span>
                   <span className="result-frame__date">{result.displayDate}</span>
                 </h2>
-                <p className="mode-chip" data-mode={result.researchMode}>
-                  {result.researchMode === 'lite'
-                    ? 'Lite · Wikipedia'
-                    : 'Full · verified + upgraded cites'}
-                </p>
+                {result.researchMode === 'lite' ? (
+                  <p className="mode-chip" data-mode="lite">
+                    Lite · Wikipedia
+                  </p>
+                ) : null}
               </header>
 
               {spotlight ? (
                 <article className="spotlight">
-                  <p className="spotlight-label">
-                    {yearMismatch
-                      ? `Also on this day · ${spotlight.year}`
-                      : String(spotlight.year)}
-                  </p>
+                  {yearMismatch ? (
+                    <p className="spotlight-label">Also on this day · {spotlight.year}</p>
+                  ) : null}
                   <h3 className="spotlight-title">{spotlight.title}</h3>
                   {spotlightLine ? (
                     <p className="spotlight-line">

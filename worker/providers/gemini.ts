@@ -1,6 +1,7 @@
 import type { NarrativeBlock } from '../../shared/provenance'
 import type { BrandConfig } from '../../shared/brand'
 import { toDisplayDate } from '../../shared/source-registry'
+import { cleanPressText, looksLikeDateOnlyTitle, endsDangling, titleEchoesBody } from '../lib/clean-text'
 
 const GEMINI_MODELS = ['gemini-flash-latest', 'gemini-3.5-flash', 'gemini-3.6-flash']
 
@@ -87,7 +88,8 @@ export async function composeNarrative(opts: {
 }
 
 /**
- * Rewrite a sourced event into a short headline + distinct one-sentence summary.
+ * Rewrite a sourced event into a readable headline + body.
+ * Full mode: multi-sentence prose paragraph. Lite: complete headline + one full sentence.
  * Facts must come only from the supplied text — no invention.
  */
 export async function polishEventCopy(opts: {
@@ -96,28 +98,42 @@ export async function polishEventCopy(opts: {
   title: string
   synopsis: string
   pageTitle?: string
+  mode?: 'full' | 'lite'
 }): Promise<{ title: string; synopsis: string } | null> {
-  const { apiKey, year, title, synopsis, pageTitle } = opts
+  const { apiKey, year, title, synopsis, pageTitle, mode = 'full' } = opts
+  const cleanTitle = cleanPressText(title)
+  const cleanSynopsis = cleanPressText(synopsis)
+  const cleanPage = pageTitle ? cleanPressText(pageTitle) : ''
+
+  if (!cleanSynopsis && !cleanTitle) return null
+
+  const isFull = mode === 'full'
 
   const prompt = [
     'You write press-desk cards for a heritage brand time machine.',
-    'Rewrite the sourced event below into a readable title and summary.',
+    isFull
+      ? 'Rewrite the sourced event below into a clear headline and a short prose paragraph a journalist can read aloud.'
+      : 'Rewrite the sourced event below into a clear complete headline and one full summary sentence.',
     '',
     `Year: ${year}`,
-    `Current title: ${title}`,
-    pageTitle ? `Linked article title: ${pageTitle}` : '',
-    `Source text: ${synopsis}`,
+    `Current title: ${cleanTitle}`,
+    cleanPage ? `Linked article title: ${cleanPage}` : '',
+    `Source text: ${cleanSynopsis || cleanTitle}`,
     '',
     'Return JSON only:',
     '{"title":string,"synopsis":string}',
     '',
     'Rules:',
-    '- title: short newspaper-style headline, max 70 characters. A complete thought — never end with ellipsis or mid-clause.',
-    '- synopsis: exactly ONE complete sentence. Distinct from the title — add place, stakes, or context the title omits. Do not restate the title verbatim.',
+    '- title: short newspaper-style headline (aim under 90 characters). A COMPLETE thought that can stand alone — never end mid-clause, never end on “the/of/a/and/…”, never use ellipsis. Name the event or action — never a bare calendar date.',
+    '- CRITICAL: title must NOT be an exact copy of the synopsis (or the synopsis with the period stripped). Near-duplicates with different wording are fine — just don’t paste the body up as the headline.',
+    isFull
+      ? '- synopsis: 2 to 4 complete sentences of plain prose. State what happened, who was involved, and why it mattered, in natural flowing English. Distinct from the title. No bullet lists, no markdown, no HTML, no table chrome, no pipe characters, no navigation leftovers from web pages.'
+      : '- synopsis: exactly ONE complete sentence that reads naturally on its own. Distinct from the title — add place, stakes, or context the title omits. Do not restate the title verbatim. Do not truncate.',
     '- Use ONLY facts present in the source text (and article title for naming). Do not invent details, numbers, or outcomes.',
     `- Write as of the event year (${year}): name people by the role they held then, not by today's titles. Never use “former”, “current”, or “ex-” relative to the present day.`,
     '- Prefer clear past tense for historical events.',
     '- No “on this day”, no brand voice, no storytelling flourishes.',
+    '- Ignore any HTML tags, markdown, site chrome, or boilerplate that leaked into the source text.',
   ]
     .filter(Boolean)
     .join('\n')
@@ -127,7 +143,7 @@ export async function polishEventCopy(opts: {
       apiKey,
       prompt,
       temperature: 0.2,
-      maxOutputTokens: 256,
+      maxOutputTokens: isFull ? 512 : 320,
       json: true,
       useSearch: false,
     })
@@ -135,14 +151,24 @@ export async function polishEventCopy(opts: {
 
     const cleaned = text.replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/i, '').trim()
     const raw = JSON.parse(cleaned) as { title?: string; synopsis?: string }
-    const nextTitle = (raw.title || '').trim().replace(/[.…]+$/u, '').trim()
-    const nextSynopsis = (raw.synopsis || '').trim()
+    let nextTitle = cleanPressText(raw.title || '').replace(/[.…]+$/u, '').trim()
+    const nextSynopsis = cleanPressText(raw.synopsis || '')
     if (!nextTitle || !nextSynopsis) return null
-    if (nextTitle.length > 100) return null
+    if (looksLikeDateOnlyTitle(nextTitle)) return null
+    if (endsDangling(nextTitle)) return null
+    if (titleEchoesBody(nextTitle, nextSynopsis)) return null
+
+    // Soft length cap at a word boundary only — never mid-clause.
+    if (nextTitle.length > 110) {
+      const cut = nextTitle.slice(0, 110)
+      const at = cut.lastIndexOf(' ')
+      nextTitle = (at > 50 ? cut.slice(0, at) : cut).trim()
+      if (endsDangling(nextTitle) || titleEchoesBody(nextTitle, nextSynopsis)) return null
+    }
 
     return {
-      title: nextTitle.slice(0, 88),
-      synopsis: firstSentence(nextSynopsis),
+      title: nextTitle,
+      synopsis: isFull ? clampProse(nextSynopsis, 4, 520) : firstSentence(nextSynopsis),
     }
   } catch (err) {
     console.error('[time-machine] Gemini event polish failed', err)
@@ -367,6 +393,19 @@ function firstSentence(text: string) {
   const trimmed = text.trim()
   const match = trimmed.match(/^(.+?[.!?])(?:\s|$)/)
   return match ? match[1] : trimmed
+}
+
+/** Keep up to `maxSentences` sentences, hard-capped by character length. */
+function clampProse(text: string, maxSentences: number, maxChars: number): string {
+  const cleaned = cleanPressText(text)
+  const sentences = cleaned.match(/[^.!?]+[.!?]+|[^.!?]+$/g)?.map((s) => s.trim()).filter(Boolean) ?? [
+    cleaned,
+  ]
+  let out = sentences.slice(0, maxSentences).join(' ').trim()
+  if (out.length > maxChars) {
+    out = `${out.slice(0, maxChars - 1).trimEnd()}…`
+  }
+  return out
 }
 
 function formatDisplayDate(queryDate: string): string {
