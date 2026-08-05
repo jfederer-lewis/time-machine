@@ -1,7 +1,7 @@
 import type { NarrativeBlock } from '../../shared/provenance'
 import type { BrandConfig } from '../../shared/brand'
 import { toDisplayDate } from '../../shared/source-registry'
-import { cleanPressText, looksLikeDateOnlyTitle, titleEchoesBody, looksLikeBareName, isIncompleteHeadline, toSentenceCaseHeadline, clipToShortProse, looksLikeHeadlineDump } from '../lib/clean-text'
+import { cleanPressText, looksLikeDateOnlyTitle, titleEchoesBody, titleIsCutFromBody, looksLikeBareName, isIncompleteHeadline, toSentenceCaseHeadline, clipToShortProse, looksLikeHeadlineDump, descriptiveFallbackTitle } from '../lib/clean-text'
 
 const GEMINI_MODELS = ['gemini-flash-latest', 'gemini-3.5-flash', 'gemini-3.6-flash']
 
@@ -123,13 +123,16 @@ export async function polishEventCopy(opts: {
     '{"title":string,"synopsis":string,"whyItMatters":string|null}',
     '',
     'Field jobs:',
-    '1) title — short sentence-case hed of what happened (under 80 chars). Complete thought. No ?, no ellipsis, no ALL CAPS, no magazine teaser.',
+    '1) title — short sentence-case hed stating the OUTCOME of the day (under 80 chars). Must include who/what + the action. Complete thought. No ?, no ellipsis, no ALL CAPS.',
+    '   Bad: “Following the non-cooperation movement against the government of Bangladesh” (lead-in only).',
+    '   Good: “Sheikh Hasina resigns and flees Bangladesh”.',
+    '   Never chop the opening subordinate clause off the synopsis and call it a title.',
     '2) synopsis — ONLY the day fact. Guideline: about 1–4 complete sentences, as long as the source honestly supports — never pad to hit a count, never cut mid-thought for a character quota. What happened that day, from the source only. No era essay, no wire roundup.',
     '3) whyItMatters — SEPARATE background for a general reader: the larger era, who the actors were, how long it had been going, why the day had weight. 1–2 short sentences. Use null ONLY if the day fact is already fully self-explanatory with no larger frame (rare). Do not invent contested day-specific details or quotations.',
     '',
     'Rules:',
     '- Voice: always past tense. Never present-tense breaking news or open questions.',
-    '- title must NOT copy the synopsis. synopsis must NOT repeat the title verbatim.',
+    '- title must NOT copy the synopsis, and must NOT be a truncated prefix / “Following… / After…” clause of the synopsis.',
     '- Put “why / era / stakes” material in whyItMatters, not synopsis.',
     `- Write as of ${year}: name people by the role they held then. Never “former/current/ex-” relative to today.`,
     '- No “on this day”, no brand voice, no storytelling flourishes.',
@@ -163,7 +166,21 @@ export async function polishEventCopy(opts: {
     if (looksLikeDateOnlyTitle(nextTitle)) return null
     if (looksLikeBareName(nextTitle)) return null
     if (isIncompleteHeadline(nextTitle)) return null
-    if (titleEchoesBody(nextTitle, nextSynopsis)) return null
+    if (titleEchoesBody(nextTitle, nextSynopsis)) {
+      nextTitle = descriptiveFallbackTitle(nextSynopsis, cleanPage)
+    }
+    if (titleIsCutFromBody(nextTitle, nextSynopsis)) {
+      nextTitle = descriptiveFallbackTitle(nextSynopsis, cleanPage)
+    }
+    if (
+      !nextTitle ||
+      looksLikeBareName(nextTitle) ||
+      isIncompleteHeadline(nextTitle) ||
+      titleEchoesBody(nextTitle, nextSynopsis) ||
+      titleIsCutFromBody(nextTitle, nextSynopsis)
+    ) {
+      return null
+    }
 
     if (nextTitle.length > 80) {
       const cut = nextTitle.slice(0, 80)
@@ -172,7 +189,15 @@ export async function polishEventCopy(opts: {
       if (
         isIncompleteHeadline(nextTitle) ||
         looksLikeBareName(nextTitle) ||
-        titleEchoesBody(nextTitle, nextSynopsis)
+        titleEchoesBody(nextTitle, nextSynopsis) ||
+        titleIsCutFromBody(nextTitle, nextSynopsis)
+      ) {
+        nextTitle = descriptiveFallbackTitle(nextSynopsis, cleanPage)
+      }
+      if (
+        !nextTitle ||
+        isIncompleteHeadline(nextTitle) ||
+        titleIsCutFromBody(nextTitle, nextSynopsis)
       ) {
         return null
       }

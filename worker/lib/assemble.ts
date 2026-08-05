@@ -22,6 +22,7 @@ import {
   looksLikeDateOnlyTitle,
   descriptiveFallbackTitle,
   titleEchoesBody,
+  titleIsCutFromBody,
   looksLikeBareName,
   isIncompleteHeadline,
   toSentenceCaseHeadline,
@@ -290,7 +291,8 @@ function fallbackDistinctCopy(event: CulturalEvent): CulturalEvent {
     looksLikeDateOnlyTitle(title) ||
     looksLikeBareName(title) ||
     isIncompleteHeadline(title) ||
-    titleEchoesBody(title, synopsis)
+    titleEchoesBody(title, synopsis) ||
+    titleIsCutFromBody(title, synopsis)
 
   if (bad) {
     title = toSentenceCaseHeadline(descriptiveFallbackTitle(synopsis, pageTitle))

@@ -144,6 +144,43 @@ export function titleEchoesBody(title: string, body: string): boolean {
   return Boolean(first) && t === first
 }
 
+/**
+ * Title is just a chopped lead-in from the synopsis — e.g. synopsis
+ * “Following X, Hasina resigns…” with title “Following X”.
+ * Headlines must state the outcome, not the subordinate clause alone.
+ */
+export function titleIsCutFromBody(title: string, body: string): boolean {
+  const rawTitle = cleanPressText(title).replace(/[,:;]+$/g, '').trim()
+  const rawBody = cleanPressText(body)
+  if (!rawTitle || !rawBody || rawTitle.length < 10) return false
+
+  const t = normalizeCopy(rawTitle)
+  const b = normalizeCopy(rawBody)
+
+  // Body opens with the title, then continues with the real news.
+  if (b.startsWith(t) && b.length >= t.length + 12) {
+    const rest = rawBody.slice(rawTitle.length).trim()
+    if (/^[,:;]/.test(rest) || /^[a-z]/.test(rest)) return true
+  }
+
+  // Dependent-clause lead-ins that never reach the payoff.
+  if (
+    /^(following|after|during|amid|despite|before|when|while|as|with)\b/i.test(rawTitle) &&
+    !hasOutcomeVerb(rawTitle)
+  ) {
+    return true
+  }
+
+  return false
+}
+
+const OUTCOME_VERB =
+  /\b(resigns?|resigned|flees?|fled|dies?|died|wins?|won|signs?|signed|launches?|launched|ends?|ended|falls?|fell|opens?|opened|founded|establishes?|established|assassinated|elected|defeats?|defeated|invades?|invaded|abolishes?|abolished|declares?|declared|announces?|announced|becomes?|became|takes?|took|leaves?|left|overthrows?|overthrown|collapses?|collapsed)\b/i
+
+function hasOutcomeVerb(text: string): boolean {
+  return OUTCOME_VERB.test(text)
+}
+
 /** "Nunavut", "Donald Trump" — fine as gloss terms, poor as event headlines alone. */
 export function looksLikeBareName(title: string): boolean {
   const t = title.trim()
@@ -155,27 +192,47 @@ export function looksLikeBareName(title: string): boolean {
 
 /**
  * Build a short descriptive headline from synopsis when Gemini is unavailable.
- * Prefers “Subject + action …” over a bare place/person name.
+ * Prefers “Subject + action …” over a bare place/person name or lead-in clause.
  */
 export function descriptiveFallbackTitle(synopsis: string, pageTitle?: string): string {
   const sentence = firstCompleteClause(synopsis)
   if (!sentence) return pageTitle?.trim() || 'Untitled event'
 
-  // Drop helper verbs for a tighter headline, then cut at a natural noun.
-  const tightened = sentence
+  // “Following X, SUBJECT verb…” → headline the payoff, not the subordinate clause.
+  const afterLead = sentence.match(
+    /^(?:Following|After|During|Amid|Despite|Before|When|While|As)\b[^,]{8,160},\s*(.+)$/i,
+  )
+  const focus = (afterLead?.[1] || sentence).trim()
+
+  const tightened = focus
     .replace(/\b(is|are|was|were)\s+/i, '')
     .replace(/\s+/g, ' ')
     .trim()
 
-  if (tightened.length <= 85 && !endsDangling(tightened)) return tightened
+  if (
+    tightened.length <= 85 &&
+    !endsDangling(tightened) &&
+    !titleIsCutFromBody(tightened, sentence)
+  ) {
+    return tightened
+  }
 
   const cut = tightened.match(
-    /^(.{18,85}?\b(?:territory|treaty|independence|election|war|invasion|bombing|launched|founded|established|signed|opened|discovered|abolished|assassinated|elected|crowned|released|championship|olympics|independence)\b)/i,
+    /^(.{18,85}?\b(?:resigns?|resigned|flees?|fled|territory|treaty|independence|election|war|invasion|bombing|launched|founded|established|signed|opened|discovered|abolished|assassinated|elected|crowned|released|championship|olympics)\b)/i,
   )
-  if (cut && !endsDangling(cut[1])) return cut[1].trim()
+  if (cut && !endsDangling(cut[1]) && !titleIsCutFromBody(cut[1], sentence)) {
+    return cut[1].trim()
+  }
 
   const clause = tightened.match(/^(.{18,85}?)(?:,| — | – |:|;)\s/)
-  if (clause && !endsDangling(clause[1])) return clause[1].trim()
+  if (
+    clause &&
+    !endsDangling(clause[1]) &&
+    hasOutcomeVerb(clause[1]) &&
+    !titleIsCutFromBody(clause[1], sentence)
+  ) {
+    return clause[1].trim()
+  }
 
   if (pageTitle && !looksLikeBareName(pageTitle) && pageTitle.length <= 90) {
     return pageTitle.trim()
@@ -184,7 +241,13 @@ export function descriptiveFallbackTitle(synopsis: string, pageTitle?: string): 
   const soft = tightened.slice(0, 85)
   const at = soft.lastIndexOf(' ')
   const candidate = (at > 40 ? soft.slice(0, at) : soft).trim()
-  if (!endsDangling(candidate) && candidate.length >= 18) return candidate
+  if (
+    !endsDangling(candidate) &&
+    candidate.length >= 18 &&
+    !titleIsCutFromBody(candidate, sentence)
+  ) {
+    return candidate
+  }
 
   return tightened
 }
