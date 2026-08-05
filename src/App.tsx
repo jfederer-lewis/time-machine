@@ -51,13 +51,12 @@ function normalizeCopy(text: string) {
 
 /** Hide synopsis when it is just the title repeated (common on unpolished Wiki text). */
 function distinctSynopsis(title: string, synopsis: string, opts?: { fullProse?: boolean }): string | null {
-  const line = opts?.fullProse ? synopsis.trim() : firstSentence(synopsis)
+  const line = synopsis.trim()
+  if (!line) return null
   const t = normalizeCopy(title)
-  const s = normalizeCopy(opts?.fullProse ? firstSentence(synopsis) : line)
-  if (!s || s === t) return null
-  if (s.startsWith(t) && s.length < t.length + 24) return null
-  if (t.startsWith(s) && !opts?.fullProse) return null
-  return line || null
+  const s = normalizeCopy(line)
+  if (s === t) return null
+  return opts?.fullProse ? line : firstSentence(line)
 }
 
 function pickSpotlight(result: DateQueryResult): CulturalEvent | null {
@@ -315,8 +314,8 @@ export default function App() {
                     </p>
                   ) : null}
                   {spotlight.whyItMatters ? (
-                    <aside className="spotlight-context" aria-label="Context">
-                      <p className="spotlight-context__label">Context</p>
+                    <aside className="spotlight-context" aria-label="Context / Provenance">
+                      <p className="spotlight-context__label">Context / Provenance</p>
                       <p className="spotlight-context__body">{spotlight.whyItMatters}</p>
                     </aside>
                   ) : null}

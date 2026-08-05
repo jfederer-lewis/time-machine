@@ -108,7 +108,8 @@ export function isIncompleteHeadline(title: string): boolean {
  */
 export function toSentenceCaseHeadline(title: string): string {
   let t = cleanPressText(title)
-    .replace(/[.…]+/gu, ' ')
+    .replace(/\.{2,}|…/gu, ' ')
+    .replace(/\.$/, '')
     .replace(/\s+/g, ' ')
     .trim()
 

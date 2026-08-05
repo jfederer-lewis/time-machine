@@ -120,7 +120,7 @@ export async function polishEventCopy(opts: {
     `Source text: ${cleanSynopsis || cleanTitle}`,
     '',
     'Return JSON only:',
-    '{"title":string,"synopsis":string,"whyItMatters":string|null}',
+    '{"title":string,"synopsis":string,"whyItMatters":string}',
     '',
     'Field jobs:',
     '1) title — short sentence-case hed stating the OUTCOME of the day (under 80 chars). Must include who/what + the action. Complete thought. No ?, no ellipsis, no ALL CAPS.',
@@ -128,12 +128,13 @@ export async function polishEventCopy(opts: {
     '   Good: “Sheikh Hasina resigns and flees Bangladesh”.',
     '   Never chop the opening subordinate clause off the synopsis and call it a title.',
     '2) synopsis — ONLY the day fact. Guideline: about 1–4 complete sentences, as long as the source honestly supports — never pad to hit a count, never cut mid-thought for a character quota. What happened that day, from the source only. No era essay, no wire roundup.',
-    '3) whyItMatters — SEPARATE background for a general reader: the larger era, who the actors were, how long it had been going, why the day had weight. 1–2 short sentences. Use null ONLY if the day fact is already fully self-explanatory with no larger frame (rare). Do not invent contested day-specific details or quotations.',
+    '3) whyItMatters — SEPARATE background for a general reader: the larger era, who the actors were, how long it had been going, why the day had weight. 1–2 short sentences. This is a REQUIRED field and must NEVER be empty or null; always provide historical context, background, or explanation of the event\'s significance or legacy.',
     '',
     'Rules:',
     '- Voice: always past tense. Never present-tense breaking news or open questions.',
     '- title must NOT copy the synopsis, and must NOT be a truncated prefix / “Following… / After…” clause of the synopsis.',
     '- Put “why / era / stakes” material in whyItMatters, not synopsis.',
+    '- Never return null or empty for whyItMatters under any circumstances. Always write a meaningful 1-2 sentence context of the era or significance of the event.',
     `- Write as of ${year}: name people by the role they held then. Never “former/current/ex-” relative to today.`,
     '- No “on this day”, no brand voice, no storytelling flourishes.',
   ]
@@ -182,10 +183,10 @@ export async function polishEventCopy(opts: {
       return null
     }
 
-    if (nextTitle.length > 80) {
-      const cut = nextTitle.slice(0, 80)
+    if (nextTitle.length > 120) {
+      const cut = nextTitle.slice(0, 120)
       const at = cut.lastIndexOf(' ')
-      nextTitle = (at > 36 ? cut.slice(0, at) : cut).trim()
+      nextTitle = (at > 60 ? cut.slice(0, at) : cut).trim()
       if (
         isIncompleteHeadline(nextTitle) ||
         looksLikeBareName(nextTitle) ||

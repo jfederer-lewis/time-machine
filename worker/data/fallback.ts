@@ -20,6 +20,7 @@ export const FALLBACK_EVENTS_BY_DATE: Record<string, CulturalEvent[]> = {
       title: 'The United States enters World War I',
       synopsis:
         'In April 1917 the U.S. declares war on Germany, reshaping American industry, sport, and youth culture in the same decade Converse launches its basketball shoe.',
+      whyItMatters: 'The American entry into the First World War marked a major turning point, shifting the balance of power toward the Allied forces and accelerating the country\'s rise as a global political and industrial leader.',
       category: 'politics',
       locale: 'United States',
       precision: 'year',
@@ -57,6 +58,7 @@ export const FALLBACK_EVENTS_BY_DATE: Record<string, CulturalEvent[]> = {
       title: 'Original Dixieland Jazz Band records in New York',
       synopsis:
         'Early jazz recordings in 1917 help mark the soundtrack of the decade in which canvas basketball shoes leave the gym and enter American street culture.',
+      whyItMatters: 'These early commercial releases helped popularize jazz nationwide, paving the way for the Jazz Age of the 1920s and the expansion of modern popular music.',
       category: 'music',
       locale: 'New York',
       precision: 'year',
@@ -85,6 +87,7 @@ export const FALLBACK_EVENTS_BY_DATE: Record<string, CulturalEvent[]> = {
       title: 'NATO’s Kosovo air campaign continues',
       synopsis:
         'In spring 1999, NATO’s Operation Allied Force dominates international headlines — the kind of global backdrop a heritage brand sits against on an ordinary April day.',
+      whyItMatters: 'Operation Allied Force represented the first time NATO used military force without explicit UN Security Council approval, sparking intense international debates over humanitarian intervention and national sovereignty.',
       category: 'politics',
       locale: 'Europe',
       precision: 'month',
@@ -114,6 +117,7 @@ export const FALLBACK_EVENTS_BY_DATE: Record<string, CulturalEvent[]> = {
       title: 'Sudan Airways Flight 139 crashes near Port Sudan',
       synopsis:
         'On 8 July 2003, a Boeing 737 crashes on approach to Port Sudan — one of the day’s international news markers.',
+      whyItMatters: 'The tragic crash, which killed all but one of the 117 passengers and crew, drew global attention to Sudanese aviation safety under international trade sanctions.',
       category: 'other',
       locale: 'Sudan',
       precision: 'exact-day',
