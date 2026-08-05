@@ -1,7 +1,7 @@
 import type { NarrativeBlock } from '../../shared/provenance'
 import type { BrandConfig } from '../../shared/brand'
 import { toDisplayDate } from '../../shared/source-registry'
-import { cleanPressText, looksLikeDateOnlyTitle, endsDangling, titleEchoesBody } from '../lib/clean-text'
+import { cleanPressText, looksLikeDateOnlyTitle, endsDangling, titleEchoesBody, looksLikeBareName } from '../lib/clean-text'
 
 const GEMINI_MODELS = ['gemini-flash-latest', 'gemini-3.5-flash', 'gemini-3.6-flash']
 
@@ -89,8 +89,8 @@ export async function composeNarrative(opts: {
 
 /**
  * Rewrite a sourced event into a readable headline + body.
- * Full mode: multi-sentence prose paragraph. Lite: complete headline + one full sentence.
- * Facts must come only from the supplied text — no invention.
+ * Same copy rules for lite and full unless noted — typically 2–3 sentences when
+ * the source supports it; never pad for length. Facts only from supplied text.
  */
 export async function polishEventCopy(opts: {
   apiKey: string
@@ -100,20 +100,16 @@ export async function polishEventCopy(opts: {
   pageTitle?: string
   mode?: 'full' | 'lite'
 }): Promise<{ title: string; synopsis: string } | null> {
-  const { apiKey, year, title, synopsis, pageTitle, mode = 'full' } = opts
+  const { apiKey, year, title, synopsis, pageTitle } = opts
   const cleanTitle = cleanPressText(title)
   const cleanSynopsis = cleanPressText(synopsis)
   const cleanPage = pageTitle ? cleanPressText(pageTitle) : ''
 
   if (!cleanSynopsis && !cleanTitle) return null
 
-  const isFull = mode === 'full'
-
   const prompt = [
     'You write press-desk cards for a heritage brand time machine.',
-    isFull
-      ? 'Rewrite the sourced event below into a clear headline and a short prose paragraph a journalist can read aloud.'
-      : 'Rewrite the sourced event below into a clear complete headline and one full summary sentence.',
+    'Rewrite the sourced event below into a clear headline and a short prose description.',
     '',
     `Year: ${year}`,
     `Current title: ${cleanTitle}`,
@@ -124,11 +120,9 @@ export async function polishEventCopy(opts: {
     '{"title":string,"synopsis":string}',
     '',
     'Rules:',
-    '- title: short newspaper-style headline (aim under 90 characters). A COMPLETE thought that can stand alone — never end mid-clause, never end on “the/of/a/and/…”, never use ellipsis. Name the event or action — never a bare calendar date.',
-    '- CRITICAL: title must NOT be an exact copy of the synopsis (or the synopsis with the period stripped). Near-duplicates with different wording are fine — just don’t paste the body up as the headline.',
-    isFull
-      ? '- synopsis: 2 to 4 complete sentences of plain prose. State what happened, who was involved, and why it mattered, in natural flowing English. Distinct from the title. No bullet lists, no markdown, no HTML, no table chrome, no pipe characters, no navigation leftovers from web pages.'
-      : '- synopsis: exactly ONE complete sentence that reads naturally on its own. Distinct from the title — add place, stakes, or context the title omits. Do not restate the title verbatim. Do not truncate.',
+    '- title: short newspaper-style headline (aim under 90 characters). Must be descriptive of what happened — include the action or stakes, not only a place or person name. Bad: “Nunavut”. Good: “Nunavut established as a Canadian territory”. A COMPLETE thought — never end mid-clause, never end on “the/of/a/and/…”, never use ellipsis. Never a bare calendar date.',
+    '- CRITICAL: title must NOT be an exact copy of the synopsis (or the synopsis with the period stripped). The title is the headline; the synopsis expands it — do not make the synopsis merely restate the title.',
+    '- synopsis: plain prose that a journalist can read aloud. Usually 2 or 3 complete sentences when the source has enough fact; one sentence is fine if that is all the source honestly supports. Never pad, never invent filler, never stretch thin material to hit a sentence count. Add place, stakes, or context the title cannot hold. No bullet lists, no markdown, no HTML, no table chrome, no pipe characters, no navigation leftovers.',
     '- Use ONLY facts present in the source text (and article title for naming). Do not invent details, numbers, or outcomes.',
     `- Write as of the event year (${year}): name people by the role they held then, not by today's titles. Never use “former”, “current”, or “ex-” relative to the present day.`,
     '- Prefer clear past tense for historical events.',
@@ -143,7 +137,7 @@ export async function polishEventCopy(opts: {
       apiKey,
       prompt,
       temperature: 0.2,
-      maxOutputTokens: isFull ? 512 : 320,
+      maxOutputTokens: 480,
       json: true,
       useSearch: false,
     })
@@ -155,6 +149,7 @@ export async function polishEventCopy(opts: {
     const nextSynopsis = cleanPressText(raw.synopsis || '')
     if (!nextTitle || !nextSynopsis) return null
     if (looksLikeDateOnlyTitle(nextTitle)) return null
+    if (looksLikeBareName(nextTitle)) return null
     if (endsDangling(nextTitle)) return null
     if (titleEchoesBody(nextTitle, nextSynopsis)) return null
 
@@ -163,15 +158,81 @@ export async function polishEventCopy(opts: {
       const cut = nextTitle.slice(0, 110)
       const at = cut.lastIndexOf(' ')
       nextTitle = (at > 50 ? cut.slice(0, at) : cut).trim()
-      if (endsDangling(nextTitle) || titleEchoesBody(nextTitle, nextSynopsis)) return null
+      if (
+        endsDangling(nextTitle) ||
+        looksLikeBareName(nextTitle) ||
+        titleEchoesBody(nextTitle, nextSynopsis)
+      ) {
+        return null
+      }
     }
 
     return {
       title: nextTitle,
-      synopsis: isFull ? clampProse(nextSynopsis, 4, 520) : firstSentence(nextSynopsis),
+      // Cap runaway output; do not pad up to a minimum.
+      synopsis: clampProse(nextSynopsis, 3, 420),
     }
   } catch (err) {
     console.error('[time-machine] Gemini event polish failed', err)
+    return null
+  }
+}
+
+/**
+ * Pick the most poignant / press-worthy event from a shortlist.
+ * Bias: UK & global cultural significance over remote administrative trivia.
+ * Returns the chosen index into `candidates`, or null on failure.
+ */
+export async function pickMostInterestingEvent(opts: {
+  apiKey: string
+  queryDate: string
+  targetYear: number
+  candidates: Array<{ title: string; synopsis: string; year: number }>
+}): Promise<number | null> {
+  const { apiKey, queryDate, targetYear, candidates } = opts
+  if (candidates.length === 0) return null
+  if (candidates.length === 1) return 0
+
+  const list = candidates
+    .slice(0, 8)
+    .map(
+      (c, i) =>
+        `${i}. [${c.year}] ${cleanPressText(c.title)} — ${cleanPressText(c.synopsis).slice(0, 220)}`,
+    )
+    .join('\n')
+
+  const prompt = [
+    'You are a UK press-desk editor for a heritage brand time machine (“Chuck was there”).',
+    `Lookup date: ${queryDate} (prefer events in ${targetYear} when they are genuinely interesting).`,
+    '',
+    'Pick the SINGLE most interesting, poignant, or culturally resonant event for a British / international reader.',
+    'Prefer: major geopolitics, war & peace, culture, sport, science, music, design, human-rights moments, UK/Europe/global stakes.',
+    'Deprioritise: remote administrative changes, local municipal trivia, obscure territorial reorganisations, dry bureaucracy.',
+    'Do not invent events — choose only by index from the list.',
+    '',
+    'Candidates:',
+    list,
+    '',
+    'Return JSON only: {"index":number,"reason":string}',
+  ].join('\n')
+
+  try {
+    const { text } = await generateGeminiGrounded({
+      apiKey,
+      prompt,
+      temperature: 0.1,
+      maxOutputTokens: 128,
+      json: true,
+      useSearch: false,
+    })
+    if (!text) return null
+    const cleaned = text.replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/i, '').trim()
+    const raw = JSON.parse(cleaned) as { index?: number }
+    const index = typeof raw.index === 'number' ? Math.floor(raw.index) : -1
+    if (index < 0 || index >= Math.min(candidates.length, 8)) return null
+    return index
+  } catch (err) {
+    console.error('[time-machine] Gemini event pick failed', err)
     return null
   }
 }

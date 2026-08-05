@@ -169,12 +169,11 @@ export default function App() {
     () =>
       spotlight
         ? distinctSynopsis(spotlight.title, spotlight.synopsis, {
-            // Both modes get complete sentences from Gemini polish;
-            // full keeps the multi-sentence paragraph, lite keeps one sentence.
-            fullProse: result?.researchMode === 'full',
+            // Multi-sentence prose in both modes — don’t collapse to a title-echo one-liner.
+            fullProse: true,
           })
         : null,
-    [spotlight, result?.researchMode],
+    [spotlight],
   )
   const queryYear = result ? Number(result.queryDate.slice(0, 4)) : null
   const yearMismatch =

@@ -38,7 +38,7 @@ export async function fetchOnThisDay(month: number, day: number): Promise<Cultur
   const data = (await res.json()) as WikiOnThisDayResponse
   const accessedAt = new Date().toISOString()
 
-  return (data.events ?? []).slice(0, 12).map((event, index) => {
+  return (data.events ?? []).slice(0, 24).map((event, index) => {
     const page = event.pages?.[0]
     const pageUrl =
       page?.content_urls?.desktop?.page ??
@@ -114,22 +114,27 @@ function truncate(text: string, max: number): string {
 }
 
 /**
- * Prefer the linked Wikipedia article title when it reads like a topic/event
- * (not a bare person/place name). Never mid-sentence truncate the body —
- * a short complete clause beats a long cut-off fragment.
+ * Prefer a descriptive event headline. Never fall back to a bare place/person
+ * page title (e.g. “Nunavut”) when the body has a real sentence.
  */
 function headlineFromOnThisDay(text: string, pageTitle: string): string {
   const page = pageTitle.trim()
-  if (page.length > 20 && page.length <= 100 && !looksLikeBareName(page)) {
-    return page
-  }
-
   const sentence = stripHtml(text)
     .replace(/\s+/g, ' ')
     .trim()
     .split(/(?<=[.!?])\s+/)[0]
     ?.replace(/[.!?]$/, '')
     .trim()
+
+  // Linked article title only when it already reads like an event, not a name.
+  if (
+    page.length > 20 &&
+    page.length <= 100 &&
+    !looksLikeBareName(page) &&
+    /\b(of|the|in|at|and|for|from|on|by|as|war|treaty|battle|election|independence)\b/i.test(page)
+  ) {
+    return page
+  }
 
   if (!sentence) return page || 'Untitled event'
   if (sentence.length <= 100) return sentence
@@ -138,10 +143,7 @@ function headlineFromOnThisDay(text: string, pageTitle: string): string {
   const clause = sentence.match(/^(.{24,100}?)(?:,| — | – |:)\s/)
   if (clause && !endsDangling(clause[1])) return clause[1].trim()
 
-  // Fall back to the page title rather than a truncated fragment.
-  if (page) return page
-
-  // Last resort: keep the full sentence (better long than mid-cut).
+  // Never return a bare name when we have a sentence — keep the full sentence.
   return sentence
 }
 

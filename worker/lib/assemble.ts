@@ -3,7 +3,7 @@ import { withHarvard } from '../../shared/provenance'
 import { getBrand } from '../../shared/brands'
 import { queryDatePrecision, toDisplayDate, toOnThisDayPath } from '../../shared/source-registry'
 import { buildFallbackResult, PROVIDER_CATALOGUE } from '../data/fallback'
-import { composeNarrative, polishEventCopy } from '../providers/gemini'
+import { composeNarrative, polishEventCopy, pickMostInterestingEvent } from '../providers/gemini'
 import { fetchOnThisDay } from '../providers/wikipedia'
 import {
   fetchChroniclingAmerica,
@@ -13,12 +13,19 @@ import {
 } from '../providers/archives'
 import { sanitizeEventCitations } from './verify'
 import {
-  citationPreferability,
   isWikipediaBridgeEvent,
   upgradeWikipediaClaim,
 } from './upgrade-claim'
 import { attachGlosses } from './gloss-service'
-import { cleanPressText, looksLikeDateOnlyTitle, endsDangling, firstCompleteClause, titleEchoesBody } from './clean-text'
+import {
+  cleanPressText,
+  looksLikeDateOnlyTitle,
+  endsDangling,
+  descriptiveFallbackTitle,
+  titleEchoesBody,
+  looksLikeBareName,
+} from './clean-text'
+import { rankByInterest, scoreCulturalInterest } from './interest'
 
 export interface Env {
   GEMINI_API_KEY?: string
@@ -92,23 +99,20 @@ export async function assembleDateQuery(
     return fallback
   }
 
-  // Prefer the queried year (Chuck-was-there means *that* date), then nearest
-  // same calendar day. Never prefer “newest July 13” over the year the desk asked for.
+  // Prefer the queried year when it has something press-worthy; otherwise
+  // allow a more poignant same-calendar-day event (UI shows “Also on this day”).
   const targetYear = Number(queryDate.slice(0, 4))
   const sameYear = merged.filter((e) => e.year === targetYear)
-  const pool = sameYear.length > 0 ? sameYear : merged
-  pool.sort((a, b) => {
-    const yearDiff = Math.abs(a.year - targetYear) - Math.abs(b.year - targetYear)
-    if (yearDiff !== 0) return yearDiff
-    // Prefer Wikipedia On This Day for the claim text (clean prose). Perplexity
-    // date-search snippets often dump HTML / nav chrome and win on cite tier alone.
-    const wikiA = a.discoveredVia?.includes('wikipedia-onthisday') ? 1 : 0
-    const wikiB = b.discoveredVia?.includes('wikipedia-onthisday') ? 1 : 0
-    if (wikiB !== wikiA) return wikiB - wikiA
-    const tierDiff = citationPreferability(b) - citationPreferability(a)
-    if (tierDiff !== 0) return tierDiff
-    return b.year - a.year
-  })
+  const sameYearRanked = rankByInterest(sameYear, targetYear)
+  const bestSameScore = sameYearRanked[0] ? scoreCulturalInterest(sameYearRanked[0]) : -99
+  // Dull admin trivia (score < 2) → widen to other years on this calendar day
+  const rankedPool = rankByInterest(
+    bestSameScore >= 2 && sameYearRanked.length > 0 ? sameYearRanked : merged,
+    targetYear,
+  )
+
+  // Keep a shortlist for Gemini to pick the most interesting; heuristic ranks first.
+  const shortlist = rankedPool.slice(0, 8)
 
   const brandMoments: CulturalEvent[] = brand.timeline
     .filter((m) => {
@@ -147,7 +151,24 @@ export async function assembleDateQuery(
 
   if (brandMoments.length) providersUsed.push('brand-timeline')
 
-  let events = pool.slice(0, 1)
+  let events = shortlist.slice(0, 1)
+
+  if (env.GEMINI_API_KEY && shortlist.length > 1) {
+    const picked = await pickMostInterestingEvent({
+      apiKey: env.GEMINI_API_KEY,
+      queryDate,
+      targetYear,
+      candidates: shortlist.map((e) => ({
+        title: e.title,
+        synopsis: e.synopsis,
+        year: e.year,
+      })),
+    })
+    if (picked != null && shortlist[picked]) {
+      events = [shortlist[picked]]
+      if (!providersUsed.includes('gemini')) providersUsed.push('gemini')
+    }
+  }
 
   // Full mode: verify Wikipedia bridge claims and upgrade to news/gov cites when possible.
   if (!isLite && events[0] && isWikipediaBridgeEvent(events[0])) {
@@ -237,7 +258,7 @@ export function listProviders(env: Env) {
   })
 }
 
-/** Scrub chrome and avoid title === body when Gemini polish is unavailable. */
+/** Scrub chrome and prefer a descriptive headline over a bare page name. */
 function fallbackDistinctCopy(event: CulturalEvent): CulturalEvent {
   const synopsis = cleanPressText(event.synopsis)
   const pageTitle = cleanPressText(event.citations[0]?.title || '')
@@ -246,25 +267,12 @@ function fallbackDistinctCopy(event: CulturalEvent): CulturalEvent {
   const bad =
     !title ||
     looksLikeDateOnlyTitle(title) ||
+    looksLikeBareName(title) ||
     endsDangling(title) ||
     titleEchoesBody(title, synopsis)
 
   if (bad) {
-    if (
-      pageTitle &&
-      pageTitle.length >= 3 &&
-      !looksLikeDateOnlyTitle(pageTitle) &&
-      !titleEchoesBody(pageTitle, synopsis)
-    ) {
-      title = pageTitle
-    } else {
-      // Last resort: keep a short lead from the synopsis only if it doesn't echo the full body.
-      const lead = firstCompleteClause(synopsis)
-      title =
-        lead && !titleEchoesBody(lead, synopsis) && lead.length <= 90
-          ? lead
-          : pageTitle || title || 'Untitled event'
-    }
+    title = descriptiveFallbackTitle(synopsis, pageTitle)
   }
 
   return { ...event, title, synopsis }
