@@ -100,7 +100,103 @@ const STOP = new Set([
   'december',
 ])
 
+/**
+ * Everyday geography / weather / concepts a general reader already knows.
+ * Prefer silence over a dotted underline on "United States" or "tornadoes".
+ */
+const TOO_OBVIOUS = new Set([
+  'united states',
+  'united states of america',
+  'u.s.',
+  'u.s.a.',
+  'usa',
+  'america',
+  'united kingdom',
+  'great britain',
+  'england',
+  'scotland',
+  'wales',
+  'france',
+  'germany',
+  'italy',
+  'spain',
+  'canada',
+  'mexico',
+  'australia',
+  'china',
+  'japan',
+  'india',
+  'russia',
+  'europe',
+  'asia',
+  'africa',
+  'north america',
+  'south america',
+  'earth',
+  'world',
+  'tornado',
+  'tornadoes',
+  'hurricane',
+  'hurricanes',
+  'cyclone',
+  'cyclones',
+  'typhoon',
+  'typhoons',
+  'earthquake',
+  'earthquakes',
+  'flood',
+  'floods',
+  'storm',
+  'storms',
+  'blizzard',
+  'blizzards',
+  'drought',
+  'droughts',
+  'wildfire',
+  'wildfires',
+  'tsunami',
+  'tsunamis',
+  'volcano',
+  'volcanoes',
+  'war',
+  'wars',
+  'peace',
+  'government',
+  'president',
+  'prime minister',
+])
+
+/** Cap resolved glosses — keep the claim readable. */
+const MAX_GLOSSES = 2
+
 type GlossCandidate = { term: string; wikipediaTitle: string }
+
+function normalizeGlossKey(term: string): string {
+  return term
+    .toLowerCase()
+    .replace(/[’']/g, "'")
+    .replace(/\s+/g, ' ')
+    .trim()
+}
+
+/** True when the term (or Wikipedia description) is too familiar to bother glossing. */
+function isTooObvious(term: string, wikiDescription?: string): boolean {
+  const key = normalizeGlossKey(term)
+  if (!key) return true
+  if (TOO_OBVIOUS.has(key)) return true
+  // Plural / morphological near-matches already listed in singular form
+  if (key.endsWith('es') && TOO_OBVIOUS.has(key.slice(0, -2))) return true
+  if (key.endsWith('s') && TOO_OBVIOUS.has(key.slice(0, -1))) return true
+
+  const desc = String(wikiDescription || '')
+    .toLowerCase()
+    .replace(/\s+/g, ' ')
+    .trim()
+  if (!desc) return false
+  if (/^(country|sovereign state|continent|nation|republic|kingdom)\b/.test(desc)) return true
+  if (/\b(weather phenomenon|natural disaster|type of storm)\b/.test(desc)) return true
+  return false
+}
 
 function firstSentence(text: string): string {
   const trimmed = text.trim()
@@ -154,8 +250,9 @@ function collectCandidates(claim: string, event: CulturalEvent): GlossCandidate[
   const push = (term: string, wikipediaTitle?: string) => {
     const clean = term.replace(/\s+/g, ' ').trim()
     if (!clean || clean.length < 3) return
+    if (isTooObvious(clean)) return
     if (!termAppearsIn(claim, clean)) return
-    const key = clean.toLowerCase()
+    const key = normalizeGlossKey(clean)
     if (seen.has(key)) return
     seen.add(key)
     out.push({ term: clean, wikipediaTitle: (wikipediaTitle || clean).trim() })
@@ -176,12 +273,12 @@ function collectCandidates(claim: string, event: CulturalEvent): GlossCandidate[
     if (titleBits) push(titleBits, titleBits)
   }
 
-  return out.slice(0, 5)
+  return out.slice(0, 4)
 }
 
 /**
- * Resolve 1–3 Wikipedia glosses for entities named in the claim sentence.
- * Prefer silence over weak definitions.
+ * Resolve a few Wikipedia glosses for less-obvious entities named in the claim.
+ * Prefer silence over weak or everyday definitions.
  */
 export async function attachGlosses(event: CulturalEvent): Promise<CulturalEvent> {
   const claim = firstSentence(event.synopsis)
@@ -192,9 +289,13 @@ export async function attachGlosses(event: CulturalEvent): Promise<CulturalEvent
 
   const resolved: Gloss[] = []
   for (const candidate of candidates) {
-    if (resolved.length >= 3) break
+    if (resolved.length >= MAX_GLOSSES) break
     const hit = await fetchWikipediaSummary(candidate.wikipediaTitle)
     if (!hit) continue
+    // Drop pages that resolve to everyday geography / weather / nations
+    if (isTooObvious(candidate.term, hit.originator) || isTooObvious(hit.title, hit.originator)) {
+      continue
+    }
     // Ensure the resolved page title still relates to something we can underline
     if (!termAppearsIn(claim, candidate.term) && !termAppearsIn(claim, hit.title)) continue
     resolved.push({
