@@ -2,7 +2,7 @@ import type { NarrativeBlock } from '../../shared/provenance'
 import type { BrandConfig } from '../../shared/brand'
 import { toDisplayDate } from '../../shared/source-registry'
 import { cleanPressText, looksLikeDateOnlyTitle, titleEchoesBody, titleIsCutFromBody, looksLikeBareName, isIncompleteHeadline, toSentenceCaseHeadline, clipToShortProse, looksLikeHeadlineDump, descriptiveFallbackTitle, firstSentence, splitSentences } from '../lib/clean-text'
-import { COPY_KNOBS, polishedCopyJsonSchemaHint, validateCopyContract } from '../lib/copy-contract'
+import { COPY_KNOBS, polishedCopyJsonSchemaHint, validateCopyContract, keepWholeSentences } from '../lib/copy-contract'
 
 const GEMINI_MODELS = ['gemini-flash-latest', 'gemini-3.5-flash', 'gemini-3.6-flash']
 
@@ -124,16 +124,18 @@ export async function polishEventCopy(opts: {
     polishedCopyJsonSchemaHint(),
     '',
     'Field jobs:',
-    `1) title — short sentence-case hed stating the OUTCOME of the day (soft aim under ${COPY_KNOBS.titleSoftMaxChars} chars, never over ${COPY_KNOBS.titleHardMaxChars}). Must include who/what + the action. Complete thought. No ?, no ellipsis, no ALL CAPS.`,
+    `1) title — one tight line / sentence-synopsis of the OUTCOME (aim ~${COPY_KNOBS.titleAimChars} chars, not a hard cut). Who/what + the action. Complete thought. No ?, no ellipsis, no ALL CAPS. Never truncate mid-word or mid-sentence.`,
     '   Bad: “Following the non-cooperation movement against the government of Bangladesh” (lead-in only).',
     '   Good: “Sheikh Hasina resigns and flees Bangladesh”.',
     '   Never chop the opening subordinate clause off the synopsis and call it a title.',
-    `2) synopsis — ONLY the day fact. Guideline: about ${COPY_KNOBS.synopsisSentenceGuideMin}–${COPY_KNOBS.synopsisSentenceGuideMax} complete sentences, as long as the source honestly supports — never pad to hit a count, never cut mid-thought for a character quota. What happened that day, from the source only. No era essay, no wire roundup.`,
+    `2) synopsis — ONLY the day fact. Optimal about ${COPY_KNOBS.synopsisOptimalMin}–${COPY_KNOBS.synopsisOptimalMax} complete sentences (up to ~${COPY_KNOBS.synopsisSoftMax} if needed). As much as the source supports — never pad, never cut mid-word or mid-sentence. No era essay, no wire roundup.`,
     COPY_KNOBS.contextRequired
-      ? `3) whyItMatters — REQUIRED Context field (1–${COPY_KNOBS.contextSentenceGuideMax} short sentences): larger era, actors, how long it had been going, why the day had weight. Never empty. Do not invent contested day-specific details or quotations.`
-      : `3) whyItMatters — SEPARATE Context for a general reader (1–${COPY_KNOBS.contextSentenceGuideMax} short sentences). Use null ONLY if the day fact is already fully self-explanatory. Do not invent contested day-specific details or quotations.`,
+      ? '3) whyItMatters — REQUIRED Context: about a paragraph, or as much as needed, for a general reader (era, actors, stakes). Never empty. Never cut mid-sentence. Do not invent contested day-specific details or quotations.'
+      : '3) whyItMatters — Context: about a paragraph, or as much as needed. Null only if the day fact is fully self-explanatory. Never cut mid-sentence.',
     '',
     'Rules:',
+    '- HARD: every field must read well as complete prose — never mid-word or mid-sentence cutoffs, never trailing ellipsis from truncation.',
+    '- Length aims above are recommendations, not quotas to force or pad toward.',
     '- Voice: always past tense. Never present-tense breaking news or open questions.',
     '- title must NOT copy the synopsis, and must NOT be a truncated prefix / “Following… / After…” clause of the synopsis.',
     '- Put “why / era / stakes” material in whyItMatters, not synopsis.',
@@ -188,24 +190,15 @@ export async function polishEventCopy(opts: {
       return null
     }
 
-    if (nextTitle.length > COPY_KNOBS.titleHardMaxChars) {
-      const cut = nextTitle.slice(0, COPY_KNOBS.titleHardMaxChars)
-      const at = cut.lastIndexOf(' ')
-      nextTitle = (at > COPY_KNOBS.titleHardMaxChars * 0.5 ? cut.slice(0, at) : cut).trim()
+    if (nextTitle.length > COPY_KNOBS.titleAimChars * 1.5) {
+      // Prefer a rebuilt outcome hed over character-slicing (never mid-word / mid-sentence).
+      const rebuilt = descriptiveFallbackTitle(nextSynopsis, cleanPage)
       if (
-        isIncompleteHeadline(nextTitle) ||
-        looksLikeBareName(nextTitle) ||
-        titleEchoesBody(nextTitle, nextSynopsis) ||
-        titleIsCutFromBody(nextTitle, nextSynopsis)
+        rebuilt &&
+        !isIncompleteHeadline(rebuilt) &&
+        !titleIsCutFromBody(rebuilt, nextSynopsis)
       ) {
-        nextTitle = descriptiveFallbackTitle(nextSynopsis, cleanPage)
-      }
-      if (
-        !nextTitle ||
-        isIncompleteHeadline(nextTitle) ||
-        titleIsCutFromBody(nextTitle, nextSynopsis)
-      ) {
-        return null
+        nextTitle = rebuilt
       }
     }
 
@@ -240,26 +233,25 @@ export async function polishEventCopy(opts: {
   }
 }
 
-/** Day fact within sentence guide; leftover beyond max can become context. */
+/**
+ * Prefer keeping whole sentences. Soft-peel only above synopsisSoftMax into Context.
+ * Never character-truncate mid-sentence.
+ */
 function splitFactAndContext(
   synopsis: string,
   whyRaw: string,
 ): { synopsis: string; whyItMatters?: string } {
   const sentences = splitSentences(cleanPressText(synopsis))
-  const max = COPY_KNOBS.synopsisSentenceGuideMax
+  const softMax = COPY_KNOBS.synopsisSoftMax
 
-  let day = sentences.slice(0, max).join(' ').trim()
-  const overflow = sentences.slice(max).join(' ').trim()
+  const day =
+    sentences.length > softMax
+      ? keepWholeSentences(synopsis, softMax)
+      : sentences.join(' ').trim()
+  const overflow = sentences.length > softMax ? sentences.slice(softMax).join(' ').trim() : ''
 
-  day = clampProse(day, max, COPY_KNOBS.synopsisRunawayMaxChars)
-
-  let why =
-    whyRaw && !looksLikeHeadlineDump(whyRaw)
-      ? clampProse(whyRaw, COPY_KNOBS.contextSentenceGuideMax + 1, COPY_KNOBS.contextRunawayMaxChars)
-      : ''
-  if (!why && overflow) {
-    why = clampProse(overflow, COPY_KNOBS.contextSentenceGuideMax + 1, COPY_KNOBS.contextRunawayMaxChars)
-  }
+  let why = whyRaw && !looksLikeHeadlineDump(whyRaw) ? cleanPressText(whyRaw) : ''
+  if (!why && overflow) why = overflow
 
   if (why && (titleEchoesBody(why, day) || normalizeLoose(why) === normalizeLoose(day))) {
     why = ''
@@ -553,26 +545,6 @@ function stripSummaryPrefix(text: string) {
 }
 
 // Remove localized duplicate functions as we now import from clean-text
-
-
-/** Keep up to `maxSentences`; `maxChars` is only a runaway guard, not a target length. */
-function clampProse(text: string, maxSentences: number, maxChars: number): string {
-  const cleaned = cleanPressText(text)
-  const sentences = splitSentences(cleaned)
-  let out = sentences.slice(0, maxSentences).join(' ').trim()
-  if (out.length > maxChars) {
-    // Prefer ending on a sentence boundary inside the guard, else soft word cut.
-    const within = out.slice(0, maxChars)
-    const lastStop = Math.max(within.lastIndexOf('.'), within.lastIndexOf('!'), within.lastIndexOf('?'))
-    if (lastStop > maxChars * 0.45) {
-      out = within.slice(0, lastStop + 1).trim()
-    } else {
-      const at = within.lastIndexOf(' ')
-      out = `${(at > 80 ? within.slice(0, at) : within).trimEnd()}…`
-    }
-  }
-  return out
-}
 
 function formatDisplayDate(queryDate: string): string {
   return toDisplayDate(queryDate)

@@ -1,11 +1,15 @@
 /**
  * Runtime validation for polished day-card copy.
  * Knobs: shared/copy-knobs.ts · Doc: documentation/COPY_CONTRACT.md
+ *
+ * HARD: must read well; never mid-word / mid-sentence cutoffs; no dumps / broken titles.
+ * SOFT: length aims (2–4 synopsis sentences, one-line title, paragraph Context) — warn only.
  */
 
 import { COPY_KNOBS } from '../../shared/copy-knobs'
 import {
   cleanPressText,
+  endsDangling,
   isIncompleteHeadline,
   looksLikeBareName,
   looksLikeDateOnlyTitle,
@@ -44,6 +48,17 @@ function normalizeLoose(text: string): string {
     .trim()
 }
 
+/** HARD: truncated prose — trailing ellipsis, dangling function word, or mid-word hyphen junk. */
+export function looksAbruptlyCut(text: string): boolean {
+  const t = cleanPressText(text)
+  if (!t) return false
+  if (/[.…]$/u.test(t)) return true
+  if (endsDangling(t)) return true
+  // Mid-word truncation often leaves a lone hyphenated stub or letter scrap.
+  if (/\b[A-Za-z]{1,2}-$/.test(t)) return true
+  return false
+}
+
 /**
  * Validate polished day-card copy against the contract.
  * Call after Gemini returns (and after any title repair attempts).
@@ -73,27 +88,20 @@ export function validateCopyContract(input: PolishedCopy): CopyValidationResult 
         message: 'Title must not be a bare place/person name — state the outcome.',
       })
     }
-    if (isIncompleteHeadline(title)) {
+    if (isIncompleteHeadline(title) || looksAbruptlyCut(title)) {
       issues.push({
         field: 'title',
         code: 'title.incomplete',
-        message: 'Title is incomplete (ellipsis, ALL CAPS teaser, question, or dangling clause).',
+        message: 'Title must read as a complete line — never cut mid-word or mid-sentence.',
       })
     }
-    if (title.length > COPY_KNOBS.titleHardMaxChars) {
-      issues.push({
-        field: 'title',
-        code: 'title.too_long',
-        message: `Title exceeds hard max of ${COPY_KNOBS.titleHardMaxChars} characters.`,
-      })
-    } else if (title.length > COPY_KNOBS.titleSoftMaxChars) {
+    if (title.length > COPY_KNOBS.titleAimChars) {
       warnings.push({
         field: 'title',
         code: 'title.soft_long',
-        message: `Title is longer than soft aim of ${COPY_KNOBS.titleSoftMaxChars} characters.`,
+        message: `Title is longer than the one-line aim (~${COPY_KNOBS.titleAimChars} chars) — still OK if it reads well.`,
       })
     }
-    // Exact echo always fails; near-duplicates are fine when the knob says so.
     if (synopsis && titleEchoesBody(title, synopsis)) {
       issues.push({
         field: 'title',
@@ -120,26 +128,31 @@ export function validateCopyContract(input: PolishedCopy): CopyValidationResult 
         message: 'Synopsis must not be a multi-headline wire dump.',
       })
     }
+    if (looksAbruptlyCut(synopsis)) {
+      issues.push({
+        field: 'synopsis',
+        code: 'synopsis.abrupt_cut',
+        message: 'Synopsis must never be cut mid-word or mid-sentence.',
+      })
+    }
     const n = countSentences(synopsis)
-    if (n < COPY_KNOBS.synopsisSentenceGuideMin) {
+    if (n < COPY_KNOBS.synopsisOptimalMin) {
       warnings.push({
         field: 'synopsis',
         code: 'synopsis.short',
-        message: `Synopsis is under the ${COPY_KNOBS.synopsisSentenceGuideMin}–${COPY_KNOBS.synopsisSentenceGuideMax} sentence guide.`,
+        message: `Synopsis is under the optimal ~${COPY_KNOBS.synopsisOptimalMin}–${COPY_KNOBS.synopsisOptimalMax} sentence aim.`,
       })
-    }
-    if (n > COPY_KNOBS.synopsisSentenceGuideMax) {
-      issues.push({
+    } else if (n > COPY_KNOBS.synopsisSoftMax) {
+      warnings.push({
         field: 'synopsis',
-        code: 'synopsis.too_many_sentences',
-        message: `Synopsis exceeds guideline of ${COPY_KNOBS.synopsisSentenceGuideMax} sentences — move overflow to Context.`,
+        code: 'synopsis.long',
+        message: `Synopsis is above the soft ~${COPY_KNOBS.synopsisSoftMax}-sentence aim — prefer moving background into Context.`,
       })
-    }
-    if (synopsis.length > COPY_KNOBS.synopsisRunawayMaxChars) {
-      issues.push({
+    } else if (n > COPY_KNOBS.synopsisOptimalMax) {
+      warnings.push({
         field: 'synopsis',
-        code: 'synopsis.runaway',
-        message: `Synopsis exceeds runaway guard of ${COPY_KNOBS.synopsisRunawayMaxChars} characters.`,
+        code: 'synopsis.above_optimal',
+        message: `Synopsis is above the optimal ~${COPY_KNOBS.synopsisOptimalMax} sentences (still within soft max).`,
       })
     }
   }
@@ -159,26 +172,18 @@ export function validateCopyContract(input: PolishedCopy): CopyValidationResult 
         message: 'Context must not be a wire dump.',
       })
     }
+    if (looksAbruptlyCut(why)) {
+      issues.push({
+        field: 'whyItMatters',
+        code: 'context.abrupt_cut',
+        message: 'Context must never be cut mid-word or mid-sentence.',
+      })
+    }
     if (synopsis && (titleEchoesBody(why, synopsis) || normalizeLoose(why) === normalizeLoose(synopsis))) {
       issues.push({
         field: 'whyItMatters',
         code: 'context.restates_synopsis',
         message: 'Context must not restate the synopsis.',
-      })
-    }
-    const cn = countSentences(why)
-    if (cn > COPY_KNOBS.contextSentenceGuideMax + 1) {
-      warnings.push({
-        field: 'whyItMatters',
-        code: 'context.long',
-        message: `Context is longer than the ~${COPY_KNOBS.contextSentenceGuideMax}-sentence guide.`,
-      })
-    }
-    if (why.length > COPY_KNOBS.contextRunawayMaxChars) {
-      issues.push({
-        field: 'whyItMatters',
-        code: 'context.runaway',
-        message: `Context exceeds runaway guard of ${COPY_KNOBS.contextRunawayMaxChars} characters.`,
       })
     }
   }
@@ -197,6 +202,13 @@ export function polishedCopyJsonSchemaHint(): string {
   return COPY_KNOBS.contextRequired
     ? '{"title":string,"synopsis":string,"whyItMatters":string}'
     : '{"title":string,"synopsis":string,"whyItMatters":string|null}'
+}
+
+/** Keep whole sentences only — never mid-word / mid-sentence cuts. */
+export function keepWholeSentences(text: string, maxSentences: number): string {
+  const sentences = splitSentences(cleanPressText(text))
+  if (sentences.length <= maxSentences) return sentences.join(' ').trim()
+  return sentences.slice(0, maxSentences).join(' ').trim()
 }
 
 export { COPY_KNOBS }
