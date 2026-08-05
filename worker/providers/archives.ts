@@ -145,6 +145,65 @@ export async function fetchPerplexityForDate(
   return events
 }
 
+/**
+ * Claim-specific search (no publish-date window) — used to upgrade Wikipedia
+ * discoveries to Tier A/B news / archive URLs. Perplexity is never the cite.
+ */
+export async function searchAllowlistedCiteForClaim(opts: {
+  apiKey?: string
+  year: number
+  title: string
+  synopsis: string
+}): Promise<Array<{ url: string; title: string; snippet: string; publisher: string }>> {
+  const { apiKey, year, title, synopsis } = opts
+  if (!apiKey) return []
+
+  const claim = `${year}: ${title}. ${synopsis}`.slice(0, 400)
+  const query = `primary source or reputable news archive confirming: ${claim}`
+
+  let res: Response
+  try {
+    res = await fetch(PERPLEXITY_SEARCH_URL, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${apiKey}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        query,
+        max_results: 8,
+        search_domain_filter: PERPLEXITY_DOMAINS,
+      }),
+    })
+  } catch (err) {
+    console.error('[time-machine] Perplexity claim search network error', err)
+    return []
+  }
+
+  if (!res.ok) {
+    const errText = await res.text().catch(() => '')
+    console.error(`[time-machine] Perplexity claim search ${res.status}`, errText.slice(0, 400))
+    return []
+  }
+
+  const payload = (await res.json()) as {
+    results?: Array<{ title?: string; url?: string; snippet?: string }>
+  }
+
+  const out: Array<{ url: string; title: string; snippet: string; publisher: string }> = []
+  for (const row of payload.results ?? []) {
+    const url = row.url?.trim()
+    if (!url || isCitationBlocked(url)) continue
+    out.push({
+      url,
+      title: (row.title || 'Untitled').trim(),
+      snippet: (row.snippet || '').trim(),
+      publisher: hostname(url),
+    })
+  }
+  return out
+}
+
 function hostname(url: string): string {
   try {
     return new URL(url).hostname.replace(/^www\./, '')

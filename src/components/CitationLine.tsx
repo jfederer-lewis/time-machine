@@ -17,18 +17,14 @@ function HarvardWithLink({ text, url }: { text: string; url: string }) {
   }
 
   const before = text.slice(0, start + marker.length)
-  const afterMarker = text.slice(start + marker.length)
-  const accessedAt = afterMarker.indexOf(' (Accessed:')
-  const linkedUrl = accessedAt === -1 ? afterMarker.trim() : afterMarker.slice(0, accessedAt).trim()
-  const after = accessedAt === -1 ? '' : afterMarker.slice(accessedAt)
+  const afterMarker = text.slice(start + marker.length).trim()
 
   return (
     <p className="citation-harvard">
       {before}
       <a className="citation-inline-link" href={url} target="_blank" rel="noreferrer">
-        {linkedUrl || url}
+        {afterMarker || url}
       </a>
-      {after}
     </p>
   )
 }

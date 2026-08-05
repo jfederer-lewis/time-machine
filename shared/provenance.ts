@@ -68,6 +68,8 @@ export interface Gloss {
   source: GlossSource
   sourceLabel?: string
   period?: string
+  /** Short Wikipedia description / role line, e.g. "American astronaut". */
+  originator?: string
 }
 
 export interface CulturalEvent {

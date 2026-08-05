@@ -4,6 +4,7 @@ import type { CulturalEvent, DateQueryResult, ResearchMode } from '../shared/pro
 import { converseBrand } from '../shared/brands/converse'
 import { CitationLine } from './components/CitationLine'
 import { DateDial } from './components/DateDial'
+import { GlossableText } from './components/GlossableText'
 import { TimelineView, type TimelineAxis } from './components/TimelineView'
 
 type View = 'date' | 'timeline'
@@ -19,7 +20,7 @@ const MODE_OPTIONS: { id: ResearchMode; label: string; description: string }[] =
   {
     id: 'full',
     label: 'Full',
-    description: 'Perplexity discovery + Gemini phrasing — uses paid keys.',
+    description: 'Verify claims, polish titles, upgrade cites via Gemini + Perplexity.',
   },
 ]
 
@@ -37,6 +38,26 @@ function firstSentence(text: string) {
   const trimmed = text.trim()
   const match = trimmed.match(/^(.+?[.!?])(?:\s|$)/)
   return match ? match[1] : trimmed
+}
+
+function normalizeCopy(text: string) {
+  return text
+    .toLowerCase()
+    .replace(/[.…]+$/u, '')
+    .replace(/[.!?]+$/g, '')
+    .replace(/\s+/g, ' ')
+    .trim()
+}
+
+/** Hide synopsis when it is just the title repeated (common on unpolished Wiki text). */
+function distinctSynopsis(title: string, synopsis: string): string | null {
+  const line = firstSentence(synopsis)
+  const t = normalizeCopy(title)
+  const s = normalizeCopy(line)
+  if (!s || s === t) return null
+  if (s.startsWith(t) && s.length < t.length + 24) return null
+  if (t.startsWith(s)) return null
+  return line
 }
 
 function pickSpotlight(result: DateQueryResult): CulturalEvent | null {
@@ -125,6 +146,13 @@ export default function App() {
   )
 
   const spotlight = useMemo(() => (result ? pickSpotlight(result) : null), [result])
+  const spotlightLine = useMemo(
+    () => (spotlight ? distinctSynopsis(spotlight.title, spotlight.synopsis) : null),
+    [spotlight],
+  )
+  const queryYear = result ? Number(result.queryDate.slice(0, 4)) : null
+  const yearMismatch =
+    spotlight != null && queryYear != null && Number.isFinite(queryYear) && spotlight.year !== queryYear
 
   return (
     <div
@@ -228,14 +256,25 @@ export default function App() {
                   <span className="result-frame__date">{result.displayDate}</span>
                 </h2>
                 <p className="mode-chip" data-mode={result.researchMode}>
-                  {result.researchMode === 'lite' ? 'Lite · Wikipedia' : 'Full · Perplexity + Gemini'}
+                  {result.researchMode === 'lite'
+                    ? 'Lite · Wikipedia'
+                    : 'Full · verified + upgraded cites'}
                 </p>
               </header>
 
               {spotlight ? (
                 <article className="spotlight">
+                  <p className="spotlight-label">
+                    {yearMismatch
+                      ? `Also on this day · ${spotlight.year}`
+                      : String(spotlight.year)}
+                  </p>
                   <h3 className="spotlight-title">{spotlight.title}</h3>
-                  <p className="spotlight-line">{firstSentence(spotlight.synopsis)}</p>
+                  {spotlightLine ? (
+                    <p className="spotlight-line">
+                      <GlossableText text={spotlightLine} glosses={spotlight.glosses ?? []} />
+                    </p>
+                  ) : null}
                   {spotlight.citations[0] ? (
                     <div className="spotlight-source">
                       <p className="spotlight-label">Source</p>

@@ -46,11 +46,14 @@ export async function fetchOnThisDay(month: number, day: number): Promise<Cultur
         ? `https://en.wikipedia.org/wiki/${encodeURIComponent(page.titles.canonical)}`
         : 'https://en.wikipedia.org/wiki/Wikipedia:On_this_day')
 
-    const title = truncate(event.text.split('.')[0] || event.text, 96)
-    const glosses: Gloss[] = page?.titles?.display
+    const pageDisplay = page?.titles?.display
+      ? stripHtml(page.titles.display.replace(/_/g, ' '))
+      : ''
+    const title = headlineFromOnThisDay(event.text, pageDisplay)
+    const glosses: Gloss[] = pageDisplay
       ? [
           {
-            term: stripHtml(page.titles.display.replace(/_/g, ' ')),
+            term: pageDisplay,
             gloss: truncate(
               page.extract || page.description || 'Wikipedia article linked from this event.',
               220,
@@ -62,14 +65,13 @@ export async function fetchOnThisDay(month: number, day: number): Promise<Cultur
         ]
       : []
 
-    const rawTitle = page?.titles?.display?.replace(/_/g, ' ') || title
-    const cleanTitle = stripHtml(rawTitle)
+    const cleanTitle = pageDisplay || title
 
     return {
       id: `wiki-${mm}${dd}-${event.year}-${index}`,
       year: event.year,
       title,
-      synopsis: event.text,
+      synopsis: stripHtml(event.text).replace(/\s+/g, ' ').trim(),
       category: 'other' as const,
       precision: 'exact-day' as const,
       discoveredVia: ['wikipedia-onthisday'],
@@ -82,7 +84,7 @@ export async function fetchOnThisDay(month: number, day: number): Promise<Cultur
           publisher: 'Wikipedia',
           publishedAt: String(event.year),
           accessedAt,
-          sourceQuality: 'trusted-source-snippet',
+          sourceQuality: 'needs-human-review',
           evidenceKind: 'paraphrase',
           reference: event.text,
           provider: 'wikipedia-onthisday',
@@ -109,4 +111,39 @@ function truncate(text: string, max: number): string {
   const clean = stripHtml(text)
   if (clean.length <= max) return clean
   return `${clean.slice(0, max - 1).trimEnd()}…`
+}
+
+/**
+ * Prefer the linked Wikipedia article title when it reads like a topic/event
+ * (not a bare person/place name). Never mid-sentence ellipsis-truncate the body.
+ */
+function headlineFromOnThisDay(text: string, pageTitle: string): string {
+  const page = pageTitle.trim()
+  if (page.length > 20 && page.length <= 88 && !looksLikeBareName(page)) {
+    return page
+  }
+
+  const sentence = stripHtml(text)
+    .replace(/\s+/g, ' ')
+    .trim()
+    .split(/(?<=[.!?])\s+/)[0]
+    ?.replace(/[.!?]$/, '')
+    .trim()
+
+  if (!sentence) return page || 'Untitled event'
+  if (sentence.length <= 88) return sentence
+
+  const clause = sentence.match(/^(.{16,88}?)(?:,| — | – |:)\s/)
+  if (clause) return clause[1].trim()
+
+  const cut = sentence.slice(0, 88)
+  const at = cut.lastIndexOf(' ')
+  return (at > 40 ? cut.slice(0, at) : cut).trim()
+}
+
+function looksLikeBareName(title: string): boolean {
+  // "Donald Trump", "Paris" — short proper-name titles make poor event headlines.
+  if (/\b(of|the|in|at|and|for|from|on|by)\b/i.test(title)) return false
+  const words = title.split(/\s+/)
+  return words.length <= 4 && title.length <= 28
 }

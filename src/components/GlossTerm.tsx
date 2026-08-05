@@ -1,79 +1,190 @@
-import type { ReactNode } from 'react'
-import { useEffect, useId, useRef, useState } from 'react'
+import { useCallback, useEffect, useId, useRef, useState, type ReactNode } from 'react'
 import { createPortal } from 'react-dom'
 import type { Gloss } from '../../shared/provenance'
 
+const OPEN_DELAY_MS = 160
+const CLOSE_DELAY_MS = 180
+
+function certifiedFooter(gloss: Gloss): { href: string; label: string } | null {
+  if (!gloss.url || gloss.source === 'ai') return null
+  if (gloss.source === 'wikipedia') {
+    return { href: gloss.url, label: 'open on Wikipedia →' }
+  }
+  return {
+    href: gloss.url,
+    label: gloss.sourceLabel ? `open ${gloss.sourceLabel} →` : 'open source →',
+  }
+}
+
+/** Bloom-inspired dotted term + fixed popover (hover preview, click to pin). */
 export function GlossTerm({ gloss, children }: { gloss: Gloss; children: ReactNode }) {
   const id = useId()
-  const ref = useRef<HTMLButtonElement>(null)
+  const ref = useRef<HTMLSpanElement>(null)
+  const openTimer = useRef<number | null>(null)
+  const closeTimer = useRef<number | null>(null)
   const [open, setOpen] = useState(false)
   const [pinned, setPinned] = useState(false)
   const [rect, setRect] = useState<DOMRect | null>(null)
-  const openTimer = useRef<number | null>(null)
-  const closeTimer = useRef<number | null>(null)
+  const pinnedRef = useRef(false)
+  pinnedRef.current = pinned
 
-  const show = () => {
+  const clearTimers = useCallback(() => {
+    if (openTimer.current) window.clearTimeout(openTimer.current)
+    if (closeTimer.current) window.clearTimeout(closeTimer.current)
+    openTimer.current = null
+    closeTimer.current = null
+  }, [])
+
+  const refreshRect = useCallback(() => {
     if (ref.current) setRect(ref.current.getBoundingClientRect())
-    setOpen(true)
-  }
+  }, [])
 
-  const hide = () => {
-    if (pinned) return
+  const show = useCallback(() => {
+    clearTimers()
+    refreshRect()
+    setOpen(true)
+  }, [clearTimers, refreshRect])
+
+  const hide = useCallback(() => {
+    if (pinnedRef.current) return
+    clearTimers()
     setOpen(false)
-  }
+  }, [clearTimers])
+
+  const close = useCallback(() => {
+    clearTimers()
+    setPinned(false)
+    setOpen(false)
+  }, [clearTimers])
+
+  useEffect(() => () => clearTimers(), [clearTimers])
 
   useEffect(() => {
-    return () => {
-      if (openTimer.current) window.clearTimeout(openTimer.current)
-      if (closeTimer.current) window.clearTimeout(closeTimer.current)
+    if (!open) return undefined
+
+    const onScrollOrResize = () => refreshRect()
+    window.addEventListener('scroll', onScrollOrResize, true)
+    window.addEventListener('resize', onScrollOrResize)
+
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') close()
     }
-  }, [])
+    window.addEventListener('keydown', onKey)
+
+    const onPointer = (e: PointerEvent) => {
+      const target = e.target as Node | null
+      if (!target) return
+      if (ref.current?.contains(target)) return
+      const pop = document.getElementById(id)
+      if (pop?.contains(target)) return
+      close()
+    }
+
+    // Defer so the pin click doesn't immediately close.
+    const timer = window.setTimeout(() => {
+      window.addEventListener('pointerdown', onPointer)
+    }, 0)
+
+    return () => {
+      window.clearTimeout(timer)
+      window.removeEventListener('scroll', onScrollOrResize, true)
+      window.removeEventListener('resize', onScrollOrResize)
+      window.removeEventListener('keydown', onKey)
+      window.removeEventListener('pointerdown', onPointer)
+    }
+  }, [close, id, open, refreshRect])
+
+  const footer = certifiedFooter(gloss)
+  const sourceClass =
+    gloss.source === 'wikipedia'
+      ? 'gloss-popover--wiki'
+      : gloss.source === 'curated'
+        ? 'gloss-popover--curated'
+        : 'gloss-popover--ai'
+
+  const popoverStyle = (() => {
+    if (!rect) return undefined
+    const width = Math.min(300, window.innerWidth - 28)
+    const left = Math.max(14, Math.min(rect.left + rect.width / 2 - width / 2, window.innerWidth - width - 14))
+    const top = Math.min(rect.bottom + 8, window.innerHeight - 16)
+    return { top, left, width }
+  })()
 
   return (
     <>
-      <button
+      <span
         ref={ref}
-        type="button"
-        className="gloss-term"
+        role="button"
+        tabIndex={0}
+        className={`gloss-term${open ? ' is-open' : ''}`}
         aria-describedby={open ? id : undefined}
         onMouseEnter={() => {
           if (closeTimer.current) window.clearTimeout(closeTimer.current)
-          openTimer.current = window.setTimeout(show, 160)
+          openTimer.current = window.setTimeout(show, OPEN_DELAY_MS)
         }}
         onMouseLeave={() => {
           if (openTimer.current) window.clearTimeout(openTimer.current)
-          closeTimer.current = window.setTimeout(hide, 180)
+          closeTimer.current = window.setTimeout(hide, CLOSE_DELAY_MS)
+        }}
+        onFocus={show}
+        onBlur={() => {
+          if (!pinned) hide()
         }}
         onClick={() => {
-          setPinned((p) => !p)
+          if (pinned) {
+            close()
+            return
+          }
+          setPinned(true)
           show()
+        }}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault()
+            if (pinned) close()
+            else {
+              setPinned(true)
+              show()
+            }
+          }
         }}
       >
         {children}
-      </button>
-      {open && rect
+      </span>
+      {open && rect && popoverStyle
         ? createPortal(
             <div
               id={id}
               role="tooltip"
-              className="gloss-popover"
-              style={{
-                top: rect.bottom + window.scrollY + 8,
-                left: Math.min(rect.left + window.scrollX, window.innerWidth - 320),
-              }}
+              className={`gloss-popover ${sourceClass}${pinned ? ' is-pinned' : ''}`}
+              style={popoverStyle}
               onMouseEnter={() => {
                 if (closeTimer.current) window.clearTimeout(closeTimer.current)
               }}
               onMouseLeave={() => {
-                closeTimer.current = window.setTimeout(hide, 180)
+                closeTimer.current = window.setTimeout(hide, CLOSE_DELAY_MS)
               }}
             >
-              <p className="gloss-term-label">{gloss.term}</p>
+              <div className="gloss-popover__heading">
+                <p className="gloss-term-label">{gloss.term}</p>
+                {pinned ? (
+                  <button type="button" className="gloss-popover__close" aria-label="Close" onClick={close}>
+                    ×
+                  </button>
+                ) : null}
+              </div>
               {gloss.period ? <p className="gloss-period">{gloss.period}</p> : null}
-              <p className="gloss-body">{gloss.gloss}</p>
-              {gloss.source !== 'ai' && gloss.url ? (
-                <a href={gloss.url} target="_blank" rel="noreferrer" className="gloss-link">
-                  {gloss.sourceLabel || gloss.source}
+              {gloss.originator ? <p className="gloss-originator">{gloss.originator}</p> : null}
+              <p className={`gloss-body${pinned ? ' is-selectable' : ''}`}>{gloss.gloss}</p>
+              {footer ? (
+                <a
+                  href={footer.href}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="gloss-link"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  {footer.label}
                 </a>
               ) : null}
             </div>,

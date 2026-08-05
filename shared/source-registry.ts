@@ -164,12 +164,12 @@ export interface HarvardCitationInput {
   /** Day Month Year if known, e.g. 21 July 1969 */
   publishedDisplay?: string
   url: string
-  accessedAt: string
+  /** Kept for provenance; not shown — lookups are live. */
+  accessedAt?: string
 }
 
-/** Author-date Harvard-ish string for press export. */
+/** Author-date Harvard-ish string for the source line. */
 export function formatHarvardCitation(input: HarvardCitationInput): string {
-  const accessed = formatAccessed(input.accessedAt)
   const year =
     input.year !== undefined && input.year !== ''
       ? String(input.year).slice(0, 4)
@@ -181,13 +181,7 @@ export function formatHarvardCitation(input: HarvardCitationInput): string {
 
   const publishedBit = input.publishedDisplay ? `, ${input.publishedDisplay}` : ''
 
-  return `${authorBit} '${input.title}', ${input.publisher}${publishedBit}. Available at: ${input.url} (Accessed: ${accessed}).`
-}
-
-function formatAccessed(iso: string): string {
-  const d = new Date(iso.includes('T') ? iso : `${iso}T12:00:00Z`)
-  if (Number.isNaN(d.getTime())) return iso
-  return d.toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })
+  return `${authorBit} '${input.title}', ${input.publisher}${publishedBit}. Available at: ${input.url}`
 }
 
 /**

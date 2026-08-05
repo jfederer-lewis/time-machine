@@ -2,6 +2,24 @@ import type { NarrativeBlock } from '../../shared/provenance'
 import type { BrandConfig } from '../../shared/brand'
 import { toDisplayDate } from '../../shared/source-registry'
 
+const GEMINI_MODELS = ['gemini-flash-latest', 'gemini-3.5-flash', 'gemini-3.6-flash']
+
+export type ClaimCandidate = {
+  url: string
+  title: string
+  snippet?: string
+  publisher?: string
+  publishedAt?: string
+}
+
+export type ClaimVerification = {
+  legit: boolean
+  confidence: 'high' | 'medium' | 'low'
+  betterCitation?: ClaimCandidate
+  groundedSources: ClaimCandidate[]
+  reason?: string
+}
+
 /**
  * Gemini narrative voice.
  * Contract: phrase lede/headline ONLY from supplied event cards — never invent facts.
@@ -42,40 +60,14 @@ export async function composeNarrative(opts: {
       ...eventSummaries.slice(0, 1).map((s, i) => `${i + 1}. ${s}`),
     ].join('\n')
 
-    const models = ['gemini-flash-latest', 'gemini-3.5-flash', 'gemini-3.6-flash']
-    let text = ''
-    let lastError = ''
+    const text = await generateGeminiText({
+      apiKey,
+      prompt,
+      temperature: 0.3,
+      maxOutputTokens: 256,
+    })
 
-    for (const model of models) {
-      const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`
-      const res = await fetch(endpoint, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'x-goog-api-key': apiKey,
-        },
-        body: JSON.stringify({
-          contents: [{ role: 'user', parts: [{ text: prompt }] }],
-          generationConfig: { temperature: 0.3, maxOutputTokens: 256 },
-        }),
-      })
-
-      if (!res.ok) {
-        lastError = `${model} ${res.status} ${await res.text().catch(() => '')}`
-        continue
-      }
-
-      const data = (await res.json()) as {
-        candidates?: Array<{ content?: { parts?: Array<{ text?: string }> } }>
-      }
-      const parts = data.candidates?.[0]?.content?.parts ?? []
-      text = parts.map((p) => p.text || '').join('').trim()
-      if (text) break
-    }
-
-    if (!text) {
-      throw new Error(lastError || 'Empty Gemini response')
-    }
+    if (!text) throw new Error('Empty Gemini response')
 
     return {
       headline,
@@ -91,6 +83,273 @@ export async function composeNarrative(opts: {
       voice: 'template',
       disclaimer: '',
     }
+  }
+}
+
+/**
+ * Rewrite a sourced event into a short headline + distinct one-sentence summary.
+ * Facts must come only from the supplied text — no invention.
+ */
+export async function polishEventCopy(opts: {
+  apiKey: string
+  year: number
+  title: string
+  synopsis: string
+  pageTitle?: string
+}): Promise<{ title: string; synopsis: string } | null> {
+  const { apiKey, year, title, synopsis, pageTitle } = opts
+
+  const prompt = [
+    'You write press-desk cards for a heritage brand time machine.',
+    'Rewrite the sourced event below into a readable title and summary.',
+    '',
+    `Year: ${year}`,
+    `Current title: ${title}`,
+    pageTitle ? `Linked article title: ${pageTitle}` : '',
+    `Source text: ${synopsis}`,
+    '',
+    'Return JSON only:',
+    '{"title":string,"synopsis":string}',
+    '',
+    'Rules:',
+    '- title: short newspaper-style headline, max 70 characters. A complete thought — never end with ellipsis or mid-clause.',
+    '- synopsis: exactly ONE complete sentence. Distinct from the title — add place, stakes, or context the title omits. Do not restate the title verbatim.',
+    '- Use ONLY facts present in the source text (and article title for naming). Do not invent details, numbers, or outcomes.',
+    `- Write as of the event year (${year}): name people by the role they held then, not by today's titles. Never use “former”, “current”, or “ex-” relative to the present day.`,
+    '- Prefer clear past tense for historical events.',
+    '- No “on this day”, no brand voice, no storytelling flourishes.',
+  ]
+    .filter(Boolean)
+    .join('\n')
+
+  try {
+    const { text } = await generateGeminiGrounded({
+      apiKey,
+      prompt,
+      temperature: 0.2,
+      maxOutputTokens: 256,
+      json: true,
+      useSearch: false,
+    })
+    if (!text) return null
+
+    const cleaned = text.replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/i, '').trim()
+    const raw = JSON.parse(cleaned) as { title?: string; synopsis?: string }
+    const nextTitle = (raw.title || '').trim().replace(/[.…]+$/u, '').trim()
+    const nextSynopsis = (raw.synopsis || '').trim()
+    if (!nextTitle || !nextSynopsis) return null
+    if (nextTitle.length > 100) return null
+
+    return {
+      title: nextTitle.slice(0, 88),
+      synopsis: firstSentence(nextSynopsis),
+    }
+  } catch (err) {
+    console.error('[time-machine] Gemini event polish failed', err)
+    return null
+  }
+}
+
+/**
+ * Verify a Wikipedia On This Day claim and propose a better Tier A/B citation.
+ * Uses Google Search grounding when available. Gemini is never the citation host.
+ */
+export async function verifyClaimWithGemini(opts: {
+  apiKey: string
+  year: number
+  title: string
+  synopsis: string
+  candidates?: ClaimCandidate[]
+}): Promise<ClaimVerification | null> {
+  const { apiKey, year, title, synopsis, candidates = [] } = opts
+
+  const candidateBlock =
+    candidates.length > 0
+      ? [
+          'Candidate sources (prefer these if they corroborate the claim):',
+          ...candidates.map(
+            (c, i) => `${i + 1}. ${c.title} — ${c.url}${c.snippet ? ` — ${c.snippet}` : ''}`,
+          ),
+        ].join('\n')
+      : 'No candidate sources supplied — search for a primary or paper-of-record URL.'
+
+  const prompt = [
+    'You are a press-desk fact checker for a heritage brand time machine.',
+    'A claim was discovered via Wikipedia On This Day. Wikipedia is only a bridge — never the preferred public citation.',
+    '',
+    `Claim year: ${year}`,
+    `Claim title: ${title}`,
+    `Claim text: ${synopsis}`,
+    '',
+    candidateBlock,
+    '',
+    'Tasks:',
+    '1. Decide if this is a real, well-attested historical event (legit true/false).',
+    '2. If legit, prefer a national archive, government, museum, wire, or reputable newspaper URL over Wikipedia.',
+    '3. Prefer .gov / national archives / Library of Congress / major papers (NYT, Guardian, BBC, Reuters, AP).',
+    '4. Do not invent URLs. Only return URLs you can ground in search or the candidate list.',
+    '5. Never cite onthisday.com, history.com this-day indexes, or hobby time-machine sites.',
+    '',
+    'Respond with JSON only, matching:',
+    '{"legit":boolean,"confidence":"high"|"medium"|"low","betterCitation":{"url":string,"title":string,"publisher":string,"publishedAt":string,"snippet":string}|null,"reason":string}',
+  ].join('\n')
+
+  try {
+    // Search grounding + responseMimeType:json can conflict on some models —
+    // ask for JSON in the prompt and parse from text instead.
+    const { text, groundedSources } = await generateGeminiGrounded({
+      apiKey,
+      prompt,
+      temperature: 0.1,
+      maxOutputTokens: 512,
+      json: false,
+      useSearch: true,
+    })
+
+    if (!text && groundedSources.length === 0) return null
+
+    const parsed = text ? parseVerificationJson(text) : null
+    if (!parsed) {
+      return {
+        legit: true,
+        confidence: 'low',
+        groundedSources,
+        reason: text
+          ? 'Could not parse verifier JSON; relying on grounded sources only.'
+          : 'No verifier text; relying on grounded sources only.',
+      }
+    }
+
+    return {
+      ...parsed,
+      groundedSources,
+    }
+  } catch (err) {
+    console.error('[time-machine] Gemini claim verify failed', err)
+    return null
+  }
+}
+
+async function generateGeminiText(opts: {
+  apiKey: string
+  prompt: string
+  temperature: number
+  maxOutputTokens: number
+}): Promise<string> {
+  const { text } = await generateGeminiGrounded({ ...opts, json: false, useSearch: false })
+  return text
+}
+
+async function generateGeminiGrounded(opts: {
+  apiKey: string
+  prompt: string
+  temperature: number
+  maxOutputTokens: number
+  json?: boolean
+  useSearch?: boolean
+}): Promise<{ text: string; groundedSources: ClaimCandidate[] }> {
+  const { apiKey, prompt, temperature, maxOutputTokens, json = false, useSearch = true } = opts
+  let lastError = ''
+
+  for (const model of GEMINI_MODELS) {
+    const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`
+    const body: Record<string, unknown> = {
+      contents: [{ role: 'user', parts: [{ text: prompt }] }],
+      generationConfig: {
+        temperature,
+        maxOutputTokens,
+        ...(json ? { responseMimeType: 'application/json' } : {}),
+      },
+    }
+    if (useSearch) {
+      body.tools = [{ google_search: {} }]
+    }
+
+    const res = await fetch(endpoint, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-goog-api-key': apiKey,
+      },
+      body: JSON.stringify(body),
+    })
+
+    if (!res.ok) {
+      lastError = `${model} ${res.status} ${await res.text().catch(() => '')}`
+      continue
+    }
+
+    const data = (await res.json()) as {
+      candidates?: Array<{
+        content?: { parts?: Array<{ text?: string }> }
+        groundingMetadata?: {
+          groundingChunks?: Array<{ web?: { uri?: string; title?: string } }>
+        }
+      }>
+    }
+
+    const candidate = data.candidates?.[0]
+    const parts = candidate?.content?.parts ?? []
+    const text = parts.map((p) => p.text || '').join('').trim()
+    const groundedSources: ClaimCandidate[] = (candidate?.groundingMetadata?.groundingChunks ?? [])
+      .map((chunk) => {
+        const url = chunk.web?.uri?.trim()
+        if (!url) return null
+        return {
+          url,
+          title: chunk.web?.title?.trim() || url,
+        }
+      })
+      .filter((c): c is ClaimCandidate => Boolean(c))
+
+    if (text || groundedSources.length) {
+      return { text, groundedSources }
+    }
+  }
+
+  throw new Error(lastError || 'Empty Gemini response')
+}
+
+function parseVerificationJson(text: string): Omit<ClaimVerification, 'groundedSources'> | null {
+  try {
+    const cleaned = text.replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/i, '').trim()
+    const raw = JSON.parse(cleaned) as {
+      legit?: boolean
+      confidence?: string
+      betterCitation?: {
+        url?: string
+        title?: string
+        publisher?: string
+        publishedAt?: string
+        snippet?: string
+      } | null
+      reason?: string
+    }
+
+    const confidence =
+      raw.confidence === 'high' || raw.confidence === 'medium' || raw.confidence === 'low'
+        ? raw.confidence
+        : 'low'
+
+    const better =
+      raw.betterCitation?.url && typeof raw.betterCitation.url === 'string'
+        ? {
+            url: raw.betterCitation.url.trim(),
+            title: (raw.betterCitation.title || '').trim() || 'Untitled',
+            publisher: raw.betterCitation.publisher?.trim(),
+            publishedAt: raw.betterCitation.publishedAt?.trim(),
+            snippet: raw.betterCitation.snippet?.trim(),
+          }
+        : undefined
+
+    return {
+      legit: Boolean(raw.legit),
+      confidence,
+      betterCitation: better,
+      reason: raw.reason?.trim(),
+    }
+  } catch {
+    return null
   }
 }
 

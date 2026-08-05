@@ -3,7 +3,7 @@ import { withHarvard } from '../../shared/provenance'
 import { getBrand } from '../../shared/brands'
 import { queryDatePrecision, toDisplayDate, toOnThisDayPath } from '../../shared/source-registry'
 import { buildFallbackResult, PROVIDER_CATALOGUE } from '../data/fallback'
-import { composeNarrative } from '../providers/gemini'
+import { composeNarrative, polishEventCopy } from '../providers/gemini'
 import { fetchOnThisDay } from '../providers/wikipedia'
 import {
   fetchChroniclingAmerica,
@@ -12,6 +12,12 @@ import {
   fetchPerplexityForDate,
 } from '../providers/archives'
 import { sanitizeEventCitations } from './verify'
+import {
+  citationPreferability,
+  isWikipediaBridgeEvent,
+  upgradeWikipediaClaim,
+} from './upgrade-claim'
+import { attachGlosses } from './gloss-service'
 
 export interface Env {
   GEMINI_API_KEY?: string
@@ -85,8 +91,18 @@ export async function assembleDateQuery(
     return fallback
   }
 
-  // Newest first; UI surfaces a single beat.
-  merged.sort((a, b) => b.year - a.year)
+  // Prefer the queried year (Chuck-was-there means *that* date), then nearest
+  // same calendar day. Never prefer “newest July 13” over the year the desk asked for.
+  const targetYear = Number(queryDate.slice(0, 4))
+  const sameYear = merged.filter((e) => e.year === targetYear)
+  const pool = sameYear.length > 0 ? sameYear : merged
+  pool.sort((a, b) => {
+    const yearDiff = Math.abs(a.year - targetYear) - Math.abs(b.year - targetYear)
+    if (yearDiff !== 0) return yearDiff
+    const tierDiff = citationPreferability(b) - citationPreferability(a)
+    if (tierDiff !== 0) return tierDiff
+    return b.year - a.year
+  })
 
   const brandMoments: CulturalEvent[] = brand.timeline
     .filter((m) => {
@@ -125,14 +141,51 @@ export async function assembleDateQuery(
 
   if (brandMoments.length) providersUsed.push('brand-timeline')
 
-  const events = merged.slice(0, 1)
+  let events = pool.slice(0, 1)
+
+  // Full mode: verify Wikipedia bridge claims and upgrade to news/gov cites when possible.
+  if (!isLite && events[0] && isWikipediaBridgeEvent(events[0])) {
+    const upgraded = await upgradeWikipediaClaim(events[0], env)
+    events = [sanitizeEventCitations(upgraded.event)]
+    for (const id of upgraded.providersUsed) {
+      if (!providersUsed.includes(id)) providersUsed.push(id)
+    }
+  }
+
+  // Full mode: rewrite truncated/wiki-ish titles into a proper headline + distinct summary.
+  // Run before gloss attach so terms match the polished claim sentence.
+  if (!isLite && env.GEMINI_API_KEY && events[0]) {
+    const event = events[0]
+    const polished = await polishEventCopy({
+      apiKey: env.GEMINI_API_KEY,
+      year: event.year,
+      title: event.title,
+      synopsis: event.synopsis,
+      pageTitle: event.citations[0]?.title,
+    })
+    if (polished) {
+      events = [{ ...event, title: polished.title, synopsis: polished.synopsis }]
+      if (!providersUsed.includes('gemini')) providersUsed.push('gemini')
+    }
+  }
+
+  // Bloom-style entity glosses on the claim sentence (Wikipedia summary).
+  if (events[0]) {
+    events = [await attachGlosses(events[0])]
+    if (events[0].glosses?.length && !providersUsed.includes('wikipedia-summary')) {
+      providersUsed.push('wikipedia-summary')
+    }
+  }
+
   const narrative = await composeNarrative({
     apiKey: isLite ? undefined : env.GEMINI_API_KEY,
     brand,
     queryDate,
     eventSummaries: events.map((e) => `${e.year}: ${e.title} — ${e.synopsis}`),
   })
-  if (narrative.voice === 'gemini') providersUsed.push('gemini')
+  if (narrative.voice === 'gemini' && !providersUsed.includes('gemini')) {
+    providersUsed.push('gemini')
+  }
 
   const hasExact = events.some((e) => e.precision === 'exact-day')
 
