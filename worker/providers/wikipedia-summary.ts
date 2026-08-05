@@ -3,7 +3,7 @@
  * Glosses are context, never the public citation for a claim.
  */
 
-const WIKIPEDIA_SUMMARY_BASE = 'https://en.wikipedia.org/api/rest_v1/page/summary'
+import { firstSentence } from '../lib/clean-text'
 const USER_AGENT = 'TimeMachinePressPrototype/0.1 (heritage press tool; research@local)'
 
 export type WikiSummaryHit = {
@@ -21,16 +21,10 @@ function normalizeTitle(value: string): string {
     .slice(0, 160)
 }
 
-function firstSentence(value: string): string {
-  const text = String(value || '')
-    .replace(/\s+/g, ' ')
-    .trim()
-  if (!text) return ''
-  const match = text.match(/^(.+?[.!?])(?:\s|$)/)
-  const sentence = match ? match[1] : text
-  if (sentence.length <= 220) return sentence
-  return `${sentence.slice(0, 217).trimEnd()}…`
-}
+const WIKIPEDIA_SUMMARY_BASE = 'https://en.wikipedia.org/api/rest_v1/page/summary'
+
+// Removed local duplicate firstSentence function as we import from clean-text
+
 
 export async function fetchWikipediaSummary(titleOrTerm: string): Promise<WikiSummaryHit | null> {
   const title = normalizeTitle(titleOrTerm)
@@ -67,7 +61,10 @@ export async function fetchWikipediaSummary(titleOrTerm: string): Promise<WikiSu
 
   if (payload.type === 'disambiguation') return null
 
-  const extract = firstSentence(payload.extract || '')
+  let extract = firstSentence(payload.extract || '')
+  if (extract.length > 220) {
+    extract = `${extract.slice(0, 217).trimEnd()}…`
+  }
   const pageUrl = payload.content_urls?.desktop?.page || payload.content_urls?.mobile?.page || ''
   if (!extract || !pageUrl) return null
 

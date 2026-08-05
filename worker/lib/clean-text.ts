@@ -87,7 +87,7 @@ export function isIncompleteHeadline(title: string): boolean {
   const t = title.trim()
   if (!t) return true
   if (/\?$/.test(t)) return true
-  if (/[.…]/u.test(t)) return true
+  if (/\.{2,}|…/u.test(t)) return true
   if (endsDangling(t)) return true
   if (/\b(tale|story|look|account|history)\s+of$/i.test(t)) return true
   if (/,\s*a\s+(tense|dramatic|remarkable|extraordinary|untold)\b/i.test(t) && endsDangling(t)) {
@@ -123,11 +123,48 @@ export function toSentenceCaseHeadline(title: string): string {
   return t.trim()
 }
 
+export function splitSentences(text: string): string[] {
+  const cleaned = text.replace(/\s+/g, ' ').trim()
+  if (!cleaned) return []
+
+  const abbrevRegex = /\b(?:Jan|Feb|Mar|Apr|Jun|Jul|Aug|Sep|Oct|Nov|Dec|Mr|Mrs|Ms|Dr|St|Prof|Sr|Jr|Gen|Sen|Rep|Gov|Col|Capt|Sgt|vs|ca|approx|etc|Co|Corp|Inc|Ltd|U\.S|U\.K|U\.N|B\.B\.C|A\.M|P\.M|A\.D|B\.C)\.$/i
+
+  const sentences: string[] = []
+  let currentStart = 0
+
+  const boundaryRegex = /([.!?])(?:\s|$)/g
+  let match: RegExpExecArray | null
+
+  while ((match = boundaryRegex.exec(cleaned)) !== null) {
+    const puncIndex = match.index
+    const sentenceCandidate = cleaned.slice(currentStart, puncIndex + 1).trim()
+
+    // It's a single letter initial if there's exactly one letter before the period
+    const isSingleLetterAbbrev = /[A-Za-z]\.$/.test(sentenceCandidate) && !/[A-Za-z]{2,}\.$/.test(sentenceCandidate)
+    const isKnownAbbrev = abbrevRegex.test(sentenceCandidate)
+
+    if (!isSingleLetterAbbrev && !isKnownAbbrev) {
+      sentences.push(sentenceCandidate)
+      currentStart = boundaryRegex.lastIndex
+    }
+  }
+
+  const remainder = cleaned.slice(currentStart).trim()
+  if (remainder) {
+    sentences.push(remainder)
+  }
+
+  return sentences
+}
+
+export function firstSentence(text: string): string {
+  const sentences = splitSentences(text)
+  return sentences[0] || text.trim()
+}
+
 /** Prefer a complete sentence; strip trailing period for use as a title. */
 export function firstCompleteClause(text: string): string {
-  const match = text.trim().match(/^(.+?[.!?])(?:\s|$)/)
-  if (match) return match[1].replace(/[.!?]$/, '').trim()
-  return text.trim()
+  return firstSentence(text).replace(/[.!?]$/, '').trim()
 }
 
 /**
@@ -159,7 +196,7 @@ export function titleIsCutFromBody(title: string, body: string): boolean {
   const b = normalizeCopy(rawBody)
 
   // Body opens with the title, then continues with the real news.
-  if (b.startsWith(t) && b.length >= t.length + 12) {
+  if (b.startsWith(t) && b.length >= t.length + 12 && !hasOutcomeVerb(rawTitle)) {
     const rest = rawBody.slice(rawTitle.length).trim()
     if (/^[,:;]/.test(rest) || /^[a-z]/.test(rest)) return true
   }
@@ -176,7 +213,7 @@ export function titleIsCutFromBody(title: string, body: string): boolean {
 }
 
 const OUTCOME_VERB =
-  /\b(resigns?|resigned|flees?|fled|dies?|died|wins?|won|signs?|signed|launches?|launched|ends?|ended|falls?|fell|opens?|opened|founded|establishes?|established|assassinated|elected|defeats?|defeated|invades?|invaded|abolishes?|abolished|declares?|declared|announces?|announced|becomes?|became|takes?|took|leaves?|left|overthrows?|overthrown|collapses?|collapsed)\b/i
+  /\b(resigns?|resigned|flees?|fled|dies?|died|wins?|won|signs?|signed|launches?|launched|ends?|ended|falls?|fell|opens?|opened|founded|establishes?|established|assassinated|elected|defeats?|defeated|invades?|invaded|abolishes?|abolished|declares?|declared|announces?|announced|becomes?|became|takes?|took|leaves?|left|overthrows?|overthrown|collapses?|collapsed|acquits?|acquitted|convicts?|convicted|arrests?|arrested|sentenced?|crashes?|crashed|bombs?|bombed|attacks?|attacked|strikes?|struck|kills?|killed|seizes?|seized|fires?|fired|releases?|released|marries?|married|crowned|born|passes|discovers?|discovered|invents?|invented)\b/i
 
 function hasOutcomeVerb(text: string): boolean {
   return OUTCOME_VERB.test(text)

@@ -34,10 +34,42 @@ function readStoredMode(): ResearchMode {
   return 'lite'
 }
 
-function firstSentence(text: string) {
-  const trimmed = text.trim()
-  const match = trimmed.match(/^(.+?[.!?])(?:\s|$)/)
-  return match ? match[1] : trimmed
+function splitSentences(text: string): string[] {
+  const cleaned = text.replace(/\s+/g, ' ').trim()
+  if (!cleaned) return []
+
+  const abbrevRegex = /\b(?:Jan|Feb|Mar|Apr|Jun|Jul|Aug|Sep|Oct|Nov|Dec|Mr|Mrs|Ms|Dr|St|Prof|Sr|Jr|Gen|Sen|Rep|Gov|Col|Capt|Sgt|vs|ca|approx|etc|Co|Corp|Inc|Ltd|U\.S|U\.K|U\.N|B\.B\.C|A\.M|P\.M|A\.D|B\.C)\.$/i
+
+  const sentences: string[] = []
+  let currentStart = 0
+
+  const boundaryRegex = /([.!?])(?:\s|$)/g
+  let match: RegExpExecArray | null
+
+  while ((match = boundaryRegex.exec(cleaned)) !== null) {
+    const puncIndex = match.index
+    const sentenceCandidate = cleaned.slice(currentStart, puncIndex + 1).trim()
+
+    const isSingleLetterAbbrev = /[A-Za-z]\.$/.test(sentenceCandidate) && !/[A-Za-z]{2,}\.$/.test(sentenceCandidate)
+    const isKnownAbbrev = abbrevRegex.test(sentenceCandidate)
+
+    if (!isSingleLetterAbbrev && !isKnownAbbrev) {
+      sentences.push(sentenceCandidate)
+      currentStart = boundaryRegex.lastIndex
+    }
+  }
+
+  const remainder = cleaned.slice(currentStart).trim()
+  if (remainder) {
+    sentences.push(remainder)
+  }
+
+  return sentences
+}
+
+function firstSentence(text: string): string {
+  const sentences = splitSentences(text)
+  return sentences[0] || text.trim()
 }
 
 function normalizeCopy(text: string) {

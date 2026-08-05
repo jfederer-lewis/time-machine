@@ -5,6 +5,7 @@
 
 import type { CulturalEvent, Gloss } from '../../shared/provenance'
 import { fetchWikipediaSummary } from '../providers/wikipedia-summary'
+import { firstSentence } from './clean-text'
 
 const STOP = new Set([
   'a',
@@ -198,11 +199,8 @@ function isTooObvious(term: string, wikiDescription?: string): boolean {
   return false
 }
 
-function firstSentence(text: string): string {
-  const trimmed = text.trim()
-  const match = trimmed.match(/^(.+?[.!?])(?:\s|$)/)
-  return match ? match[1] : trimmed
-}
+// Imported firstSentence from clean-text
+
 
 function termAppearsIn(claim: string, term: string): boolean {
   const hay = claim.toLowerCase()
@@ -223,9 +221,9 @@ function extractProperNounCandidates(claim: string): GlossCandidate[] {
   const out: GlossCandidate[] = []
   const seen = new Set<string>()
 
-  // Multi-word Capitalized sequences: "World War I", "Neil Armstrong", "United Nations"
+  // Multi-word Capitalized sequences: "World War I", "Neil Armstrong", "United Nations", allowing single-letter initials like "O. J. Simpson"
   const multi =
-    claim.match(/\b([A-Z][\w'’-]*(?:\s+(?:of|the|and|de|van|von|da|di|le|la)?\s*[A-Z][\w'’-]*)+)\b/g) ??
+    claim.match(/\b([A-Z][\w'’-]*\.?(?:\s+(?:of|the|and|de|van|von|da|di|le|la)?\s*[A-Z][\w'’-]*\.?)+)\b/g) ??
     []
 
   for (const raw of multi) {

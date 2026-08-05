@@ -1,7 +1,7 @@
 import type { NarrativeBlock } from '../../shared/provenance'
 import type { BrandConfig } from '../../shared/brand'
 import { toDisplayDate } from '../../shared/source-registry'
-import { cleanPressText, looksLikeDateOnlyTitle, titleEchoesBody, titleIsCutFromBody, looksLikeBareName, isIncompleteHeadline, toSentenceCaseHeadline, clipToShortProse, looksLikeHeadlineDump, descriptiveFallbackTitle } from '../lib/clean-text'
+import { cleanPressText, looksLikeDateOnlyTitle, titleEchoesBody, titleIsCutFromBody, looksLikeBareName, isIncompleteHeadline, toSentenceCaseHeadline, clipToShortProse, looksLikeHeadlineDump, descriptiveFallbackTitle, firstSentence, splitSentences } from '../lib/clean-text'
 
 const GEMINI_MODELS = ['gemini-flash-latest', 'gemini-3.5-flash', 'gemini-3.6-flash']
 
@@ -534,18 +534,13 @@ function stripSummaryPrefix(text: string) {
   return withoutYear
 }
 
-function firstSentence(text: string) {
-  const trimmed = text.trim()
-  const match = trimmed.match(/^(.+?[.!?])(?:\s|$)/)
-  return match ? match[1] : trimmed
-}
+// Remove localized duplicate functions as we now import from clean-text
+
 
 /** Keep up to `maxSentences`; `maxChars` is only a runaway guard, not a target length. */
 function clampProse(text: string, maxSentences: number, maxChars: number): string {
   const cleaned = cleanPressText(text)
-  const sentences = cleaned.match(/[^.!?]+[.!?]+|[^.!?]+$/g)?.map((s) => s.trim()).filter(Boolean) ?? [
-    cleaned,
-  ]
+  const sentences = splitSentences(cleaned)
   let out = sentences.slice(0, maxSentences).join(' ').trim()
   if (out.length > maxChars) {
     // Prefer ending on a sentence boundary inside the guard, else soft word cut.
