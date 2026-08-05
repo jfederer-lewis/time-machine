@@ -88,9 +88,9 @@ export async function composeNarrative(opts: {
 }
 
 /**
- * Rewrite a sourced event into a readable headline + body.
+ * Rewrite a sourced event into a readable headline + body (+ optional context).
  * Same copy rules for lite and full unless noted — typically 2–3 sentences when
- * the source supports it; never pad for length. Facts only from supplied text.
+ * the source supports it; never pad for length. Day facts only from supplied text.
  */
 export async function polishEventCopy(opts: {
   apiKey: string
@@ -99,7 +99,7 @@ export async function polishEventCopy(opts: {
   synopsis: string
   pageTitle?: string
   mode?: 'full' | 'lite'
-}): Promise<{ title: string; synopsis: string } | null> {
+}): Promise<{ title: string; synopsis: string; whyItMatters?: string } | null> {
   const { apiKey, year, title, synopsis, pageTitle } = opts
   const cleanTitle = cleanPressText(title)
   const cleanSynopsis = cleanPressText(synopsis)
@@ -109,7 +109,7 @@ export async function polishEventCopy(opts: {
 
   const prompt = [
     'You write press-desk cards for a heritage brand time machine.',
-    'Rewrite the sourced event below into a clear headline and a short prose description.',
+    'Rewrite the sourced event below into a clear headline, a short prose description, and optional background context.',
     '',
     `Year: ${year}`,
     `Current title: ${cleanTitle}`,
@@ -117,13 +117,14 @@ export async function polishEventCopy(opts: {
     `Source text: ${cleanSynopsis || cleanTitle}`,
     '',
     'Return JSON only:',
-    '{"title":string,"synopsis":string}',
+    '{"title":string,"synopsis":string,"whyItMatters":string|null}',
     '',
     'Rules:',
     '- title: short newspaper-style headline (aim under 90 characters). Must be descriptive of what happened — include the action or stakes, not only a place or person name. Bad: “Nunavut”. Good: “Nunavut established as a Canadian territory”. A COMPLETE thought — never end mid-clause, never end on “the/of/a/and/…”, never use ellipsis. Never a bare calendar date.',
     '- CRITICAL: title must NOT be an exact copy of the synopsis (or the synopsis with the period stripped). The title is the headline; the synopsis expands it — do not make the synopsis merely restate the title.',
     '- synopsis: plain prose that a journalist can read aloud. Usually 2 or 3 complete sentences when the source has enough fact; one sentence is fine if that is all the source honestly supports. Never pad, never invent filler, never stretch thin material to hit a sentence count. Add place, stakes, or context the title cannot hold. No bullet lists, no markdown, no HTML, no table chrome, no pipe characters, no navigation leftovers.',
-    '- Use ONLY facts present in the source text (and article title for naming). Do not invent details, numbers, or outcomes.',
+    '- synopsis: Use ONLY facts present in the source text (and article title for naming). Do not invent details, numbers, or outcomes about the day itself.',
+    '- whyItMatters: optional 1–3 sentences of background for a general reader who may not know the era — what larger conflict, movement, rivalry, or cultural moment this sits inside, who the main actors were, roughly how long it had been going, and why the day mattered. Skip (null) when the fact is already self-explanatory or the background would only restate the synopsis. Never pad. Do not invent contested specifics about this day’s event; stick to widely established historical framing. Do not invent quotations.',
     `- Write as of the event year (${year}): name people by the role they held then, not by today's titles. Never use “former”, “current”, or “ex-” relative to the present day.`,
     '- Prefer clear past tense for historical events.',
     '- No “on this day”, no brand voice, no storytelling flourishes.',
@@ -137,14 +138,18 @@ export async function polishEventCopy(opts: {
       apiKey,
       prompt,
       temperature: 0.2,
-      maxOutputTokens: 480,
+      maxOutputTokens: 640,
       json: true,
       useSearch: false,
     })
     if (!text) return null
 
     const cleaned = text.replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/i, '').trim()
-    const raw = JSON.parse(cleaned) as { title?: string; synopsis?: string }
+    const raw = JSON.parse(cleaned) as {
+      title?: string
+      synopsis?: string
+      whyItMatters?: string | null
+    }
     let nextTitle = cleanPressText(raw.title || '').replace(/[.…]+$/u, '').trim()
     const nextSynopsis = cleanPressText(raw.synopsis || '')
     if (!nextTitle || !nextSynopsis) return null
@@ -167,15 +172,34 @@ export async function polishEventCopy(opts: {
       }
     }
 
+    const whyRaw =
+      typeof raw.whyItMatters === 'string' ? cleanPressText(raw.whyItMatters) : ''
+    const whyItMatters =
+      whyRaw &&
+      !titleEchoesBody(whyRaw, nextSynopsis) &&
+      normalizeLoose(whyRaw) !== normalizeLoose(nextSynopsis)
+        ? clampProse(whyRaw, 3, 380)
+        : undefined
+
     return {
       title: nextTitle,
       // Cap runaway output; do not pad up to a minimum.
       synopsis: clampProse(nextSynopsis, 3, 420),
+      ...(whyItMatters ? { whyItMatters } : {}),
     }
   } catch (err) {
     console.error('[time-machine] Gemini event polish failed', err)
     return null
   }
+}
+
+function normalizeLoose(text: string): string {
+  return text
+    .toLowerCase()
+    .replace(/[.…]+$/u, '')
+    .replace(/[.!?]+$/g, '')
+    .replace(/\s+/g, ' ')
+    .trim()
 }
 
 /**

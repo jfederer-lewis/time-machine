@@ -314,6 +314,12 @@ export default function App() {
                       <GlossableText text={spotlightLine} glosses={spotlight.glosses ?? []} />
                     </p>
                   ) : null}
+                  {spotlight.whyItMatters ? (
+                    <aside className="spotlight-context" aria-label="Why this matters">
+                      <p className="spotlight-context__label">Why this matters</p>
+                      <p className="spotlight-context__body">{spotlight.whyItMatters}</p>
+                    </aside>
+                  ) : null}
                   {spotlight.citations[0] ? (
                     <div className="spotlight-source">
                       <p className="spotlight-label">Source</p>

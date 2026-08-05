@@ -192,7 +192,14 @@ export async function assembleDateQuery(
       mode: isLite ? 'lite' : 'full',
     })
     if (polished) {
-      events = [{ ...event, title: polished.title, synopsis: polished.synopsis }]
+      events = [
+        {
+          ...event,
+          title: polished.title,
+          synopsis: polished.synopsis,
+          ...(polished.whyItMatters ? { whyItMatters: polished.whyItMatters } : {}),
+        },
+      ]
       if (!providersUsed.includes('gemini')) providersUsed.push('gemini')
     } else {
       events = [fallbackDistinctCopy(event)]

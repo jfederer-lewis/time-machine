@@ -77,6 +77,11 @@ export interface CulturalEvent {
   year: number
   title: string
   synopsis: string
+  /**
+   * Optional background — why the fact lands for a general reader
+   * (era, actors, stakes). Secondary to the day claim; not a citation.
+   */
+  whyItMatters?: string
   /** Primary facet (On This Day–style breadth: charts, sport, culture…). */
   category: EventFacet
   locale?: string
