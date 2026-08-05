@@ -1,7 +1,7 @@
 import type { NarrativeBlock } from '../../shared/provenance'
 import type { BrandConfig } from '../../shared/brand'
 import { toDisplayDate } from '../../shared/source-registry'
-import { cleanPressText, looksLikeDateOnlyTitle, titleEchoesBody, looksLikeBareName, isIncompleteHeadline, toSentenceCaseHeadline } from '../lib/clean-text'
+import { cleanPressText, looksLikeDateOnlyTitle, titleEchoesBody, looksLikeBareName, isIncompleteHeadline, toSentenceCaseHeadline, clipToShortProse, looksLikeHeadlineDump } from '../lib/clean-text'
 
 const GEMINI_MODELS = ['gemini-flash-latest', 'gemini-3.5-flash', 'gemini-3.6-flash']
 
@@ -88,9 +88,8 @@ export async function composeNarrative(opts: {
 }
 
 /**
- * Rewrite a sourced event into a readable headline + body (+ optional context).
- * Same copy rules for lite and full unless noted — typically 2–3 sentences when
- * the source supports it; never pad for length. Day facts only from supplied text.
+ * Rewrite a sourced event into a readable headline + body (+ context).
+ * Past-tense day fact (~1–4 sentences); era background goes in whyItMatters.
  */
 export async function polishEventCopy(opts: {
   apiKey: string
@@ -101,17 +100,21 @@ export async function polishEventCopy(opts: {
   mode?: 'full' | 'lite'
 }): Promise<{ title: string; synopsis: string; whyItMatters?: string } | null> {
   const { apiKey, year, title, synopsis, pageTitle } = opts
-  const cleanTitle = cleanPressText(title)
-  const cleanSynopsis = cleanPressText(synopsis)
-  const cleanPage = pageTitle ? cleanPressText(pageTitle) : ''
+  const cleanTitle = toSentenceCaseHeadline(title)
+  // Never feed wire roundups into the model — clip dumps; otherwise leave room for 1–4 sentences.
+  const cleanSynopsis = looksLikeHeadlineDump(synopsis)
+    ? clipToShortProse(title, 160)
+    : clipToShortProse(synopsis || title, 900)
+  const cleanPage = pageTitle ? toSentenceCaseHeadline(pageTitle) : ''
 
   if (!cleanSynopsis && !cleanTitle) return null
 
   const prompt = [
-    'You write press-desk cards for a heritage brand time machine.',
-    'Rewrite the sourced event below into a clear headline, a short prose description, and optional background context.',
+    'You write press-desk cards for a heritage brand time machine that looks backward in time.',
+    'The reader experiences the day as settled history (“Chuck was there”) — never as breaking news.',
+    'Split the card into THREE fields with different jobs. Do not put everything in synopsis.',
     '',
-    `Year: ${year}`,
+    `Event year: ${year}`,
     `Current title: ${cleanTitle}`,
     cleanPage ? `Linked article title: ${cleanPage}` : '',
     `Source text: ${cleanSynopsis || cleanTitle}`,
@@ -119,19 +122,17 @@ export async function polishEventCopy(opts: {
     'Return JSON only:',
     '{"title":string,"synopsis":string,"whyItMatters":string|null}',
     '',
+    'Field jobs:',
+    '1) title — short sentence-case hed of what happened (under 80 chars). Complete thought. No ?, no ellipsis, no ALL CAPS, no magazine teaser.',
+    '2) synopsis — ONLY the day fact. Guideline: about 1–4 complete sentences, as long as the source honestly supports — never pad to hit a count, never cut mid-thought for a character quota. What happened that day, from the source only. No era essay, no wire roundup.',
+    '3) whyItMatters — SEPARATE background for a general reader: the larger era, who the actors were, how long it had been going, why the day had weight. 1–2 short sentences. Use null ONLY if the day fact is already fully self-explanatory with no larger frame (rare). Do not invent contested day-specific details or quotations.',
+    '',
     'Rules:',
-    '- title: sentence-case factual headline (never ALL CAPS, never Title Case Magazine Teaser). State what happened in plain complete prose — like a calm BBC/Guardian hed. Aim under 90 characters.',
-    '- title examples — Good: “Chernobyl remembered one year after the disaster”. Bad: “ONE YEAR AFTER CHERNOBYL, A TENSE TALE OF …”. Bad: bare names (“Nunavut”). Good: “Nunavut established as a Canadian territory”.',
-    '- title must be a COMPLETE thought with a clear action or outcome. Never end mid-clause, never ellipsis, never trail off on “the/of/a/and/tale of…”. Never a bare calendar date.',
-    '- Do not echo flashy source article titles; rewrite into a plain factual hed from the event itself.',
-    '- CRITICAL: title must NOT be an exact copy of the synopsis (or the synopsis with the period stripped). The title is the headline; the synopsis expands it — do not make the synopsis merely restate the title.',
-    '- synopsis: plain prose that a journalist can read aloud. Usually 2 or 3 complete sentences when the source has enough fact; one sentence is fine if that is all the source honestly supports. Never pad, never invent filler, never stretch thin material to hit a sentence count. Add place, stakes, or context the title cannot hold. No bullet lists, no markdown, no HTML, no table chrome, no pipe characters, no navigation leftovers.',
-    '- synopsis: Use ONLY facts present in the source text (and article title for naming). Do not invent details, numbers, or outcomes about the day itself.',
-    '- whyItMatters: optional 1–3 sentences of background for a general reader who may not know the era — what larger conflict, movement, rivalry, or cultural moment this sits inside, who the main actors were, roughly how long it had been going, and why the day mattered. Skip (null) when the fact is already self-explanatory or the background would only restate the synopsis. Never pad. Do not invent contested specifics about this day’s event; stick to widely established historical framing. Do not invent quotations.',
-    `- Write as of the event year (${year}): name people by the role they held then, not by today's titles. Never use “former”, “current”, or “ex-” relative to the present day.`,
-    '- Prefer clear past tense for historical events.',
+    '- Voice: always past tense. Never present-tense breaking news or open questions.',
+    '- title must NOT copy the synopsis. synopsis must NOT repeat the title verbatim.',
+    '- Put “why / era / stakes” material in whyItMatters, not synopsis.',
+    `- Write as of ${year}: name people by the role they held then. Never “former/current/ex-” relative to today.`,
     '- No “on this day”, no brand voice, no storytelling flourishes.',
-    '- Ignore any HTML tags, markdown, site chrome, or boilerplate that leaked into the source text.',
   ]
     .filter(Boolean)
     .join('\n')
@@ -141,7 +142,7 @@ export async function polishEventCopy(opts: {
       apiKey,
       prompt,
       temperature: 0.2,
-      maxOutputTokens: 640,
+      maxOutputTokens: 520,
       json: true,
       useSearch: false,
     })
@@ -154,18 +155,20 @@ export async function polishEventCopy(opts: {
       whyItMatters?: string | null
     }
     let nextTitle = toSentenceCaseHeadline(raw.title || '')
-    const nextSynopsis = cleanPressText(raw.synopsis || '')
+    let nextSynopsis = cleanPressText(raw.synopsis || '')
     if (!nextTitle || !nextSynopsis) return null
+    if (looksLikeHeadlineDump(nextSynopsis)) {
+      nextSynopsis = clipToShortProse(nextSynopsis, 400)
+    }
     if (looksLikeDateOnlyTitle(nextTitle)) return null
     if (looksLikeBareName(nextTitle)) return null
     if (isIncompleteHeadline(nextTitle)) return null
     if (titleEchoesBody(nextTitle, nextSynopsis)) return null
 
-    // Soft length cap at a word boundary only — never mid-clause.
-    if (nextTitle.length > 110) {
-      const cut = nextTitle.slice(0, 110)
+    if (nextTitle.length > 80) {
+      const cut = nextTitle.slice(0, 80)
       const at = cut.lastIndexOf(' ')
-      nextTitle = (at > 50 ? cut.slice(0, at) : cut).trim()
+      nextTitle = (at > 36 ? cut.slice(0, at) : cut).trim()
       if (
         isIncompleteHeadline(nextTitle) ||
         looksLikeBareName(nextTitle) ||
@@ -177,22 +180,50 @@ export async function polishEventCopy(opts: {
 
     const whyRaw =
       typeof raw.whyItMatters === 'string' ? cleanPressText(raw.whyItMatters) : ''
-    const whyItMatters =
-      whyRaw &&
-      !titleEchoesBody(whyRaw, nextSynopsis) &&
-      normalizeLoose(whyRaw) !== normalizeLoose(nextSynopsis)
-        ? clampProse(whyRaw, 3, 380)
-        : undefined
+
+    // Keep day fact to ~1–4 sentences; peel true overflow into context.
+    const split = splitFactAndContext(nextSynopsis, whyRaw)
 
     return {
       title: nextTitle,
-      // Cap runaway output; do not pad up to a minimum.
-      synopsis: clampProse(nextSynopsis, 3, 420),
-      ...(whyItMatters ? { whyItMatters } : {}),
+      synopsis: split.synopsis,
+      ...(split.whyItMatters ? { whyItMatters: split.whyItMatters } : {}),
     }
   } catch (err) {
     console.error('[time-machine] Gemini event polish failed', err)
     return null
+  }
+}
+
+/** Day fact ~1–4 sentences; leftover beyond that can become context. */
+function splitFactAndContext(
+  synopsis: string,
+  whyRaw: string,
+): { synopsis: string; whyItMatters?: string } {
+  const sentences =
+    cleanPressText(synopsis)
+      .match(/[^.!?]+[.!?]+|[^.!?]+$/g)
+      ?.map((s) => s.trim())
+      .filter(Boolean) ?? [cleanPressText(synopsis)]
+
+  // Guideline ceiling: 4 sentences. Soft runaway guard only (not a harsh length quota).
+  let day = sentences.slice(0, 4).join(' ').trim()
+  let overflow = sentences.slice(4).join(' ').trim()
+
+  day = clampProse(day, 4, 1200)
+
+  let why = whyRaw && !looksLikeHeadlineDump(whyRaw) ? clampProse(whyRaw, 3, 500) : ''
+  if (!why && overflow) {
+    why = clampProse(overflow, 3, 500)
+  }
+
+  if (why && (titleEchoesBody(why, day) || normalizeLoose(why) === normalizeLoose(day))) {
+    why = ''
+  }
+
+  return {
+    synopsis: day,
+    ...(why ? { whyItMatters: why } : {}),
   }
 }
 
@@ -224,17 +255,17 @@ export async function pickMostInterestingEvent(opts: {
     .slice(0, 8)
     .map(
       (c, i) =>
-        `${i}. [${c.year}] ${cleanPressText(c.title)} — ${cleanPressText(c.synopsis).slice(0, 220)}`,
+        `${i}. [${c.year}] ${cleanPressText(c.title)} — ${clipToShortProse(c.synopsis, 180)}`,
     )
     .join('\n')
 
   const prompt = [
     'You are a UK press-desk editor for a heritage brand time machine (“Chuck was there”).',
-    `Lookup date: ${queryDate} (prefer events in ${targetYear} when they are genuinely interesting).`,
+    `Lookup date: ${queryDate} (prefer events in ${targetYear} when they are genuinely interesting historical moments).`,
     '',
-    'Pick the SINGLE most interesting, poignant, or culturally resonant event for a British / international reader.',
+    'Pick the SINGLE most interesting, poignant, or culturally resonant settled historical event for a British / international reader.',
     'Prefer: major geopolitics, war & peace, culture, sport, science, music, design, human-rights moments, UK/Europe/global stakes.',
-    'Deprioritise: remote administrative changes, local municipal trivia, obscure territorial reorganisations, dry bureaucracy.',
+    'Deprioritise: remote administrative changes, local municipal trivia, live wire roundups, breaking-news question headlines, obscure territorial reorganisations.',
     'Do not invent events — choose only by index from the list.',
     '',
     'Candidates:',
@@ -483,7 +514,7 @@ function firstSentence(text: string) {
   return match ? match[1] : trimmed
 }
 
-/** Keep up to `maxSentences` sentences, hard-capped by character length. */
+/** Keep up to `maxSentences`; `maxChars` is only a runaway guard, not a target length. */
 function clampProse(text: string, maxSentences: number, maxChars: number): string {
   const cleaned = cleanPressText(text)
   const sentences = cleaned.match(/[^.!?]+[.!?]+|[^.!?]+$/g)?.map((s) => s.trim()).filter(Boolean) ?? [
@@ -491,7 +522,15 @@ function clampProse(text: string, maxSentences: number, maxChars: number): strin
   ]
   let out = sentences.slice(0, maxSentences).join(' ').trim()
   if (out.length > maxChars) {
-    out = `${out.slice(0, maxChars - 1).trimEnd()}…`
+    // Prefer ending on a sentence boundary inside the guard, else soft word cut.
+    const within = out.slice(0, maxChars)
+    const lastStop = Math.max(within.lastIndexOf('.'), within.lastIndexOf('!'), within.lastIndexOf('?'))
+    if (lastStop > maxChars * 0.45) {
+      out = within.slice(0, lastStop + 1).trim()
+    } else {
+      const at = within.lastIndexOf(' ')
+      out = `${(at > 80 ? within.slice(0, at) : within).trimEnd()}…`
+    }
   }
   return out
 }

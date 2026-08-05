@@ -25,8 +25,10 @@ import {
   looksLikeBareName,
   isIncompleteHeadline,
   toSentenceCaseHeadline,
+  looksLikeHeadlineDump,
+  clipToShortProse,
 } from './clean-text'
-import { rankByInterest, scoreCulturalInterest } from './interest'
+import { rankByInterest, scoreCulturalInterest, isTooRecentForLiveWire } from './interest'
 
 export interface Env {
   GEMINI_API_KEY?: string
@@ -75,11 +77,13 @@ export async function assembleDateQuery(
 
     // Full mode fans out to paid / archive providers. Lite stays on Wikipedia only
     // so local testing does not burn Perplexity / Gemini credits.
+    // Skip live wire date-search for recent/future dates — this product reads as past.
     if (!isLite) {
+      const skipLiveWire = isTooRecentForLiveWire(queryDate)
       ;[nyt, guardian, perplexity, chronicling] = await Promise.all([
         fetchNytForDate(queryDate, env.NYT_API_KEY),
         fetchGuardianForDate(queryDate, env.GUARDIAN_API_KEY),
-        fetchPerplexityForDate(queryDate, env.PERPLEXITY_API_KEY),
+        skipLiveWire ? Promise.resolve([]) : fetchPerplexityForDate(queryDate, env.PERPLEXITY_API_KEY),
         fetchChroniclingAmerica(queryDate),
       ])
 
@@ -90,9 +94,14 @@ export async function assembleDateQuery(
     }
   }
 
-  const merged = [...wikiEvents, ...nyt, ...guardian, ...perplexity, ...chronicling].map((e) =>
-    sanitizeEventCitations(e),
-  )
+  const merged = [...wikiEvents, ...nyt, ...guardian, ...perplexity, ...chronicling]
+    .map((e) => sanitizeEventCitations(e))
+    .filter((e) => !looksLikeHeadlineDump(e.synopsis))
+    .map((e) =>
+      e.synopsis.length > 320
+        ? { ...e, synopsis: clipToShortProse(e.synopsis, 280) }
+        : e,
+    )
 
   if (merged.length === 0) {
     const fallback = buildFallbackResult(queryDate, brandId, researchMode)
@@ -102,18 +111,22 @@ export async function assembleDateQuery(
 
   // Prefer the queried year when it has something press-worthy; otherwise
   // allow a more poignant same-calendar-day event (UI shows “Also on this day”).
+  // Recent / future dates: prefer historical Wikipedia over live wire.
   const targetYear = Number(queryDate.slice(0, 4))
   const sameYear = merged.filter((e) => e.year === targetYear)
   const sameYearRanked = rankByInterest(sameYear, targetYear)
   const bestSameScore = sameYearRanked[0] ? scoreCulturalInterest(sameYearRanked[0]) : -99
-  // Dull admin trivia (score < 2) → widen to other years on this calendar day
-  const rankedPool = rankByInterest(
-    bestSameScore >= 2 && sameYearRanked.length > 0 ? sameYearRanked : merged,
-    targetYear,
-  )
+  const wikiOnly = merged.filter((e) => e.discoveredVia?.includes('wikipedia-onthisday'))
+  const preferHistorical = isTooRecentForLiveWire(queryDate) || bestSameScore < 2
 
-  // Keep a shortlist for Gemini to pick the most interesting; heuristic ranks first.
-  const shortlist = rankedPool.slice(0, 8)
+  const poolForPick =
+    preferHistorical && wikiOnly.length > 0
+      ? rankByInterest(wikiOnly, targetYear)
+      : bestSameScore >= 2 && sameYearRanked.length > 0
+        ? sameYearRanked
+        : rankByInterest(merged, targetYear)
+
+  const shortlist = poolForPick.slice(0, 8)
 
   const brandMoments: CulturalEvent[] = brand.timeline
     .filter((m) => {

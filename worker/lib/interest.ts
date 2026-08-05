@@ -1,4 +1,5 @@
 import type { CulturalEvent } from '../../shared/provenance'
+import { looksLikeHeadlineDump } from './clean-text'
 
 /**
  * Press-desk interest scoring — bias toward poignant global / UK-relevant news
@@ -26,6 +27,9 @@ export function scoreCulturalInterest(event: CulturalEvent): number {
   const text = `${event.title} ${event.synopsis}`
   let score = 0
 
+  // Wire roundups / video indexes are never the day card.
+  if (looksLikeHeadlineDump(event.synopsis) || looksLikeHeadlineDump(text)) score -= 40
+
   if (BOOST.test(text)) score += 8
   if (POIGNANT.test(text)) score += 6
   if (CULTURE.test(text)) score += 4
@@ -40,14 +44,31 @@ export function scoreCulturalInterest(event: CulturalEvent): number {
   if (ADMIN_TRIVIA.test(text)) score -= 10
   if (LOCAL_US_CANADA.test(text) && !BOOST.test(text) && !POIGNANT.test(text)) score -= 4
 
-  // Prefer a bit of substance in the blurb
-  if (event.synopsis.length >= 80) score += 1
-  if (event.synopsis.length >= 160) score += 1
+  // Prefer Wikipedia On This Day claim text over raw press search rows
+  if (event.discoveredVia?.includes('wikipedia-onthisday')) score += 5
+
+  // Prefer a bit of substance in the blurb — but not a dump
+  if (event.synopsis.length >= 80 && event.synopsis.length < 400) score += 1
 
   return score
 }
 
-/** Sort in place: closer year first, then higher interest. */
+/**
+ * Recent / future lookup dates should not surface live wire scrapes —
+ * the product reads as settled history (“Chuck was there”), not breaking news.
+ */
+export function isTooRecentForLiveWire(queryDate: string, now = new Date()): boolean {
+  const m = queryDate.match(/^(\d{4})-(\d{2})-(\d{2})$/)
+  if (!m) return false
+  const q = Date.UTC(Number(m[1]), Number(m[2]) - 1, Number(m[3]))
+  const today = Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate())
+  const daysAhead = (q - today) / 86_400_000
+  const daysBehind = (today - q) / 86_400_000
+  // Future dates, or roughly the last 18 months
+  return daysAhead >= 0 || daysBehind < 548
+}
+
+/** Sort: closer year first, then higher interest; wiki slightly preferred within a year. */
 export function rankByInterest(events: CulturalEvent[], targetYear: number): CulturalEvent[] {
   return [...events].sort((a, b) => {
     const yearDiff = Math.abs(a.year - targetYear) - Math.abs(b.year - targetYear)

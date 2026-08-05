@@ -315,8 +315,8 @@ export default function App() {
                     </p>
                   ) : null}
                   {spotlight.whyItMatters ? (
-                    <aside className="spotlight-context" aria-label="Why this matters">
-                      <p className="spotlight-context__label">Why this matters</p>
+                    <aside className="spotlight-context" aria-label="Context">
+                      <p className="spotlight-context__label">Context</p>
                       <p className="spotlight-context__body">{spotlight.whyItMatters}</p>
                     </aside>
                   ) : null}

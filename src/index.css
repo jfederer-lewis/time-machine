@@ -534,14 +534,14 @@ a {
   font-size: 1.05rem;
   line-height: 1.55;
   color: color-mix(in srgb, var(--ink) 78%, transparent);
-  max-width: 36rem;
+  max-width: 34rem;
 }
 
 .spotlight-context {
-  margin: 1rem 0 0;
-  padding: 0.65rem 0 0.15rem 0.95rem;
+  margin: 1.1rem 0 0;
+  padding: 0.7rem 0 0.2rem 1rem;
   border-left: 1px solid var(--rule);
-  max-width: 32rem;
+  max-width: 26rem;
 }
 
 .spotlight-context__label {
@@ -555,9 +555,9 @@ a {
 
 .spotlight-context__body {
   margin: 0;
-  font-size: 0.84rem;
+  font-size: 0.82rem;
   line-height: 1.5;
-  color: color-mix(in srgb, var(--muted) 88%, var(--ink));
+  color: color-mix(in srgb, var(--muted) 92%, var(--ink));
 }
 
 .spotlight-source {

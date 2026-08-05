@@ -18,6 +18,44 @@ export function cleanPressText(text: string): string {
     .trim()
 }
 
+/**
+ * Wire / video-index scrapes that concatenate many unrelated headlines.
+ * These must never become the day card body.
+ */
+export function looksLikeHeadlineDump(text: string): boolean {
+  const t = cleanPressText(text)
+  if (t.length < 160) return false
+  const ellipses = (t.match(/\.{2,}|…/g) || []).length
+  const separators = (t.match(/\s[—–-]\s/g) || []).length
+  const storyish = (t.match(/\b(says|fans celebrate|return home|signs|defeats|slumped|aborted)\b/gi) || [])
+    .length
+  if (ellipses >= 3) return true
+  if (separators >= 4 && t.length > 280) return true
+  if (storyish >= 4 && t.length > 320) return true
+  if (t.length > 600) return true
+  return false
+}
+
+/** First 1–2 sentences, hard-capped — for snippets fed into polish / display. */
+export function clipToShortProse(text: string, maxChars = 280): string {
+  const cleaned = cleanPressText(text)
+  if (!cleaned) return ''
+  if (looksLikeHeadlineDump(cleaned)) {
+    // Keep only up to the first ellipsis / dash break — often the lead hed.
+    const lead = cleaned.split(/\s*(?:\.{2,}|…|\s[—–]\s)\s*/)[0]?.trim() || cleaned.slice(0, maxChars)
+    return lead.length > maxChars ? lead.slice(0, maxChars).trim() : lead
+  }
+  const sentences =
+    cleaned.match(/[^.!?]+[.!?]+|[^.!?]+$/g)?.map((s) => s.trim()).filter(Boolean) ?? [cleaned]
+  let out = sentences.slice(0, 2).join(' ').trim()
+  if (out.length > maxChars) {
+    const cut = out.slice(0, maxChars)
+    const at = cut.lastIndexOf(' ')
+    out = (at > 80 ? cut.slice(0, at) : cut).trim()
+  }
+  return out
+}
+
 function normalizeCopy(text: string): string {
   return text
     .toLowerCase()
@@ -48,6 +86,7 @@ export function endsDangling(text: string): boolean {
 export function isIncompleteHeadline(title: string): boolean {
   const t = title.trim()
   if (!t) return true
+  if (/\?$/.test(t)) return true
   if (/[.…]/u.test(t)) return true
   if (endsDangling(t)) return true
   if (/\b(tale|story|look|account|history)\s+of$/i.test(t)) return true

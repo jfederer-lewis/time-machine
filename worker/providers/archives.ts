@@ -6,7 +6,7 @@
 
 import { withHarvard, type CulturalEvent } from '../../shared/provenance'
 import { CITATION_ALLOWLIST, isCitationBlocked } from '../../shared/source-registry'
-import { cleanPressText } from '../lib/clean-text'
+import { cleanPressText, clipToShortProse, looksLikeHeadlineDump } from '../lib/clean-text'
 
 const PERPLEXITY_SEARCH_URL = 'https://api.perplexity.ai/search'
 
@@ -110,8 +110,14 @@ export async function fetchPerplexityForDate(
     if (!url || isCitationBlocked(url)) continue
 
     const title = cleanPressText(row.title || 'Untitled').slice(0, 120)
-    const snippet = cleanPressText(row.snippet || '')
+    const rawSnippet = cleanPressText(row.snippet || '')
+    // Video indexes / wire roundups dump dozens of heds — never use that as the body.
+    const snippet = looksLikeHeadlineDump(rawSnippet)
+      ? clipToShortProse(title, 160)
+      : clipToShortProse(rawSnippet || title, 280)
     const publishedAt = row.date || row.last_updated || date
+
+    if (looksLikeHeadlineDump(rawSnippet) && (!title || title.length < 12)) continue
 
     events.push({
       id: `pplx-${date}-${index}`,
@@ -131,7 +137,10 @@ export async function fetchPerplexityForDate(
           publisher: hostname(url),
           publishedAt: publishedAt.slice(0, 10),
           accessedAt,
-          sourceQuality: snippet.length >= 80 ? 'trusted-source-snippet' : 'trusted-discovery-only',
+          sourceQuality:
+            snippet.length >= 80 && !looksLikeHeadlineDump(rawSnippet)
+              ? 'trusted-source-snippet'
+              : 'trusted-discovery-only',
           evidenceKind: 'paraphrase',
           reference:
             snippet ||
