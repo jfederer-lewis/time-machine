@@ -34,7 +34,9 @@ export interface BrandConfig {
   claimFrame: string
   /** Supporting line under the lookup hero — what the date tool does */
   lookupIntro: string
-  /** Short line under the brand — heritage angle, not product hype */
+  /** Timeline page headline */
+  timelineTitle: string
+  /** Short lede under the timeline title */
   heritageNote: string
   palette: BrandPalette
   /** Seed dates journalists can jump to — YYYY, YYYY-MM, or YYYY-MM-DD (never invent a day). */

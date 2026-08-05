@@ -318,8 +318,8 @@ export function TimelineView({
     >
       <header className="timeline-page__head">
         <div className="timeline-page__intro">
-          <p className="timeline-page__eyebrow">{brand.productLine}</p>
-          <h1 className="timeline-page__title">{brand.name}</h1>
+          <p className="timeline-page__eyebrow">{brand.name}</p>
+          <h1 className="timeline-page__title">{brand.timelineTitle}</h1>
           <p className="timeline-page__lede">{brand.heritageNote}</p>
         </div>
 

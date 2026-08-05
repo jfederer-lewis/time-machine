@@ -26,8 +26,9 @@ export const converseBrand: BrandConfig = {
   claimFrame: 'Chuck was there.',
   lookupIntro:
     'Pick a year, a month, or a day — and see what was happening in the world.',
+  timelineTitle: 'The All Star story',
   heritageNote:
-    'Brand moments by year — only a day when the day is known.',
+    'Over a century of Converse heritage — from a Malden rubber shop to a silhouette worn everywhere, the moments that made Chuck Taylor.',
   palette: {
     ink: '#141414',
     paper: '#F5F4F0',
