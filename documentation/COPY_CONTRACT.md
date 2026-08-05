@@ -11,15 +11,19 @@
 
 ## Hard rules (non-negotiable)
 
-| Rule | Notes |
-|------|--------|
-| Must read well | Every field is complete, sensible prose |
-| Never cut mid-word or mid-sentence | No trailing `…` from truncation; no dangling “of / the / a” |
-| Settled history | Past tense — “Chuck was there”, never breaking news |
-| No invention | Day facts from sourced / grounded text; Context = established framing only |
-| Same copy rules Lite + Full | Full adds discovery breadth + cite upgrade — **not** looser prose |
-| Ship gate | `validateCopyContract` must pass; failing candidates are skipped (then curated fallback) |
-| No aggregator chart labels | Never ship “UK #1: Song” / “#1 song on this date: Song” as the card |
+| Rule | Enforced by |
+|------|-------------|
+| Must read well (complete prose) | `validateCopyContract` — empty / dumps / abrupt cuts / broken titles |
+| Never cut mid-word or mid-sentence | `looksAbruptlyCut`: trailing `…` or `..+`, dangling “of / the / a”, mid-word `X-`. **A normal period is OK.** |
+| Same copy rules Lite + Full | Shared validator; Full adds cite upgrade only |
+| Ship gate | `validateCopyContract` must pass; failing candidates skipped (then curated fallback) |
+| Context when required | `contextRequired: true` → hard fail `context.required` |
+
+| Rule | Prompt / pipeline only (not a copy-contract code) |
+|------|-----------------------------------------------------|
+| Settled history / past tense | Gemini polish + product voice — **not** validated |
+| No invention | Grounding + cite process — **not** validated |
+| No aggregator chart labels | Dropped at day-index ingest / thin-stub filters |
 
 Length aims below are **recommendations**, not quotas. Prefer leaving a slightly long complete sentence over chopping it.
 
@@ -33,9 +37,9 @@ Length aims below are **recommendations**, not quotas. Prefer leaving a slightly
 |--|--|
 | Job | One tight line / sentence-synopsis of the **outcome** |
 | Aim | ~**90** characters (soft) |
-| Must | Who/what + action; complete thought; sentence case |
-| Must not | Bare name; date-only; ALL CAPS; `?`; ellipsis; exact synopsis copy; trivial rephrase of the same fact; chopped “Following…” lead-in |
-| Near-duplicates | OK if wording differs *and* synopsis is fuller prose than the title |
+| Must | Who/what + action; complete thought; sentence case (polish aims for this) |
+| Must not | Bare name; date-only; ALL CAPS shout; `?`; ellipsis; exact synopsis copy; trivial rephrase of the same fact; chopped “Following…” lead-in |
+| Differently worded | OK when synopsis is fuller prose — hard fail only for echo / trivial twin (`title.echoes_body`, `title.too_close`) |
 
 ### 2. `synopsis`
 
@@ -43,30 +47,30 @@ Length aims below are **recommendations**, not quotas. Prefer leaving a slightly
 |--|--|
 | Job | Day fact only |
 | Optimal | ~**2–4** sentences |
-| Soft ceiling | ~**5** sentences — prefer peeling further background into Context |
+| Soft ceiling | ~**5** sentences — prefer peeling further background into Context (`splitFactAndContext` may peel above soft max before validate) |
 | Must not | Pad to hit a count; wire dumps; era essay (→ Context) |
 
-### 3. `whyItMatters` → UI **Context**
+### 3. `whyItMatters` → UI **Context / Provenance**
 
 | | |
 |--|--|
 | Job | Background for a general reader (era, actors, stakes) |
 | Aim | About a **paragraph**, or as much as needed — no word/char quota |
-| Required? | `contextRequired: true` in knobs (toggle if you want omit-when-obvious) |
-| UI | Smaller, paler, more indented — must not compete with the day fact |
+| Required? | `contextRequired: true` in knobs |
+| UI | Label is currently **“Context / Provenance”**; smaller/paler than the day fact |
 | Citation? | No |
 
 ### 4. Source
 
-Harvard + allowlisted URL; don’t double the year in the cite string.
+Harvard string (`formatHarvardCitation`) + allowlisted URL. **Accessed date is kept on the citation object but not shown in the Harvard line today.**
 
 Rules:
 
-- Cite must be **about the claim**. Tier A alone is not enough — reject generic research guides (e.g. National Archives copyright / help-with-your-research pages).
-- Prefer papers of record when logged: **NYT / TimesMachine, BBC, Guardian, Reuters, FT, Telegraph, AP**.
+- Cite must be **about the claim** (enforced on **cite upgrade**, not on every discovery path). Tier A alone is not enough — reject generic research guides.
+- Prefer papers of record when logged: **NYT / TimesMachine, BBC, Guardian, Reuters, FT, Telegraph, AP** (+ hosts in `interest.ts` `PREMIUM_PRESS`).
 - Music moments (when real cards, not labels): prefer Official Charts / Billboard week or article URLs.
-- Gemini / Perplexity / aggregators are **never** the public Source host.
-- Purpose of the Source: verify the **date**, block hallucination, let users read more.
+- Gemini / Perplexity / aggregators are **never** the public Source **host**.
+- Lite (and failed full upgrade) may still show **Wikipedia bridge** or `needs-human-review` cites on the Source line — quality labels are not rendered in the UI yet.
 
 ---
 
@@ -80,20 +84,44 @@ export const COPY_KNOBS = {
   synopsisOptimalMax: 4,
   synopsisSoftMax: 5,
   contextRequired: true,
-  nearDuplicateTitleOk: true,
   preferUkGlobalInterest: true,
   preferPremiumPress: true,
   recentLiveWireSkipDays: 548,
 } as const
 ```
 
-Interest ranking (`worker/lib/interest.ts`) lifts culturally resonant UK/global news and candidates that already carry **NYT / BBC / Guardian / Reuters / FT** (etc.) cites above aggregator-only discovery.
+Interest ranking (`worker/lib/interest.ts`) lifts culturally resonant UK/global news and candidates that already carry premium-press cites above aggregator-only discovery.
+
+### Operational polish notes (not knobs)
+
+- Gemini polish uses `responseMimeType: application/json` and `maxOutputTokens: 3072`. Flash models spend a large share on hidden “thoughts”; budgets ~520 truncate JSON and blank the day.
+- Schema hint: `polishedCopyJsonSchemaHint()` from knobs (`whyItMatters` required when `contextRequired`).
+- On polish failure, assemble tries deterministic `fallbackDistinctCopy` (may reuse Wikipedia extract gloss as Context) before skipping the candidate.
 
 ---
 
 ## Validation
 
-- **Fail (hard):** empty fields; dumps; incomplete/cut titles; mid-sentence cuts; title-as-lead-in; title too close to synopsis; Context restates synopsis; missing Context when required
-- **Warn (soft):** title longer than one-line aim; synopsis outside 2–4 / above soft 5
+### Hard fail (`ok: false`) — issue codes
 
-Runtime: `worker/lib/copy-contract.ts` · called after polish and again before ship in `worker/lib/assemble.ts`.
+| Code | Meaning |
+|------|---------|
+| `title.empty` / `synopsis.empty` | Required fields |
+| `title.date_only` / `title.bare_name` | Useless hed |
+| `title.incomplete` | `?`, ellipsis, dangling, shouty caps, abrupt cut |
+| `title.echoes_body` | Exact title===synopsis (normalized) |
+| `title.too_close` | Trivial rephrase / chart-noise twin / high containment |
+| `title.cut_from_body` | Chopped “Following…” lead-in |
+| `synopsis.headline_dump` / `context.headline_dump` | Wire dump |
+| `synopsis.abrupt_cut` / `context.abrupt_cut` | Truncation markers (not a normal `.`) |
+| `context.required` | Missing when knob on |
+| `context.restates_synopsis` | Context === day fact |
+
+### Soft warn (still ships)
+
+| Code | Meaning |
+|------|---------|
+| `title.soft_long` | Longer than ~90 |
+| `synopsis.short` / `synopsis.above_optimal` / `synopsis.long` | Outside 2–4 / soft 5 |
+
+Runtime: `worker/lib/copy-contract.ts` · after polish and again before ship in `worker/lib/assemble.ts`.

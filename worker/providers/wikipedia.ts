@@ -110,7 +110,12 @@ function stripHtml(text: string): string {
 function truncate(text: string, max: number): string {
   const clean = stripHtml(text)
   if (clean.length <= max) return clean
-  return `${clean.slice(0, max - 1).trimEnd()}…`
+  // Prefer a complete sentence — never append ellipsis (fails the copy contract).
+  const slice = clean.slice(0, max)
+  const sentenceEnd = Math.max(slice.lastIndexOf('. '), slice.lastIndexOf('! '), slice.lastIndexOf('? '))
+  if (sentenceEnd > 40) return slice.slice(0, sentenceEnd + 1).trim()
+  const at = slice.lastIndexOf(' ')
+  return (at > 40 ? slice.slice(0, at) : slice).trim()
 }
 
 /**

@@ -1,21 +1,24 @@
 # Copy to .dev.vars and fill in when ready.
 # Never commit real keys.
 
+# Brand pack id (see shared/brands/)
+BRAND_ID=converse
+
+# Live lookup by default. Set true only for curated-seed demos without keys.
+USE_FALLBACK=false
+
 # Google Gemini — grounded discovery + polish/phrasing + claim verify
-# (never the public citation; candidates need an allowlisted URL that backs the date)
+# (never the public citation; Gemini discovery candidates need an allowlisted URL that backs the date)
 GEMINI_API_KEY=
 
 # Perplexity Search — allowlisted contemporary press discovery + claim cite upgrades
 PERPLEXITY_API_KEY=
 
-# New York Times Archive / Article Search (1851–present metadata)
+# New York Times Archive / Article Search (1851–present metadata) — stub until wired
 NYT_API_KEY=
 
-# The Guardian Open Platform (1999–present)
+# The Guardian Open Platform (1999–present) — stub until wired
 GUARDIAN_API_KEY=
 
-# Optional: GDELT Cloud for structured post-1979 events
+# Optional: GDELT Cloud for structured post-1979 events — stub until wired
 GDELT_API_KEY=
-
-# Force mock data even when keys exist (useful for demos)
-USE_FALLBACK=true

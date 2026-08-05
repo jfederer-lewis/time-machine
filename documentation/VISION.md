@@ -55,16 +55,16 @@ Every Chuck launch date (and, more broadly, any date) becomes a doorway into wha
 ## Provenance pipeline
 
 ```
-DISCOVER (indexes, Wiki, Gemini grounded search, GDELT, aggregators…)
+DISCOVER (Wiki + day-indexes; Gemini + Perplexity in Full; NYT/Guardian/LoC/GDELT stubs)
     → FILTER / RANK (culture + premium press; drop chart labels & dumps)
     → POLISH + VALIDATE (copy contract)
-    → VERIFY / CITE UPGRADE (claim-relevant Tier A/B; Harvard string)
-    → HUMAN REVIEW (before press export)
+    → CITE UPGRADE (Full only, when needed)
+    → SHIP one spotlight  (+ human review before export — not built yet)
 ```
 
 Full detail: `documentation/PIPELINE.md`.
 
-Public citation line = allowlisted host only. `discoveredVia` is internal metadata.
+Public Source = `citations[0]` after sanitize (blocklisted hosts dropped). Wikipedia bridge may still render, especially in Lite. `discoveredVia` is internal metadata.
 
 Cultural breadth: politics **and** culture, sport, science, music, design/fashion — each as a full research card with a credible cite. Do **not** surface aggregator “#1 song on this date” labels; real music moments (releases, tours, cultural breakthroughs) yes — Official Charts / Billboard only when they support a proper card.
 
@@ -76,10 +76,10 @@ Build beyond “Chuck launch dates only” into a general **time machine for any
 
 | Mode | Behaviour |
 |------|-----------|
-| **Exact day** | Same calendar day events (Wikipedia On This Day, archives, Gemini grounded) |
+| **Exact day** | Same calendar day events (Wiki + day-indexes; Full adds Gemini / Perplexity) |
 | **Period estimate** | When exact day isn’t attested (e.g. “1917 Non-Skid era”), return year/period context clearly labelled as estimate |
-| **Brand timeline** | Vertical heritage archive with the same citation contract (extended idea — partially built) |
-| **Lite vs Full** | Lite = Wiki (+ polish). Full = archives + Gemini retrieval + cite upgrade. Same copy rules. |
+| **Brand timeline** | Vertical heritage archive (Timeline view built; Lookup only attaches brand moments when no cultural hit) |
+| **Lite vs Full** | Lite = Wiki + day-indexes + polish. Full = + Gemini discovery + Perplexity + cite upgrade. Same copy rules. Archives still stubs. |
 
 **Reusability:** Prototype for Converse, but **plug-and-play brand packs** so the same tool can be pitched to other heritage brands later (`shared/brands/`).
 
@@ -94,22 +94,22 @@ Build beyond “Chuck launch dates only” into a general **time machine for any
 - Typography currently: Schibsted Grotesk + Newsreader; newsprint paper field; single Converse red accent.
 - Citations should feel seamless (Bloom gloss / research-card pattern), not like a clunky bibliography dump.
 - First viewport: brand + one clear claim + date doorway — not a control panel of widgets.
-- Day card: title + synopsis + optional smaller/paler **Context** (`whyItMatters`) + Harvard Source. Mode chip shows Lite only when relevant.
+- Day card: title + synopsis + optional smaller/paler **Context / Provenance** (`whyItMatters`) + Harvard Source. Mode chip shows Lite only when relevant.
 
 ---
 
-## Provenance contract (copy from Bloom)
+## Provenance contract (target UX)
 
-Every cultural claim is a **research card**:
+Lookup today ships fields 1–3 + 5 (+ optional 6). Reference block, quality labels, and `open hostname →` are schema/target — not on the spotlight UI yet.
 
 1. **Title** — tight outcome hed (see `COPY_CONTRACT.md`)  
-2. **Synopsis** — day fact only (past tense)  
-3. **Context** (`whyItMatters`) — era / actors / stakes for a general reader  
-4. **Reference** — curated evidence; exact wording only inside `"…"`; paraphrase outside  
-5. **Citation line** — Harvard-style bibliographic string + `open hostname →`  
+2. **Synopsis** — day fact only (past tense aspiration)  
+3. **Context** (`whyItMatters`) — era / actors / stakes; UI label **Context / Provenance**  
+4. **Reference** — curated evidence; exact wording only inside `"…"`; paraphrase outside (**not on Lookup spotlight**)  
+5. **Citation line** — Harvard-style string + URL (`formatHarvardCitation`; no Accessed date)  
 6. **Glosses** (optional) — dotted underline definitions (Wikipedia / curated). AI glosses never count as proof.
 
-### Quality labels
+### Quality labels (schema; not rendered on Lookup)
 
 - `trusted-source-quote`
 - `trusted-source-snippet`
@@ -134,7 +134,8 @@ Every cultural claim is a **research card**:
 | Provider | Role | Status |
 |----------|------|--------|
 | Wikipedia On This Day | **Discovery** + provisional bridge | **Live** (flags human review) |
-| Wikipedia REST Summary | Glosses | Pattern ready |
+| Wikipedia REST Summary | Glosses | Live via gloss service |
+| On This Day / History.com | Discovery indexes | Live discovery; never public cite |
 | Gemini | Grounded discovery + phrasing; **never** the public cite | Live when keyed (cite-gated) |
 | Perplexity Search | Allowlisted discovery → verify | Live when keyed |
 | NYT Archive | **Verification** (deepest public US paper API — bdayrecap lesson) | Stub |
@@ -142,7 +143,7 @@ Every cultural claim is a **research card**:
 | GDELT | Discovery → cite outlet URL | Stub |
 | Chronicling America (LoC) | Tier A historic US papers | Stub |
 | National Archives (+ Gallica, NDL, Trove…) | Tier A official records | Stub |
-| Curated fallback pack | Demo with allowlisted cites | **Default on** |
+| Curated fallback pack | Demo with allowlisted cites | Available via `USE_FALLBACK=true` / `?fallback=1` (**default off** in wrangler) |
 
 Keys go in `.dev.vars` locally and `wrangler secret` in prod. Never commit secrets. See `.dev.vars.example`.
 
@@ -159,33 +160,43 @@ Keys go in `.dev.vars` locally and `wrangler secret` in prod. Never commit secre
 ### Done
 
 - [x] Cloudflare Workers + React SPA scaffold (`wrangler`, Vite plugin)
-- [x] Doorway UI: date query, featured Chuck dates, research cards, export JSON / copy brief
+- [x] Lookup UI: date dial → **one spotlight** day card (title / synopsis / Context / Source + optional glosses)
 - [x] Timeline view (Converse heritage moments)
-- [x] Pipeline view (provider catalogue)
 - [x] Plug-and-play brand config (`shared/brands/converse.ts`)
-- [x] Curated fallback with source URLs
-- [x] Live Wikipedia On This Day path (`fallback=0` / UI toggle)
-- [x] Deployed to `time-machine.jasminefederer.workers.dev`
+- [x] Curated fallback pack (seeded dates only; else empty-day UI)
+- [x] Live discovery path (`USE_FALLBACK=false`; `?fallback=0`)
+- [x] Lite / Full research modes + Specific year / Any year (settings)
+- [x] Deployed Worker
 - [x] Source registry allowlist / blocklist + Harvard formatter
 - [x] Citation sanitize guard (`worker/lib/verify.ts`)
-- [x] Landscape doc + two-pass provenance policy
+- [x] Landscape doc + provenance policy
 - [x] Copy contract + knobs + runtime validation
 - [x] Interest ranking (culture + premium press)
 - [x] Gemini grounded discovery (cite-gated) + polish + pick
-- [x] Cite upgrade with claim relevance
-- [x] Aggregator chart labels removed from discovery
+- [x] Cite upgrade with claim relevance (Full)
+- [x] Aggregator chart labels removed from day-index discovery
 - [x] Assemble never ships failing copy-contract cards
+
+### Not built yet (docs previously over-claimed)
+
+- [ ] Featured Chuck date chips (brand data exists; UI passes `featured={[]}`)
+- [ ] Multi-card story pack / Bloom `EventCard` + Reference block on the Lookup surface
+- [ ] Quality labels / `needsHumanReview` badge on the day card
+- [ ] Pipeline / provider catalogue UI (`/api/providers` JSON only)
+- [ ] Fallback / live toggle in the UI (env + query param only)
+- [ ] Press export JSON / copy brief
+- [ ] Human verification workflow before export
 
 ### Next (when keys / next sprint)
 
 - [ ] Implement NYT / Guardian / Chronicling America / National Archives verify APIs
-- [ ] Market / locale parameter for localised press packs (Le Monde, Asahi, The Hindu…)
-- [ ] Human verification workflow (approve / reject before export)
+- [ ] Market / locale parameter for localised press packs
+- [ ] Wire `needsHumanReview` into the UI; editor approve/reject before export
 - [ ] Richer press export (PDF / formatted brief with Harvard block)
-- [ ] Real music facets via Official Charts / Billboard **week/article** URLs (full cards only)
+- [ ] Real music facets via Official Charts / Billboard **week/article** URLs
 - [ ] Expand brand timeline as a first-class pitch surface
 - [ ] More curated exact-day packs for known Chuck/cultural doorways
-
+- [ ] Re-enable featured dates; optional multi-event pack
 ---
 
 ## How to run / deploy
@@ -197,10 +208,11 @@ npm run dev                      # http://localhost:5173
 npm run deploy                   # Cloudflare Workers
 ```
 
-Toggle **Live Wikipedia On This Day** in the UI, or call:
+Toggle live vs curated via env / query (no UI toggle yet):
 
-`/api/query?date=YYYY-MM-DD&fallback=0`
+`/api/query?date=YYYY-MM-DD&fallback=0&mode=lite|full&anyYear=true`
 
+UI defaults: research mode **lite**, specific year. API defaults: mode **full** if `mode` omitted.
 ---
 
 ## Repo map (for agents)
@@ -237,7 +249,9 @@ Record material product/architecture choices here as we go.
 | 2026-08-04 | Cloudflare Workers + Vite React | Matches Bloom/JasRag stack instincts; easy deploy via Wrangler |
 | 2026-08-04 | Bloom-style research cards + glosses | Proven citation UX; reduces hallucination risk in press context |
 | 2026-08-04 | Brand packs in `shared/brands/` | Pitch Converse now; other heritage brands later |
-| 2026-08-04 | Fallback default ON | Demo-safe until keys; live Wiki available via toggle |
+| 2026-08-04 | Fallback default ON | Superseded 2026-08-05 — wrangler `USE_FALLBACK=false` |
+| 2026-08-05 | Fallback default OFF; curated via `?fallback=1` | Live path is the product default once keys exist |
+| 2026-08-05 | Docs aligned to runtime (Lite day-indexes, stubs, ship gate = copy contract) | Docs had oversold export / Pipeline UI / Tier A/B absolute / Harvard Accessed |
 | 2026-08-04 | Two-pass discover → verify → Harvard | Aggregators are ugly + uncitable; press needs archives/papers |
 | 2026-08-04 | Block onthisday / youdidntnotice / bdayrecap as cites | Explicit client instruction |
 | 2026-08-04 | Full-date path `year/month/day` | Best naming from On This Day without copying UI |
@@ -249,6 +263,8 @@ Record material product/architecture choices here as we go.
 | 2026-08-05 | Assemble: polish → validate → cite → validate; never ship fails | Contract is a ship gate, not just a prompt |
 | 2026-08-05 | Context (`whyItMatters`) required by default | Separate era background from day fact |
 | 2026-08-05 | Past tense / “Chuck was there”; skip live wire for recent dates | Product reads as settled history |
+| 2026-08-05 | Polish `maxOutputTokens` ≥ ~3k (thinking models) | Flash “thoughts” ate a 520 budget → truncated JSON → empty days |
+| 2026-08-05 | `looksAbruptlyCut` must not treat `.` as truncation | Character class `[.…]` rejected every finished sentence |
 
 ---
 

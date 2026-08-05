@@ -21,8 +21,6 @@ export const COPY_KNOBS = {
    * No word/character quota — readability wins.
    */
   contextRequired: true,
-  /** Exact title===synopsis still rejected; near-duplicates OK when true. */
-  nearDuplicateTitleOk: true,
   preferUkGlobalInterest: true,
   /**
    * When NYT / BBC / Guardian (etc.) cites are already logged on a candidate,

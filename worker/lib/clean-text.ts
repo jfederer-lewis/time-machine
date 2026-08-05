@@ -47,11 +47,19 @@ export function clipToShortProse(text: string, maxChars = 280): string {
   }
   const sentences =
     cleaned.match(/[^.!?]+[.!?]+|[^.!?]+$/g)?.map((s) => s.trim()).filter(Boolean) ?? [cleaned]
-  let out = sentences.slice(0, 2).join(' ').trim()
+  const picked: string[] = []
+  for (const sentence of sentences) {
+    if (picked.length >= 2) break
+    const next = [...picked, sentence].join(' ')
+    if (picked.length > 0 && next.length > maxChars) break
+    picked.push(sentence)
+  }
+  let out = picked.join(' ').trim()
+  if (!out) out = sentences[0] || cleaned
+  // Never character-slice mid-sentence — keep the first whole sentence only.
   if (out.length > maxChars) {
-    const cut = out.slice(0, maxChars)
-    const at = cut.lastIndexOf(' ')
-    out = (at > 80 ? cut.slice(0, at) : cut).trim()
+    const one = sentences[0] || ''
+    out = one.length <= maxChars ? one : one.replace(/\s+\S*$/, '').trim()
   }
   return out
 }

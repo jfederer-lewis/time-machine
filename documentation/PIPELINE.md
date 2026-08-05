@@ -14,7 +14,7 @@ Credible cites are **not** a ban on LLM discovery. They exist so that:
 2. Users can **trace the fact** and read more on the original page.
 3. Press export stays honest — Gemini / Perplexity are never the public citation host.
 
-Gemini **may discover and phrase**. It **must never** invent quotations, ship without an allowlisted corroborating URL, or appear as the Source line.
+Gemini **may discover and phrase**. It **must never** invent quotations, ship without a corroborating URL when discovery is Gemini-sourced, or appear as the Source line.
 
 ---
 
@@ -22,57 +22,82 @@ Gemini **may discover and phrase**. It **must never** invent quotations, ship wi
 
 | Mode | Stack |
 |------|--------|
-| **Lite** | Wikipedia On This Day (+ Gemini polish / Context). No paid archive fan-out. |
-| **Full** | Day-indexes + Wiki + Gemini grounded retrieval + Perplexity / NYT / Guardian when keyed + cite upgrade. |
+| **Lite** (UI default) | Wikipedia On This Day + onthisday.com + History.com discovery; Gemini pick/polish when keyed. **No** archives fan-out, **no** Gemini grounded discovery, **no** cite upgrade. |
+| **Full** (API default if `mode` omitted) | Lite discovery + Gemini grounded retrieval + Perplexity date-search (when keyed) + cite upgrade. |
 
 Same **copy contract** in both modes (`COPY_CONTRACT.md`). Full adds discovery breadth and cite upgrade — not looser prose rules.
+
+**Stubbed (not live even when keyed):** NYT Archive, Guardian Open Platform, Chronicling America / LoC, GDELT.
+
+API: `/api/query?date=YYYY-MM-DD&mode=lite|full&anyYear=true|false&fallback=0|1&brand=converse`
+
+---
+
+## Query precision
+
+| Input | Behaviour |
+|-------|-----------|
+| `YYYY-MM-DD` (`exact-day`) | Full discovery fan-out (per mode) |
+| `YYYY` or `YYYY-MM` | **No** day-index / archive / Gemini discovery → curated fallback (and optional brand moments) |
+| `USE_FALLBACK=true` or `?fallback=1` | Skip live pipeline entirely → curated fallback |
 
 ---
 
 ## Pipeline (runtime)
 
 ```
-DISCOVER
-  Wikipedia On This Day
-  onthisday.com / History.com   ← discovery metadata only, never public cite
-  Gemini + Google Search        ← full mode; cite-gated (Tier A/B allowlisted URL required)
-  Perplexity / NYT / Guardian / LoC (when keyed)
+DISCOVER  (exact-day only)
+  Wikipedia On This Day                 ← both modes
+  onthisday.com / History.com           ← both modes; discovery metadata only, never public cite
+  + anyYear → OTD cross-year scrape
+  Gemini + Google Search                ← full only; cite-gated (Tier A/B URL required)
+  Perplexity date-search                ← full only, when keyed; skipped if recent/future
+  NYT / Guardian / Chronicling / GDELT  ← stubs (always empty)
        │
        ▼
 FILTER
-  Drop aggregator “#1 song on this date” labels / charts category stubs
-  Drop wire dumps, title≈synopsis stubs, thin blurbs
+  Drop isLowValueDiscovery (#1 song labels) at day-index ingest
+  Drop category === 'charts' if ever set (unused today — labels mapped to music)
+  Drop wire dumps (looksLikeHeadlineDump), thin stubs (title≈synopsis / synopsis < 48)
+  Dedupe by year + normalized synopsis; prefer more citations
        │
        ▼
 RANK  (worker/lib/interest.ts)
   Prefer culturally resonant UK/global news
-  Prefer candidates already cited from NYT / BBC / Guardian / Reuters / FT / Telegraph / AP
-  Soft-penalise admin trivia (Nunavut-style)
+  Prefer candidates already cited from premium-press hosts (see interest.ts PREMIUM_PRESS)
+  Soft-penalise admin trivia; wire dumps −40; year proximity (unless anyYear)
+  Same-year pool if best same-year interest ≥ 2; else all years by proximity
        │
        ▼
-PICK  (Gemini shortlist, optional)
-  Same cultural + premium-press bias; sourceHint shown when logged
+PICK  (Gemini shortlist, optional; top 8)
+  Same cultural + premium-press bias; sourceHint when logged
        │
        ▼
 POLISH → VALIDATE  (up to 3 candidates)
-  Gemini → { title, synopsis, whyItMatters }
-  validateCopyContract — hard fails skip candidate
+  Gemini → { title, synopsis, whyItMatters }  (mode unused — same prompt)
+  maxOutputTokens ≥ ~3072 (Flash “thoughts” eat smaller budgets → truncated JSON)
+  validateCopyContract — hard fails → try deterministic fallbackDistinctCopy, then next candidate
        │
        ▼
-CITE UPGRADE  (full, if needed)
-  Skip if lead cite is already Tier A/B and not Wikipedia
+CITE UPGRADE  (full only, if needsCiteUpgrade)
+  Triggers: Wiki bridge, discovery-channel / empty cites, trusted-discovery-only, review+unknown/C
+  Skip if lead cite is already Tier A/B and publisher ≠ Wikipedia
   Else Perplexity allowlisted search + Gemini verify/grounding
   Cite must be *about the claim* (relevance) — Tier A alone ≠ enough
   Charts/music claims prefer Official Charts / Billboard when applicable
+  Fail → keep bridge cite, set needsHumanReview — still may ship if copy contract passes
        │
        ▼
 VALIDATE AGAIN → SHIP
-  Never ship a card that fails the copy contract
-  If all candidates fail → curated fallback pack (usingFallback: true)
+  Ship gate = validateCopyContract only (prose fields)
+  needsHumanReview / Wikipedia bridge do NOT block ship
+  If empty pool or all candidates fail → curated fallback (usingFallback: true)
        │
        ▼
-GLOSSES + brand moments
+GLOSSES (Wikipedia summary) + brand moments (max 1, separate stack)
 ```
+
+UI ships **one spotlight** (`events[0]`, else `brandMoments[0]`). Empty both → “No fact on record for this date.”
 
 Code: `worker/lib/assemble.ts`, `worker/providers/gemini.ts`, `worker/lib/upgrade-claim.ts`, `worker/lib/interest.ts`, `worker/lib/copy-contract.ts`.
 
@@ -84,14 +109,14 @@ Code: `worker/lib/assemble.ts`, `worker/providers/gemini.ts`, `worker/lib/upgrad
 
 - Culturally resonant settled history: arts, music (real moments), film, fashion, design, sport, science, human rights, major geopolitics
 - UK / Europe / global stakes (“Chuck was there” for a British/international desk)
-- Events already carrying **paper-of-record** cites when logged: NYT / TimesMachine, BBC article URLs, Guardian, Reuters, FT, Telegraph, AP, etc.
+- Events already carrying **paper-of-record** cites when logged (see `PREMIUM_PRESS` in `interest.ts`)
 
 **Deprioritise / exclude**
 
-- Aggregator “UK #1: Song” / “#1 song on this date” labels — **do not ingest** (not research cards)
+- Aggregator “UK #1: Song” / “#1 song on this date” labels — drop at day-index ingest
 - Remote administrative trivia (new territories, postal renames, municipal amalgamation)
-- Live wire dumps / video index scrapes / present-tense breaking news
-- Recent/future lookup dates: skip live wire date-search (`recentLiveWireSkipDays`)
+- Live wire dumps / video index scrapes
+- Recent/future lookup dates: skip **Perplexity** date-search only (`recentLiveWireSkipDays`); Gemini discovery still runs in full
 
 Knobs: `preferUkGlobalInterest`, `preferPremiumPress` in `shared/copy-knobs.ts`.
 
@@ -103,7 +128,7 @@ Knobs: `preferUkGlobalInterest`, `preferPremiumPress` in `shared/copy-knobs.ts`.
 |------|----------|------|
 | Grounded discovery (full) | Yes | Google Search grounding + allowlisted Tier A/B URL that corroborates the date |
 | Pick most interesting shortlist | Yes | From supplied candidates only |
-| Polish title / synopsis / Context | Yes | `validateCopyContract` must pass |
+| Polish title / synopsis / Context | Yes | `validateCopyContract` must pass (or deterministic copy fallback) |
 | Public citation host | **Never** | — |
 | Invent facts / quotes / years | **Never** | — |
 
@@ -111,23 +136,30 @@ Knobs: `preferUkGlobalInterest`, `preferPremiumPress` in `shared/copy-knobs.ts`.
 
 ## Cite upgrade rules
 
-- Discovery hosts (`onthisday.com`, History.com indexes, hobby birthday sites) → **never** the Harvard line.
-- Wikipedia → bridge / gloss; upgrade when a primary or paper-of-record URL is findable.
-- Candidate URLs must share **claim relevance** (title/snippet tokens). Reject generic research guides (e.g. National Archives copyright / “help with your research” pages) that don’t corroborate the day fact.
+- Discovery hosts (`onthisday.com`, History.com, hobby birthday sites) → **never** the Harvard line.
+- Wikipedia → bridge / gloss; upgrade in **full** when a primary or paper-of-record URL is findable.
+- Candidate URLs must share **claim relevance** (title/snippet tokens). Reject generic research guides.
 - If already Tier A/B (non-Wikipedia) → skip upgrade pass.
-- If no relevant Tier A/B found → keep bridge cite, flag `needs-human-review` — silence over a fake cite.
+- If no relevant Tier A/B found → keep bridge cite, flag `needs-human-review`. Prefer silence over a **fake** cite — but the bridge cite may still render on the Source line.
+- Lite never runs upgrade → Wikipedia / empty-cite discovery cards routinely ship as Source with `needsHumanReview: true` (not shown in UI today).
 
 ---
 
 ## What must never ship
 
+**Enforced by `validateCopyContract`:**
+
 - Title that is an exact or trivial rephrase of the synopsis
 - Title that is a chopped “Following…” lead-in from the synopsis
-- Mid-word / mid-sentence cuts in any field
+- Mid-word / mid-sentence cuts (trailing `…` / `..+`, dangling function words — **not** a normal period)
 - Missing Context when `contextRequired: true`
-- Present-tense breaking news voice
-- Aggregator #1-song labels as the day card
-- Unallowlisted or irrelevant Tier A pages as the Source
+- Wire dumps / empty fields
+
+**Pipeline / prompt aspirations (not copy-contract hard fails):**
+
+- Past-tense / “Chuck was there” voice (polish prompt only today)
+- Aggregator #1-song labels (dropped at discovery ingest when detected)
+- Unallowlisted hosts as Source (blocked or flagged `needs-human-review`; unknown hosts kept + flagged)
 
 ---
 
@@ -135,13 +167,17 @@ Knobs: `preferUkGlobalInterest`, `preferPremiumPress` in `shared/copy-knobs.ts`.
 
 | File | Role |
 |------|------|
-| `worker/lib/assemble.ts` | Orchestration: discover → rank → polish → validate → cite → ship |
+| `worker/index.ts` | `/api/query` params: date, mode, anyYear, fallback, brand |
+| `worker/lib/assemble.ts` | Orchestration: discover → filter → rank → pick → polish → cite → ship |
 | `worker/lib/interest.ts` | Cultural + premium-press ranking |
 | `worker/lib/copy-contract.ts` | Hard/soft validation |
 | `shared/copy-knobs.ts` | Adjustable length / Context / ranking knobs |
 | `worker/providers/gemini.ts` | Discover, pick, polish, verify |
-| `worker/providers/day-indexes.ts` | OTD / History.com discovery (no chart stubs) |
-| `worker/providers/archives.ts` | Perplexity / NYT / Guardian stubs |
+| `worker/providers/wikipedia.ts` | On This Day discovery |
+| `worker/providers/wikipedia-summary.ts` | Glosses |
+| `worker/providers/day-indexes.ts` | OTD / History.com discovery (chart-label drop) |
+| `worker/providers/archives.ts` | Perplexity live; NYT / Guardian / Chronicling stubs |
 | `worker/lib/upgrade-claim.ts` | Cite upgrade + relevance |
+| `worker/lib/gloss-service.ts` | Attach glosses after pick |
 | `shared/source-registry.ts` | Allow / block / Harvard |
-| `worker/lib/verify.ts` | Block discovery hosts as public cites |
+| `worker/lib/verify.ts` | Drop blocklisted cites; flag unknown hosts |

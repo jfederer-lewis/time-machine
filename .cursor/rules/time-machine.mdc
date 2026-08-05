@@ -16,9 +16,9 @@ Before changing discovery, ranking, polish, cites, or day-card UI, read:
 ## Invariants
 
 1. Frame is **Chuck was there** (past tense settled history), not breaking news.
-2. Gemini may discover + phrase; it is **never** the public citation. Every shipped claim needs an allowlisted Tier A/B URL that corroborates the date.
+2. Gemini may discover + phrase; it is **never** the public citation host. Prefer Tier A/B cites; Lite may ship Wikipedia bridge without cite upgrade.
 3. Never ingest or ship aggregator “#1 song on this date” / charts label stubs.
-4. Prefer culturally resonant UK/global news; prefer NYT / BBC / Guardian / Reuters / FT when those cites are already logged.
-5. Assemble order: polish → validate → cite upgrade → validate again. Never ship a failing copy contract — skip candidate or use curated fallback.
-6. Cite must be claim-relevant (reject generic research-guide pages).
-7. Keep knobs (`shared/copy-knobs.ts`), Gemini prompts, and docs in sync when you change rules.
+4. Prefer culturally resonant UK/global news; prefer premium-press hosts when those cites are already logged.
+5. Assemble order: polish → validate → (full) cite upgrade → validate again. Never ship a failing copy contract — skip candidate or use curated fallback. `needsHumanReview` does not block ship.
+6. Cite must be claim-relevant on upgrade (reject generic research-guide pages).
+7. Keep knobs (`shared/copy-knobs.ts`), Gemini prompts, registry, and docs in sync when you change rules. Registry hosts beat markdown tables.

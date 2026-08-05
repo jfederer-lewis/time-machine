@@ -26,9 +26,9 @@ npm run dev
 
 Open the Vite URL (Cloudflare plugin serves `/api/*` from the Worker).
 
-- **Fallback mode (default):** curated, source-linked seed cards — safe for demos without keys.
-- **Live lookup:** toggle live mode in the UI, or call `/api/query?date=YYYY-MM-DD&fallback=0`.
-- **Lite** = Wikipedia (+ polish). **Full** = archives + Gemini grounded retrieval + cite upgrade. Same copy rules.
+- **Live lookup (default in wrangler):** `USE_FALLBACK=false`. Force curated seeds with `USE_FALLBACK=true` or `?fallback=1`.
+- **Lite** (UI default) = Wiki + On This Day + History.com + Gemini polish. **Full** (API default if `mode` omitted) = + Gemini grounded discovery + Perplexity + cite upgrade. NYT / Guardian / LoC remain stubs. Same copy rules.
+- Settings: Specific year / Any year (`?anyYear=true`).
 
 ```bash
 npm run build
@@ -39,24 +39,22 @@ npm run deploy    # requires `wrangler login`
 
 | Surface | Purpose |
 |--------|---------|
-| **Doorway** | Date query → research cards + press export |
-| **Timeline** | Converse heritage moments (extended idea) |
-| **Pipeline** | Provider status / what to wire next |
+| **Lookup** | Date dial → one spotlight day card (title / synopsis / Context / Source + glosses) |
+| **Timeline** | Converse heritage moments |
 
-### Citation contract (from Bloom)
+Not built yet: press export, Pipeline UI, featured-date chips, multi-card pack, human-review workflow.
 
-Every cultural claim is a **research card**:
+### Citation contract
+
+Every cultural claim aims to be a **research card**:
 
 1. Title + synopsis (day fact, past tense) + Context (`whyItMatters`)
-2. Reference block (quotes only inside `"…"`)
-3. Citation line + `open hostname →` (allowlisted, claim-relevant)
-4. Optional dotted **glosses** (Wikipedia / curated — never AI-as-proof)
+2. Citation line (Harvard string + URL; allowlisted / claim-relevant when upgraded)
+3. Optional dotted **glosses** (Wikipedia / curated — never AI-as-proof)
 
-Quality labels: `trusted-source-quote` · `trusted-source-snippet` · `trusted-discovery-only` · `curated-fallback` · `period-estimate` · `needs-human-review`.
+Quality labels exist on the schema (`trusted-source-quote` · … · `needs-human-review`) but are **not rendered** on the Lookup card today. Lite often ships a Wikipedia bridge cite.
 
-Contested heritage dates (e.g. when Chuck’s signature hit the patch) are flagged for human review — inventing history on a heritage brand is the failure mode this system is designed to avoid.
-
-**Sources exist** to verify the date and give users somewhere to read more — Gemini may discover/phrase, but is never the public citation.
+**Sources exist** to verify the date and give users somewhere to read more — Gemini may discover/phrase, but is never the public citation host.
 
 ## Plug-and-play brands
 
@@ -68,23 +66,24 @@ To pitch another brand: copy `shared/brands/converse.ts`, swap palette / timelin
 
 | Provider | Why it matters | Key? | Status in prototype |
 |----------|----------------|------|---------------------|
-| **Wikipedia On This Day** | Exact calendar-day events across centuries | No | **Live** via Worker proxy |
-| **Wikipedia REST Summary** | Glosses for named entities | No | Pattern ready (inline glosses) |
+| **Wikipedia On This Day** | Exact calendar-day events across centuries | No | **Live** |
+| **On This Day / History.com** | Editorial day indexes | No | **Live** discovery only (never cite) |
+| **Wikipedia REST Summary** | Glosses for named entities | No | Live via gloss service |
 | **Gemini** | Grounded discovery + phrasing; never the citation itself | Yes | Live when `GEMINI_API_KEY` set (cite-gated) |
-| **Perplexity Search** | Allowlisted contemporary press (Bloom pattern) | Yes | Live when keyed — rolling lookback ≠ deep history |
-| **NYT Archive** | US press metadata by month, 1851– | Yes | Stub — filter to day client-side |
+| **Perplexity Search** | Allowlisted press + cite upgrades | Yes | Live when keyed — rolling lookback ≠ deep history |
+| **NYT Archive** | US press metadata by month, 1851– | Yes | Stub |
 | **Guardian Open Platform** | UK/intl ~1999–, `from-date`/`to-date` | Yes | Stub |
 | **GDELT** | Structured global events ~1979– | Optional | Stub |
-| **Chronicling America (LoC)** | US historic papers ~1777–1963 | No | Stub — ideal for Chuck decades |
+| **Chronicling America (LoC)** | US historic papers ~1777–1963 | No | Stub |
 
-**Important (from Bloom):** Perplexity’s default date filter is “last N days from now,” not “what happened on 12 June 1968.” Deep history needs archive APIs + Wikipedia On This Day under the same citation UX.
+**Important:** Perplexity’s default date filter is “last N days from now,” not “what happened on 12 June 1968.” Deep history needs archive APIs + Wikipedia On This Day under the same citation UX.
 
 ## When you have keys
 
 1. Put secrets in `.dev.vars` (local) / `wrangler secret put …` (prod).
-2. Set `USE_FALLBACK=false`.
+2. Keep `USE_FALLBACK=false` for live lookup.
 3. Flesh out stubs in `worker/providers/archives.ts`.
-4. Gemini may discover or phrase — every shipped claim still needs an allowlisted cite that backs the date.
+4. Gemini may discover or phrase — every shipped claim still needs a corroborating URL outside Gemini.
 
 ## Project layout
 
@@ -93,9 +92,9 @@ AGENTS.md
 documentation/    vision, pipeline, copy contract, sources
 shared/           brand + provenance + knobs (client + worker)
 worker/           Cloudflare API (/api/query, /api/brand, /api/providers)
-src/              React UI (Swiss / Scandi / JP-minimal)
+src/              React UI
 ```
 
 ## Design notes
 
-Typography: **Schibsted Grotesk** (Nordic press DNA) + **Newsreader** (editorial body). Newsprint paper field, single Converse red accent, no card chrome in the hero, citations as quiet research lines rather than bibliography dumps.
+Swiss / Scandi / JP-minimal — quiet type, restrained colour, press-desk calm.

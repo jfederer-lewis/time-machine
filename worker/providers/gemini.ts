@@ -157,22 +157,20 @@ export async function polishEventCopy(opts: {
     .join('\n')
 
   try {
+    // Flash models spend a large share of maxOutputTokens on hidden "thoughts".
+    // 520 was finishing MAX_TOKENS with ~20 visible tokens → truncated JSON → empty day cards.
     const { text } = await generateGeminiGrounded({
       apiKey,
       prompt,
       temperature: 0.2,
-      maxOutputTokens: 520,
+      maxOutputTokens: 3072,
       json: true,
       useSearch: false,
     })
     if (!text) return null
 
-    const cleaned = text.replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/i, '').trim()
-    const raw = JSON.parse(cleaned) as {
-      title?: string
-      synopsis?: string
-      whyItMatters?: string | null
-    }
+    const raw = parsePolishedCopyJson(text)
+    if (!raw) return null
     let nextTitle = toSentenceCaseHeadline(raw.title || '')
     let nextSynopsis = cleanPressText(raw.synopsis || '')
     if (!nextTitle || !nextSynopsis) return null
@@ -750,6 +748,33 @@ function parseVerificationJson(text: string): Omit<ClaimVerification, 'groundedS
     }
   } catch {
     return null
+  }
+}
+
+/** Parse polish JSON; tolerate markdown fences and minor wrapper noise. */
+function parsePolishedCopyJson(
+  text: string,
+): { title?: string; synopsis?: string; whyItMatters?: string | null } | null {
+  const cleaned = text.replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/i, '').trim()
+  try {
+    return JSON.parse(cleaned) as {
+      title?: string
+      synopsis?: string
+      whyItMatters?: string | null
+    }
+  } catch {
+    const start = cleaned.indexOf('{')
+    const end = cleaned.lastIndexOf('}')
+    if (start < 0 || end <= start) return null
+    try {
+      return JSON.parse(cleaned.slice(start, end + 1)) as {
+        title?: string
+        synopsis?: string
+        whyItMatters?: string | null
+      }
+    } catch {
+      return null
+    }
   }
 }
 

@@ -53,7 +53,8 @@ function normalizeLoose(text: string): string {
 export function looksAbruptlyCut(text: string): boolean {
   const t = cleanPressText(text)
   if (!t) return false
-  if (/[.…]$/u.test(t)) return true
+  // Ellipsis only — a single '.' is normal sentence punctuation, not a cut.
+  if (/…$|\.{2,}$/u.test(t)) return true
   if (endsDangling(t)) return true
   // Mid-word truncation often leaves a lone hyphenated stub or letter scrap.
   if (/\b[A-Za-z]{1,2}-$/.test(t)) return true

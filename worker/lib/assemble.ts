@@ -250,14 +250,30 @@ export async function assembleDateQuery(
         pageTitle: candidate.citations[0]?.title,
         mode: isLite ? 'lite' : 'full',
       })
-      if (!polished) continue
-      next = {
-        ...candidate,
-        title: polished.title,
-        synopsis: polished.synopsis,
-        ...(polished.whyItMatters ? { whyItMatters: polished.whyItMatters } : {}),
+      if (polished) {
+        next = {
+          ...candidate,
+          title: polished.title,
+          synopsis: polished.synopsis,
+          ...(polished.whyItMatters ? { whyItMatters: polished.whyItMatters } : {}),
+        }
+        if (!providersUsed.includes('gemini')) providersUsed.push('gemini')
+      } else {
+        // Discovery found a real claim — don't blank the day because phrasing failed.
+        next = fallbackDistinctCopy(candidate)
+        const gate = validateCopyContract({
+          title: next.title,
+          synopsis: next.synopsis,
+          ...(next.whyItMatters ? { whyItMatters: next.whyItMatters } : {}),
+        })
+        if (!gate.ok) {
+          console.warn(
+            '[time-machine] polish failed and deterministic copy also failed contract',
+            gate.issues.map((i) => i.code).join(', '),
+          )
+          continue
+        }
       }
-      if (!providersUsed.includes('gemini')) providersUsed.push('gemini')
     } else {
       next = fallbackDistinctCopy(candidate)
       const gate = validateCopyContract({
@@ -382,7 +398,28 @@ function fallbackDistinctCopy(event: CulturalEvent): CulturalEvent {
     title = toSentenceCaseHeadline(descriptiveFallbackTitle(synopsis, pageTitle))
   }
 
-  return { ...event, title, synopsis }
+  // Context is required by knobs — reuse a Wikipedia extract gloss when Gemini polish failed.
+  let whyItMatters = event.whyItMatters ? cleanPressText(event.whyItMatters) : ''
+  if (!whyItMatters) {
+    const gloss = event.glosses?.find((g) => cleanPressText(g.gloss).length > 40)
+    if (gloss) {
+      const candidate = cleanPressText(gloss.gloss)
+      if (
+        candidate &&
+        !titleEchoesBody(candidate, synopsis) &&
+        candidate.toLowerCase() !== synopsis.toLowerCase()
+      ) {
+        whyItMatters = candidate
+      }
+    }
+  }
+
+  return {
+    ...event,
+    title,
+    synopsis,
+    ...(whyItMatters ? { whyItMatters } : {}),
+  }
 }
 
 /** Discovery labels with title ≈ synopsis — not shippable research cards. */

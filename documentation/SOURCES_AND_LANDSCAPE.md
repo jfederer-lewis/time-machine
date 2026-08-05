@@ -1,6 +1,8 @@
 # Landscape, naming & source policy
 
 > Companion to `VISION.md` and `PIPELINE.md`. Agents must follow the citation rules here.  
+> **Canonical host lists:** `shared/source-registry.ts` (`CITATION_ALLOWLIST` / `CITATION_BLOCKLIST`).  
+> Tables below summarise intent; if a host is missing from the registry, it is **not** allowlisted yet.  
 > **Last updated:** 2026-08-05  
 > **Visual note:** Existing “on this day” products are functional references only — **do not copy their UI.**
 
@@ -12,9 +14,9 @@ Allowlisted cites are required so that:
 
 1. Every shipped claim is **corroborated for that date** (blocks LLM hallucination).
 2. Users can **open the original** and read more.
-3. Press export stays honest — **Gemini / Perplexity / aggregators are never the public citation**.
+3. Press export stays honest — **Gemini / Perplexity / aggregators are never the public citation host**.
 
-Gemini **may discover** events via grounded search. Candidates only enter the pool when an allowlisted Tier A/B URL backs the date. See `PIPELINE.md`.
+Gemini **may discover** events via grounded search. Candidates only enter the Gemini discovery pool when an allowlisted Tier A/B URL backs the date. Day-index / Wikipedia discovery may still ship with a Wikipedia bridge cite (especially in Lite). See `PIPELINE.md`.
 
 ---
 
@@ -22,47 +24,37 @@ Gemini **may discover** events via grounded search. Candidates only enter the po
 
 | Site | URL pattern (naming) | Strengths | Gaps | Our use |
 |------|----------------------|-----------|------|---------|
-| **History.com This Day** | `/this-day-in-history/august-4` (month + day, **no year**) | Strong editorial day-of-year framing | Not searchable by full date/year | Discovery inspiration only — never cite as authority |
-| **BBC On This Day** | `/onthisday/hi/dates/stories/february/20/` (month/day) | Desk-quality storytelling | ~1950–2005 only; incomplete calendar; year **or** date, not always both | Discovery / tone reference — cite **BBC article** pages as primary, not the index shell alone when thin |
-| **On This Day** | `/date/1999/april/1` (**year / month-name / day**) | Full date in URL; breadth | Aggregator; not Harvard-grade; ships thin “#1 song” labels | **Best naming convention**; discovery only — **never the citation**; **do not ingest chart labels** |
-| **You Didn’t Notice** | birthday → personal timeline | UX for “your date in world history” | Personal product; not a citable archive | Study **mechanic** only — **blocked as citation** |
-| **NYT On This Day (Learning Blog)** | archived learning.blogs…/on-this-day/ | NYT-adjacent | Day-of-year; no year in the classic tool | Prefer **NYT Archive / Article Search / TimesMachine issue** for real cites |
-| **NYT TimesMachine** | `timesmachine.nytimes.com/browser` | Front pages of issues | Often front-page display, not a structured event API | Credible **when linking a specific issue/article** |
-| **Birthday Recap** | birthday headlines | Documents **why NYT API** (depth to ~1950s) vs Guardian (~1990s) | US-centric; hobby tool | **API strategy lesson** — **blocked as citation** |
+| **History.com This Day** | `/this-day-in-history/august-4` (month + day, **no year**) | Strong editorial day-of-year framing | Not searchable by full date/year | Discovery only — **entire host blocked** as citation |
+| **BBC On This Day** | `/onthisday/hi/dates/stories/february/20/` (month/day) | Desk-quality storytelling | ~1950–2005 only; incomplete calendar | Discovery / tone — cite **BBC article** pages |
+| **On This Day** | `/date/1999/april/1` (**year / month-name / day**) | Full date in URL; breadth | Aggregator; thin “#1 song” labels | Best **naming**; discovery only — **never cite**; drop chart labels |
+| **You Didn’t Notice** | birthday → personal timeline | UX for “your date in world history” | Not a citable archive | Mechanic only — **blocked** |
+| **NYT On This Day (Learning Blog)** | archived learning.blogs…/on-this-day/ | NYT-adjacent | Day-of-year | Prefer **NYT Archive / TimesMachine** |
+| **NYT TimesMachine** | `timesmachine.nytimes.com` | Front pages of issues | Not a structured event API | Credible when linking a specific issue/article |
+| **Birthday Recap** | birthday headlines | Why NYT API depth matters | Hobby tool | **Blocked** as citation |
 
 ### Preferred date naming for *our* product
 
 Use ISO in APIs: `YYYY-MM-DD`.  
-In human URLs / export titles, prefer On This Day’s clarity:
+Display: `1 April 1999` (en-GB) via `toDisplayDate`.  
+Path helper: `toOnThisDayPath` → `{year}/{month-name}/{day}`.
 
-`{year}/{month-name}/{day}` → e.g. `1999/april/1`  
-Display: `1 April 1999` (en-GB) or localised per market.
-
-Do **not** ship month-day-only URLs as the primary key — year is required for press packs.
+Year is required for press packs — do not ship month-day-only as the primary key.
 
 ### Cultural breadth
 
-A press doorway should not be politics-only. Prefer culturally resonant headlines. Facets:
+Prefer culturally resonant headlines. Facets in schema: world / culture / sport / science / music / design / fashion / brand / other.
 
-- world / national events  
-- culture & arts  
-- sport  
-- science / tech  
-- music (releases, tours, cultural moments — **not** aggregator “#1 on this date” labels)  
-- design / fashion (relevant to Converse)  
-- brand moments (separate stack)
+Music = releases, tours, cultural moments — **not** aggregator “#1 on this date” labels (dropped at day-index ingest).
 
-Each facet still needs a **credible, claim-relevant citation** — not the aggregator that listed the song, and not a random Tier A research guide.
-
-**Ranking bias:** when NYT / BBC / Guardian / Reuters / FT / Telegraph / AP cites are already logged on a candidate, lift them above aggregator-only discovery (`preferPremiumPress`).
+**Ranking bias:** when premium-press hosts are already logged on a candidate, lift them (`preferPremiumPress` → `interest.ts` `PREMIUM_PRESS`: NYT, TimesMachine, Guardian, Telegraph, Reuters, AP, BBC, FT, WaPo, Le Monde, Asahi, Hindu, plus discovery via nyt-archive / guardian / bbc-onthisday / chronicling-america).
 
 ---
 
 ## Pipeline (mandatory)
 
 ```
-1. DISCOVER  →  calendar indexes, Wikipedia On This Day, Gemini grounded search,
-                GDELT, hobby aggregators, internal seeds
+1. DISCOVER  →  Wiki + day-indexes (both modes); Gemini + Perplexity (full);
+                NYT / Guardian / LoC / GDELT = stubs today
                     │
                     ▼
 2. FILTER / RANK  →  drop chart labels & dumps; prefer culture + premium press
@@ -71,17 +63,17 @@ Each facet still needs a **credible, claim-relevant citation** — not the aggre
 3. POLISH + VALIDATE  →  copy contract (title / synopsis / Context)
                     │
                     ▼
-4. VERIFY / CITE  →  claim-relevant primary or paper-of-record URL + Harvard
+4. VERIFY / CITE  →  full mode: claim-relevant upgrade when needed
                     │
                     ▼
-5. HUMAN     →  editor review before press export (esp. contested / estimate)
+5. HUMAN     →  **not built yet** — editor review before press export is a next item
 ```
 
 - Discovery hosts may appear in **internal metadata** (`discoveredVia`) for debugging.  
-- Discovery hosts must **never** appear in the public citation line, export pack, or Harvard string.  
-- If verification fails → keep the card as `needs-human-review` or `trusted-discovery-only` **without** promoting the aggregator to “source.” Prefer silence over a fake cite.  
-- Cite upgrade skips when a Tier A/B non-Wikipedia lead cite is already present.  
-- Cite relevance: title/snippet must match the claim; reject generic `/help-with-your-research/` / copyright-guide style pages.
+- Discovery hosts must **never** appear in the public citation line.  
+- Public Source line = `citations[0]` after `sanitizeEventCitations`. Wikipedia bridge, Tier C, and `needs-human-review` **can still render** (UI does not hide them today).  
+- If upgrade finds nothing better → keep bridge cite + `needsHumanReview` — prefer silence over a **fake** aggregator cite.  
+- Cite relevance + research-guide reject run on the **upgrade** path (`upgrade-claim.ts`).
 
 Full runtime map: `documentation/PIPELINE.md`.
 
@@ -89,102 +81,111 @@ Full runtime map: `documentation/PIPELINE.md`.
 
 ## Never cite (blocklist)
 
-These may be used for **discovery / UX research only**:
+Registered in `CITATION_BLOCKLIST` (discovery-only):
 
 - youdidntnotice.com  
 - bdayrecap.com  
 - onthisday.com  
-- history.com/this-day-in-history *(index pages — prefer primary docs)*  
-- Similar birthday / “what happened on my birthday” hobby sites  
-- AI chat answers, unsourced social posts, SEO content farms  
-- Gemini / Perplexity as the bibliographic host (they may retrieve; they are not the Source)
+- history.com  
 
-Wikipedia: allowed as **bridge** (gloss + On This Day discovery) and as a **provisional** cite only when the article itself is the best available public summary — prefer upgrading to the footnote’s underlying primary (archive, paper, official body). Label quality honestly.
+Also never: AI chat answers as bibliographic host, unsourced social, SEO farms; Gemini / Perplexity as the Source **host** (they may retrieve).
+
+Wikipedia: allowlisted as **bridge** (`gloss-bridge`). Provisional public cite OK when best available summary — prefer upgrading in Full. Label quality honestly (`needs-human-review` often set).
 
 ---
 
 ## Credible cite allowlist (tiered)
 
-### Tier A — institutional / official (prefer)
+**Source of truth:** `CITATION_ALLOWLIST` in `shared/source-registry.ts`.  
+Hosts marked *aspirational* below are **not** registered yet — do not assume they pass `isCitationAllowed`.
 
-| Source | Region | Notes |
-|--------|--------|-------|
-| nationalarchives.gov.uk | UK | Official **records** about the claim — not generic help/copyright guides |
-| archives.gov | US | NARA |
-| loc.gov / Chronicling America | US | Library of Congress; historic papers |
-| Europa / EUR-Lex / official EU institutions | EU | Official |
-| un.org / unesco.org | Global | Treat carefully; prefer specific document URLs |
-| National Diet Library (ndl.go.jp) | Japan | |
-| Bibliothèque nationale de France (bnf.fr / Gallica) | France | |
-| Deutsche Nationalbibliothek / Bundesarchiv | Germany | |
-| National Library of Australia (nla.gov.au / Trove) | AU | |
-| LAC-BAC (canada.ca library/archives) | CA | |
-| Official Charts, RIAA, Billboard (primary chart / week pages) | UK/US | Music facets — full cards only |
-| Museum collection pages (V&A, MoMA, Smithsonian, etc.) | Global | Design/culture |
+### Tier A — institutional / official (registered)
 
-### Tier B — papers / wires of record (prefer when logged)
+| Source | Host(s) | Notes |
+|--------|---------|-------|
+| UK National Archives | nationalarchives.gov.uk | Prefer records about the claim — not generic help/copyright guides |
+| US National Archives | archives.gov | |
+| Library of Congress | loc.gov, chroniclingamerica.loc.gov | |
+| UN / UNESCO | un.org, unesco.org | Prefer specific document URLs |
+| EU | europa.eu | EUR-Lex not separately registered |
+| BnF / Gallica | bnf.fr, gallica.bnf.fr | |
+| Bundesarchiv | bundesarchiv.de | DNB not registered |
+| National Diet Library | ndl.go.jp | |
+| NLA / Trove | nla.gov.au, trove.nla.gov.au | |
+| Official Charts / Billboard | officialcharts.com, billboard.com | Music — full cards only |
+| Museums | si.edu, vam.ac.uk, moma.org | |
 
-| Source | Region | Notes |
-|--------|--------|-------|
-| nytimes.com / NYT Archive API / TimesMachine **issue** | US | Strongest public newspaper API depth |
-| theguardian.com / Open Platform | UK/intl | Strong from ~1999 via API |
-| telegraph.co.uk | UK | |
-| reuters.com | Global wire | |
-| apnews.com / AP Media API | Global wire | Often licensed |
-| afp.com / AFP API | Global wire | FR/multilingual |
-| bbc.co.uk / bbc.com **article** URLs | UK/intl | Prefer article over On This Day index |
-| ft.com | UK/global | |
-| washingtonpost.com | US | |
-| lemonde.fr | FR | |
-| asahi.com / nikkei.com | JP | |
-| scmp.com | HK/Asia | |
-| thehindu.com / indianexpress.com | IN | |
-| smh.com.au / theage.com.au | AU | |
+*Aspirational (not in registry):* EUR-Lex host, LAC-BAC / canada.ca, Deutsche Nationalbibliothek, RIAA, additional museum hosts.
 
-### Tier C — acceptable with care
+### Tier B — papers / wires (registered)
 
-- Peer-reviewed journals / DOI links  
-- University digital collections  
-- Brand official history pages (Converse, Nike About) for **brand** claims only — still prefer independent corroboration for cultural claims  
-- Encyclopaedia Britannica (better than random web; still secondary)
+| Source | Host(s) |
+|--------|---------|
+| NYT / TimesMachine | nytimes.com, timesmachine.nytimes.com |
+| Guardian | theguardian.com |
+| Telegraph | telegraph.co.uk |
+| Reuters / AP / AFP | reuters.com, apnews.com, afp.com |
+| BBC articles | bbc.co.uk, bbc.com |
+| FT / WaPo / Le Monde | ft.com, washingtonpost.com, lemonde.fr |
+| Asahi / Nikkei | asahi.com, nikkei.com |
+| SCMP | scmp.com |
+| The Hindu / Indian Express | thehindu.com, indianexpress.com |
+| SMH | smh.com.au |
 
-### Market localisation
+*Aspirational:* theage.com.au (not registered).
 
-Global launch ⇒ prefer a **local Tier A/B** source when the desk is local (e.g. Le Monde for FR, Asahi for JP, The Hindu for IN). Western bias in default APIs is known; mitigate with locale parameter + regional allowlist scoring (same idea as Bloom’s Source Wiki).
+### Tier C / bridge (registered)
+
+- britannica.com  
+- converse.com / about.nike.com — **brand claims only**  
+- wikipedia.org / en.wikipedia.org — bridge  
+
+*Aspirational:* peer-reviewed DOI / university collections (no hosts registered).
+
+### What `verify.ts` does
+
+| Case | Behaviour |
+|------|-----------|
+| Blocklisted host | Drop cite |
+| Allowlisted host | Keep; attach tier |
+| Unknown host | Keep + `needs-human-review` (except `curated-fallback` quality) |
+| Empty cites | Force `needsHumanReview` |
+
+### Cite upgrade (full)
+
+- Skip when lead is **Tier A/B** and publisher ≠ Wikipedia.  
+- **Tier C** may ship without an upgrade attempt.  
+- Relevance: `claimCiteRelevance` + `isGenericResearchGuide` patterns.
 
 ---
 
-## Harvard-style citation (press export)
+## Harvard-style citation (runtime)
 
-Target shape (author-date; adapt when no personal author):
+`formatHarvardCitation` shape (**no Accessed date in the string**):
 
 ```
-Author Surname, Initial. (Year) 'Article or page title', Publisher or Site Name, Day Month Year [if known]. Available at: URL (Accessed: Day Month Year).
+Author or Publisher (Year) 'Title', Publisher[, published display]. Available at: URL
 ```
 
 Examples:
 
 ```
-National Archives (1917) 'Declaration of war…', The National Archives. Available at: https://… (Accessed: 4 August 2026).
+National Archives (1917) 'Declaration of war…', The National Archives. Available at: https://…
 
-Associated Press (1969) 'Apollo 11…', AP News, 21 July 1969. Available at: https://… (Accessed: 4 August 2026).
+Associated Press (1969) 'Apollo 11…', AP News, 21 July 1969. Available at: https://…
 ```
 
-UI may show a compact line + `open hostname →`; **export packs must include the full Harvard string**. Don’t double the year in the display string.
+`accessedAt` is stored for provenance but omitted from display (lookups are live).  
+UI shows the full Harvard string + URL link — not a compact `open hostname →` CTA (that pattern exists on glosses only). Export packs are **not built** yet.
 
 ---
 
 ## Lessons for our API stack
 
-From **bdayrecap.com** (method, not branding):
-
-1. **NYT Archive / Article Search** is the deepest easily accessible US newspaper API (~1950s+ for their use-case; Archive metadata claims back further).  
-2. **Guardian** is the next-best open newspaper API but shallower historically (~1990s).  
-3. One western paper ≠ global product — we need LoC / National Archives / wires / regional papers.
-
-From **On This Day** naming: full date in the path; culture breadth yes — **chart label lists no**.
-
-From **BBC / History.com**: month-day indexes are great for serendipity, bad as a sole press key without year.
+1. **NYT Archive** is the deepest easily accessible US newspaper API — still a **stub** in this prototype.  
+2. **Guardian** next-best open paper API — still a **stub**.  
+3. **Perplexity** is live for date-search + cite upgrade when keyed; rolling lookback ≠ deep history.  
+4. One western paper ≠ global product — need LoC / National Archives / wires / regional papers.
 
 ---
 
@@ -194,7 +195,7 @@ From **BBC / History.com**: month-day indexes are great for serendipity, bad as 
 |------|------|
 | `shared/source-registry.ts` | Allowlist / blocklist / tiers / Harvard formatter |
 | `shared/provenance.ts` | `discoveredVia`, citation fields, facets |
-| `worker/lib/verify.ts` | Guard: blocklisted hosts cannot become citations |
+| `worker/lib/verify.ts` | Drop blocklisted; flag unknown hosts |
 | `worker/lib/upgrade-claim.ts` | Cite upgrade + claim relevance |
 | `worker/lib/interest.ts` | Premium-press ranking boost |
 | `documentation/PIPELINE.md` | Full assemble path |
@@ -209,8 +210,10 @@ From **BBC / History.com**: month-day indexes are great for serendipity, bad as 
 | 2026-08-04 | Two-pass discover → verify → Harvard cite |
 | 2026-08-04 | Block hobby aggregators as citations forever |
 | 2026-08-04 | Prefer On This Day-style full-date naming; ISO in API |
-| 2026-08-04 | NYT + Guardian + archives/LOC as first verification targets |
+| 2026-08-04 | NYT + Guardian + archives/LOC as first verification targets (still stubs) |
 | 2026-08-05 | Cultural facets yes; aggregator #1-song labels out of the pool |
 | 2026-08-05 | Cite must be claim-relevant; prefer premium press when logged |
 | 2026-08-05 | Gemini may retrieve when grounded + Tier A/B cite verifies the date |
 | 2026-08-05 | Sources exist to verify date + let users read more — not to ban LLM discovery |
+| 2026-08-05 | Registry is canonical; doc tables mark aspirational hosts explicitly |
+| 2026-08-05 | Harvard display omits Accessed; Wikipedia bridge may render as Source in Lite |
