@@ -39,7 +39,48 @@ export function looksLikeDateOnlyTitle(title: string): boolean {
 
 /** Mid-clause cuts like “…carved out of the”. */
 export function endsDangling(text: string): boolean {
-  return /\b(the|a|an|of|in|on|at|to|for|from|by|with|and|or|as)$/i.test(text.trim())
+  return /\b(the|a|an|of|in|on|at|to|for|from|by|with|and|or|as|into|onto|upon)$/i.test(
+    text.trim(),
+  )
+}
+
+/** ALL CAPS magazine teasers, ellipses, trail-offs — not usable as headlines. */
+export function isIncompleteHeadline(title: string): boolean {
+  const t = title.trim()
+  if (!t) return true
+  if (/[.…]/u.test(t)) return true
+  if (endsDangling(t)) return true
+  if (/\b(tale|story|look|account|history)\s+of$/i.test(t)) return true
+  if (/,\s*a\s+(tense|dramatic|remarkable|extraordinary|untold)\b/i.test(t) && endsDangling(t)) {
+    return true
+  }
+  // Mostly shouty caps (excluding short strings)
+  const letters = t.replace(/[^A-Za-z]/g, '')
+  if (letters.length >= 12) {
+    const upper = (letters.match(/[A-Z]/g) || []).length
+    if (upper / letters.length >= 0.75) return true
+  }
+  return false
+}
+
+/**
+ * Turn shouty / teaser titles into readable sentence-case prose.
+ * Does not invent wording — only case + ellipsis cleanup.
+ */
+export function toSentenceCaseHeadline(title: string): string {
+  let t = cleanPressText(title)
+    .replace(/[.…]+/gu, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
+
+  const letters = t.replace(/[^A-Za-z]/g, '')
+  const upper = (letters.match(/[A-Z]/g) || []).length
+  if (letters.length >= 8 && upper / letters.length >= 0.55) {
+    t = t.toLowerCase()
+    t = t.replace(/^\p{L}/u, (c) => c.toUpperCase())
+  }
+
+  return t.trim()
 }
 
 /** Prefer a complete sentence; strip trailing period for use as a title. */

@@ -1,7 +1,7 @@
 import type { NarrativeBlock } from '../../shared/provenance'
 import type { BrandConfig } from '../../shared/brand'
 import { toDisplayDate } from '../../shared/source-registry'
-import { cleanPressText, looksLikeDateOnlyTitle, endsDangling, titleEchoesBody, looksLikeBareName } from '../lib/clean-text'
+import { cleanPressText, looksLikeDateOnlyTitle, titleEchoesBody, looksLikeBareName, isIncompleteHeadline, toSentenceCaseHeadline } from '../lib/clean-text'
 
 const GEMINI_MODELS = ['gemini-flash-latest', 'gemini-3.5-flash', 'gemini-3.6-flash']
 
@@ -120,7 +120,10 @@ export async function polishEventCopy(opts: {
     '{"title":string,"synopsis":string,"whyItMatters":string|null}',
     '',
     'Rules:',
-    '- title: short newspaper-style headline (aim under 90 characters). Must be descriptive of what happened — include the action or stakes, not only a place or person name. Bad: “Nunavut”. Good: “Nunavut established as a Canadian territory”. A COMPLETE thought — never end mid-clause, never end on “the/of/a/and/…”, never use ellipsis. Never a bare calendar date.',
+    '- title: sentence-case factual headline (never ALL CAPS, never Title Case Magazine Teaser). State what happened in plain complete prose — like a calm BBC/Guardian hed. Aim under 90 characters.',
+    '- title examples — Good: “Chernobyl remembered one year after the disaster”. Bad: “ONE YEAR AFTER CHERNOBYL, A TENSE TALE OF …”. Bad: bare names (“Nunavut”). Good: “Nunavut established as a Canadian territory”.',
+    '- title must be a COMPLETE thought with a clear action or outcome. Never end mid-clause, never ellipsis, never trail off on “the/of/a/and/tale of…”. Never a bare calendar date.',
+    '- Do not echo flashy source article titles; rewrite into a plain factual hed from the event itself.',
     '- CRITICAL: title must NOT be an exact copy of the synopsis (or the synopsis with the period stripped). The title is the headline; the synopsis expands it — do not make the synopsis merely restate the title.',
     '- synopsis: plain prose that a journalist can read aloud. Usually 2 or 3 complete sentences when the source has enough fact; one sentence is fine if that is all the source honestly supports. Never pad, never invent filler, never stretch thin material to hit a sentence count. Add place, stakes, or context the title cannot hold. No bullet lists, no markdown, no HTML, no table chrome, no pipe characters, no navigation leftovers.',
     '- synopsis: Use ONLY facts present in the source text (and article title for naming). Do not invent details, numbers, or outcomes about the day itself.',
@@ -150,12 +153,12 @@ export async function polishEventCopy(opts: {
       synopsis?: string
       whyItMatters?: string | null
     }
-    let nextTitle = cleanPressText(raw.title || '').replace(/[.…]+$/u, '').trim()
+    let nextTitle = toSentenceCaseHeadline(raw.title || '')
     const nextSynopsis = cleanPressText(raw.synopsis || '')
     if (!nextTitle || !nextSynopsis) return null
     if (looksLikeDateOnlyTitle(nextTitle)) return null
     if (looksLikeBareName(nextTitle)) return null
-    if (endsDangling(nextTitle)) return null
+    if (isIncompleteHeadline(nextTitle)) return null
     if (titleEchoesBody(nextTitle, nextSynopsis)) return null
 
     // Soft length cap at a word boundary only — never mid-clause.
@@ -164,7 +167,7 @@ export async function polishEventCopy(opts: {
       const at = cut.lastIndexOf(' ')
       nextTitle = (at > 50 ? cut.slice(0, at) : cut).trim()
       if (
-        endsDangling(nextTitle) ||
+        isIncompleteHeadline(nextTitle) ||
         looksLikeBareName(nextTitle) ||
         titleEchoesBody(nextTitle, nextSynopsis)
       ) {

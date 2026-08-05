@@ -20,10 +20,11 @@ import { attachGlosses } from './gloss-service'
 import {
   cleanPressText,
   looksLikeDateOnlyTitle,
-  endsDangling,
   descriptiveFallbackTitle,
   titleEchoesBody,
   looksLikeBareName,
+  isIncompleteHeadline,
+  toSentenceCaseHeadline,
 } from './clean-text'
 import { rankByInterest, scoreCulturalInterest } from './interest'
 
@@ -269,17 +270,17 @@ export function listProviders(env: Env) {
 function fallbackDistinctCopy(event: CulturalEvent): CulturalEvent {
   const synopsis = cleanPressText(event.synopsis)
   const pageTitle = cleanPressText(event.citations[0]?.title || '')
-  let title = cleanPressText(event.title)
+  let title = toSentenceCaseHeadline(event.title)
 
   const bad =
     !title ||
     looksLikeDateOnlyTitle(title) ||
     looksLikeBareName(title) ||
-    endsDangling(title) ||
+    isIncompleteHeadline(title) ||
     titleEchoesBody(title, synopsis)
 
   if (bad) {
-    title = descriptiveFallbackTitle(synopsis, pageTitle)
+    title = toSentenceCaseHeadline(descriptiveFallbackTitle(synopsis, pageTitle))
   }
 
   return { ...event, title, synopsis }
