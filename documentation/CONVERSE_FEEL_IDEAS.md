@@ -2,7 +2,7 @@
 
 > **Not a ship brief.** Exploratory ideas only — do not treat as product requirements or agent non-negotiables.  
 > Promote anything that graduates into `VISION.md` / pipeline / knobs with a decision-log entry.  
-> **Last updated:** 2026-08-06 (news-source + wear layer)
+> **Last updated:** 2026-08-06 (more feel seeds §11–18)
 
 ---
 
@@ -84,6 +84,38 @@ Export / cliff notes include a one-line **brand presence** field when available:
 ### 10. Seed more culture × Chuck exact days
 
 Curated packs where the world event and the shoe story already intertwine (1936 Olympics gold + All Star colourway; 1939 NCAA; 1982 Jordan Pro Leather; CDG PLAY debut month; etc.) so affinity ranking has real candidates to lift.
+
+### 11. “How old was the Chuck?” — silhouette age on this date
+
+Quiet line under the day card: *the All Star lineage was N years old that day* (anchor: 1917 Non-Skid or 1934 signature — pick one and cite it). Pure calendar math + heritage cite; no invented story. Fun longevity flex that matches “Chuck was there.”
+
+### 12. Reverse doorway — start from the shoe, land on culture
+
+Flip Lookup: pick an era / silhouette / collab (Weapon, Chuck 70, CDG PLAY, GOLF le FLEUR*) → offer a handful of **sourced cultural dates from that window**. Desk pitch: “write around the shoe’s moment in culture,” not only “date → news.”
+
+### 13. Anniversary / near-miss ribbon
+
+If the queried date is an exact heritage day (Nike close, Chuck 70 drop, Jordan final) or falls within a few days of one in the same year, show a thin ribbon: *Converse doorway this week* → jump to that beat. Feels curated, not spammy; keep a tight window so it doesn’t fire constantly.
+
+### 14. Photo-desk search strip (for journalists)
+
+After a day card, one line of **suggested archive search strings** — e.g. `Obama Converse 2009`, `Chuck Taylor All Star 1982 NCAA` — so desks hunt wire/Getty themselves. We don’t host the image; we point. Pairs well with §2 wear claims when we *do* have a cite.
+
+### 15. “Court ↔ street” lens
+
+Optional toggle or auto-tag: same date ranked once for **sport/performance** Converse adjacency and once for **youth/fashion/music** adjacency. Matches the All Star’s dual life; still one spotlight by default, second as a “also that day” teaser.
+
+### 16. Year-as-yearbook (month or year query)
+
+When the user only picks a year (or month), return a short **yearbook spread**: 3–5 sourced cultural beats + 1 heritage KB beat for that year, laid out like a calm press scrapbook rather than a single card. Plays to “durable archive,” not listicle spam — cap the count hard.
+
+### 17. Red-thread year echo on Timeline
+
+From a Lookup result, a subtle jump into Timeline scrolled to the matching year, with a Converse-red “thread” mark on that spine year. Connects the cultural day to the brand story without cloning the History LP.
+
+### 18. Seasonal / ritual soft nudges (sourced only)
+
+Rare, calendar-aware hints — e.g. June post-2015 → Pride collection beat if attested; late Aug → Olympic / back-to-school era notes when relevant. Easy to feel gimmicky; only ship where heritage KB already has the beat.
 
 ---
 
