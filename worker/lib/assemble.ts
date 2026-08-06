@@ -1,5 +1,6 @@
 import type { CulturalEvent, DateQueryResult, ProviderId, ResearchMode } from '../../shared/provenance'
 import { withHarvard } from '../../shared/provenance'
+import { heritageMoments } from '../../shared/brand'
 import { getBrand } from '../../shared/brands'
 import { queryDatePrecision, toDisplayDate, toOnThisDayPath } from '../../shared/source-registry'
 import { buildFallbackResult, PROVIDER_CATALOGUE } from '../data/fallback'
@@ -170,11 +171,7 @@ export async function assembleDateQuery(
       ? sameYearRanked
       : rankByInterest(merged, targetYear)
 
-  // Prefer substance for the shortlist — thin chart stubs (#1: Song / same fact twice) lose.
-  const substanceFirst = poolForPick.filter((e) => !isThinDiscoveryStub(e))
-  const shortlist = (substanceFirst.length ? substanceFirst : poolForPick).slice(0, 8)
-
-  const brandMoments: CulturalEvent[] = brand.timeline
+  const brandMoments: CulturalEvent[] = heritageMoments(brand)
     .filter((m) => {
       if (m.date.length === 4) return m.date === queryDate.slice(0, 4)
       if (m.date.length === 7) return m.date === queryDate.slice(0, 7)
@@ -210,6 +207,18 @@ export async function assembleDateQuery(
     )
 
   if (brandMoments.length) providersUsed.push('brand-timeline')
+
+  // Exact-day / month heritage beats compete for the spotlight (not only as a side note).
+  const brandForSpotlight = brandMoments.filter(
+    (m) => m.precision === 'exact-day' || m.precision === 'month',
+  )
+  const poolWithBrand = brandForSpotlight.length
+    ? rankByInterest([...poolForPick, ...brandForSpotlight], targetYear)
+    : poolForPick
+
+  // Prefer substance for the shortlist — thin chart stubs (#1: Song / same fact twice) lose.
+  const substanceFirst = poolWithBrand.filter((e) => !isThinDiscoveryStub(e))
+  const shortlist = (substanceFirst.length ? substanceFirst : poolWithBrand).slice(0, 8)
 
   // Ordered try list: Gemini pick first, then remaining shortlist by interest rank.
   let ordered = [...shortlist]

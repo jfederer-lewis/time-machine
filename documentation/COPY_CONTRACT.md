@@ -87,11 +87,12 @@ export const COPY_KNOBS = {
   preferUkGlobalInterest: true,
   preferPremiumPress: true,
   preferPositiveWhenTied: true,
+  preferBrandAffinity: true,
   recentLiveWireSkipDays: 548,
 } as const
 ```
 
-Interest ranking (`worker/lib/interest.ts`) uses a weighted formula: **significance first** (culture / UK-global / landmark), then a **light positive/neutral tone lean**, plus credibility and quality. Landmark defining days (9/11-class) skip the tone term. Tone is a nudge, not a veto over clearly more significant hard news.
+Interest ranking (`worker/lib/interest.ts`) uses a weighted formula: **significance first** (culture / UK-global / landmark / Converse-affinity), then a **light positive/neutral tone lean**, plus credibility and quality. Landmark defining days (9/11-class) skip the tone term. Tone is a nudge, not a veto over clearly more significant hard news. Brand affinity lifts Converse / Chuck / All Star story beats, and Nike only when the claim is about Converse — standalone iconic Nike sports days do not get the boost.
 
 ### Operational polish notes (not knobs)
 

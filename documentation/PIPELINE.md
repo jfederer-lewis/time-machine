@@ -135,7 +135,9 @@ Ranking is a **weighted formula** (`scoreInterestBreakdown` in `interest.ts`), n
 - Live wire dumps / video index scrapes
 - Recent/future lookup dates: skip **Perplexity** date-search only (`recentLiveWireSkipDays`); Gemini discovery still runs in full
 
-Knobs: `preferUkGlobalInterest`, `preferPremiumPress`, `preferPositiveWhenTied` (enables the tone term) in `shared/copy-knobs.ts`. Weights live as `W` in `interest.ts`.
+Knobs: `preferUkGlobalInterest`, `preferPremiumPress`, `preferPositiveWhenTied` (enables the tone term), `preferBrandAffinity` in `shared/copy-knobs.ts`. Weights live as `W` in `interest.ts`.
+
+Brand heritage: curated `brand.timeline` is Timeline UI only. Full History beats live in `brand.heritageKb` (`shared/brands/converse-heritage-kb.ts`). Assemble / Chuck-E use `heritageMoments(brand)`. Exact-day and month KB hits are merged into the Lookup shortlist so Converse doorways can win the spotlight.
 
 ---
 

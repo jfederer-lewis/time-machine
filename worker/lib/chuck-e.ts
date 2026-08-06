@@ -7,6 +7,7 @@ import { CHUCK_E_KNOBS } from '../../shared/chuck-e-knobs'
 import { getBrand } from '../../shared/brands'
 import { allProductFacts, getProductPack, type ProductFact } from '../../shared/products'
 import type { BrandMoment } from '../../shared/brand'
+import { heritageMoments } from '../../shared/brand'
 import type { Citation, CulturalEvent, Gloss, ResearchMode } from '../../shared/provenance'
 import { withHarvard } from '../../shared/provenance'
 import { parseQueryDate, toDisplayDate } from '../../shared/source-registry'
@@ -222,7 +223,7 @@ function matchHeritageMoments(
 ): BrandMoment[] {
   const brand = getBrand(brandId)
   const q = query.toLowerCase()
-  const scored = brand.timeline.map((m) => {
+  const scored = heritageMoments(brand).map((m) => {
     const hay = `${m.title} ${m.synopsis} ${m.date}`.toLowerCase()
     let score = 0
     for (const token of q.split(/\W+/).filter((t) => t.length > 2)) {
@@ -336,8 +337,8 @@ function formatDateSpotlight(event: CulturalEvent, displayDate: string): {
 function buildSystemContext(brandId: string): string {
   const brand = getBrand(brandId)
   const pack = getProductPack()
-  const heritageLines = brand.timeline
-    .slice(0, 24)
+  const heritageLines = heritageMoments(brand)
+    .slice(0, 40)
     .map(
       (m) =>
         `- ${m.date}: ${m.title} — ${m.synopsis} [source: ${m.citation.url}]`,

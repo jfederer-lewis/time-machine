@@ -2,7 +2,7 @@
 
 > Living document. Update this as the idea develops. Agents: read this before making product or architecture decisions.
 
-**Last updated:** 2026-08-06 (positive-when-tied ranking)  
+**Last updated:** 2026-08-06 (curated timeline + heritage KB split)  
 **Client (current):** Converse  
 **Working title:** Good News, Chuck  
 **Live:** https://time-machine.jasminefederer.workers.dev  
@@ -80,7 +80,7 @@ Build beyond “Chuck launch dates only” into a general **time machine for any
 |------|-----------|
 | **Exact day** | Same calendar day events (Wiki + day-indexes; Full adds Gemini / Perplexity) |
 | **Period estimate** | When exact day isn’t attested (e.g. “1917 Non-Skid era”), return year/period context clearly labelled as estimate |
-| **Brand timeline** | Vertical heritage archive (Timeline view built; Lookup only attaches brand moments when no cultural hit) |
+| **Brand timeline** | Curated vertical heritage archive (Timeline UI). Full Converse History text lives in `heritageKb` for Chuck-E + date attach — not a website clone. |
 | **Lite vs Full** | Lite = Wiki + day-indexes + polish. Full = + Gemini discovery + Perplexity + cite upgrade. Same copy rules. Archives still stubs. |
 
 **Reusability:** Prototype for Converse, but **plug-and-play brand packs** so the same tool can be pitched to other heritage brands later (`shared/brands/`).
@@ -181,7 +181,9 @@ Keys go in `.dev.vars` locally and `wrangler secret` in prod. Never commit secre
 - [x] Chuck-E floating chat widget (request/response) with Art. 50 first-message disclosure
 - [x] Chuck-E intent routing: date → assemble; product → launch pack; heritage → brand timeline
 - [x] Cliff notes extract (bullets + Harvard + AI-origin banner) — not finished press copy
-- [x] Brand timeline expanded from Converse History landing + researched exact days/months
+- [x] Brand timeline: curated surface + full History KB (`heritageKb`) for Chuck-E / date attach
+- [x] Brand-affinity ranking: Converse / Chuck-tied cultural news (Nike only when about Converse) can win the day card
+- [x] Exact-day / month heritage KB beats compete in the Lookup spotlight pool
 
 ### Not built yet (docs previously over-claimed)
 
@@ -236,6 +238,7 @@ shared/chuck-e-knobs.ts                  ← disclosure + cliff-notes rules
 shared/source-registry.ts                ← allow/block + Harvard
 shared/provenance.ts
 shared/brands/
+shared/brands/converse-heritage-kb.ts     ← full History text for Chuck-E
 shared/products/                         ← new Chuck launch pack
 worker/lib/assemble.ts                   ← orchestration
 worker/lib/chuck-e.ts                    ← Chuck-E intent router
@@ -280,7 +283,9 @@ Record material product/architecture choices here as we go.
 | 2026-08-06 | Chuck-E floating chat on top of Time Machine pipeline | Launch desk needs shoe Q&A + heritage + date nuggets beside Lookup |
 | 2026-08-06 | Chuck-E = cliff notes for press, not finished stories | Fine line: convenience vs branded editorial |
 | 2026-08-06 | Art. 50: hardcoded first-message AI disclosure + cliff-notes AI banner | Queryable chatbot + synthetic text that may leave the app |
-| 2026-08-06 | Brand timeline expanded to mirror Converse History landing | Client surface; press packs need the same beats + better dates |
+| 2026-08-06 | Brand timeline expanded to mirror Converse History landing | Superseded same day — see curated + heritageKb split |
+| 2026-08-06 | Timeline UI = curated beats; History LP text = `heritageKb` for chat / date attach | Don’t clone converse.com History as the product surface; still feed the full text to Chuck-E |
+| 2026-08-06 | Prefer Converse-affinity cultural news (Nike only when tied to Converse) on Lookup | Make “what happened on this day” feel more Chuck without inventing brand claims |
 | 2026-08-06 | Signature year = 1934 (official history), not 1932 secondary lore | Align with Converse.com + archive narrative; flag older 1932 claims |
 | 2026-08-06 | Nike close = 2003-09-04 (announce 2003-07-09) | SEC 8-K; prior pack wrongly treated announce day as close |
 | 2026-08-06 | Timeline images from Converse History LP CDN + credit link | Visual parity with client page; deep-link only |
@@ -296,7 +301,8 @@ Record material product/architecture choices here as we go.
 - Exact public calendar day for Non-Skid / All Star 1917 / 1919? (Still year-only on Converse History — keep year precision.)
 - Which markets / languages first for localisation?
 - Editorial workflow: who human-verifies before export?
-- Brand timeline is now a first-class pitch surface — confirm copy tone vs Converse.com marketing voice with client.
+- Brand timeline is a curated pitch surface; full History copy is KB-only — confirm curated beat list with client.
+- Should Lookup floor the date range at Converse founding (1908) so the capsule is “Chuck’s world”?
 - Should “Chuck launch dates” be a curated seed list supplied by Converse, or inferred from brand pack only?
 - How aggressively do we auto-scrape primary URLs from Wikipedia footnotes vs require editor pick?
 - New Chuck launch pack content (engineering / features / story) for `shared/products/new-chuck.ts`?

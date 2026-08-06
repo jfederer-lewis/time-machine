@@ -60,7 +60,7 @@ ChuckEWidget (floating launcher)
 |--------|-----------|
 | `date` | Parse date → `assembleDateQuery` (same pipeline as Lookup) → spotlight card prose + cites + glosses |
 | `product` | Match `shared/products/new-chuck.ts` facts; if placeholder/empty, refuse to invent |
-| `heritage` | Match `shared/brands/converse.ts` timeline moments + Converse History cites + citation glosses |
+| `heritage` | Match full History KB (`brand.heritageKb` via `heritageMoments`) + Converse History cites + citation glosses. Soft general fallback uses curated `timeline` beats. |
 | `general` | `chatWithChuckE()` with persona guardrails; when reply/query hits timeline beats, attach History cites + glosses |
 | cliff notes action | Separate endpoint; extracts bullets from the conversation + cites |
 
@@ -120,7 +120,9 @@ Runtime: wire stable framing into product packs before treating it as auto-shipp
 | `worker/index.ts` | `/api/chuck-e/chat`, `/api/chuck-e/cliff-notes` |
 | `src/components/ChuckEWidget.tsx` | Floating launcher + panel |
 | `src/components/ChuckEMessage.tsx` | Message bubbles + cites + glosses |
-| `shared/brands/converse-heritage-media.ts` | History LP image deep-links (timeline visuals) |
+| `shared/brands/converse.ts` | Curated Timeline surface + `heritageKb` pointer |
+| `shared/brands/converse-heritage-kb.ts` | Full Converse History landing text for Chuck-E / date attach |
+| `shared/brands/converse-heritage-media.ts` | History LP image deep-links (KB visuals; Timeline stays text-forward) |
 | `src/components/CliffNotesPanel.tsx` | Export UI with AI banner |
 | `src/hooks/useChuckEChat.ts` | Request/response chat state |
 
@@ -137,6 +139,7 @@ Runtime: wire stable framing into product packs before treating it as auto-shipp
 | 2026-08-06 | Product facts only from `new-chuck` pack; dates via `assembleDateQuery` | Same provenance rules as Time Machine |
 | 2026-08-06 | Ship placeholder pack empty | Prefer “don’t have it yet” over invented launch specs |
 | 2026-08-06 | Heritage facts always cite Converse History + dotted gloss | Traceability to client History LP; Gemini never the public cite |
+| 2026-08-06 | Chuck-E reads `heritageKb` (full History); Timeline UI stays curated | Feed website timeline text without cloning the History page as our UI |
 | 2026-08-06 | Timeline images deep-link History LP CDN assets with credit | Match official visuals; no rehost without press-kit license |
 | 2026-08-06 | Ingest Chuck Ecosystem KB; UI cite = SPSU27 Chuck Reset Internal Comms | Client reset deck is useful for desk Q&A but mixes strategy with product framing |
 | 2026-08-06 | Ecosystem KB: refuse launches / talent / prices / rollouts as public fact | Internal planning must not leak as press-ready confirmation |

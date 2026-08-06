@@ -6,6 +6,7 @@ import type {
 } from '../../shared/provenance'
 import { withHarvard } from '../../shared/provenance'
 import { getBrand } from '../../shared/brands'
+import { heritageMoments } from '../../shared/brand'
 import { toDisplayDate, toOnThisDayPath } from '../../shared/source-registry'
 import { sanitizeEventCitations } from '../lib/verify'
 
@@ -237,7 +238,7 @@ export function buildFallbackResult(
   const brand = getBrand(brandId)
   const rawEvents = lookupFallbackEvents(queryDate)
   const events = rawEvents.map((e) => sanitizeEventCitations(e))
-  const brandMoments: CulturalEvent[] = brand.timeline
+  const brandMoments: CulturalEvent[] = heritageMoments(brand)
     .filter((m) => momentTouchesDate(m.date, queryDate))
     .map((m) =>
       sanitizeEventCitations({

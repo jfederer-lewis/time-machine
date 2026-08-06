@@ -52,6 +52,20 @@ const LOCAL_US_CANADA =
   /\b(state of|governor of|mayor of|city council|township|alberta|manitoba|saskatchewan|newfoundland|nova scotia|prince edward|new brunswick|ohio|idaho|iowa|nebraska|wyoming|montana|dakota)\b/i
 
 /**
+ * Direct Converse / Chuck story beats — lift these when they appear in cultural news.
+ * Makes “what happened on this day” feel brand-adjacent without inventing claims.
+ */
+const BRAND_AFFINITY =
+  /\b(converse|chuck\s+taylor|chuck\s*70|all[\s-]?stars?|non[\s-]?skid|jack\s+purcell|one\s+star|pro\s+leather|golf\s+le\s+fleur|comme\s+des\s+gar[cç]ons\s+play|cons\s+skate)\b/i
+
+/**
+ * Nike only when the claim is about Converse (acquisition / portfolio) —
+ * not every iconic Nike sports day.
+ */
+const NIKE_CONVERSE_TIE =
+  /\b(nike.{0,40}(acquir|acquire|acquisition|buy|bought|purchase|completes?).{0,40}converse|converse.{0,40}(acquir|acquire|acquisition|buy|bought|purchase|nike)|swoosh.{0,20}converse)\b/i
+
+/**
  * Formula weights — significance dominates; tone is a light lean only.
  * Tunable here (and via COPY_KNOBS.preferPositiveWhenTied on/off for the tone term).
  */
@@ -63,7 +77,10 @@ const W = {
   categoryCulture: 4,
   categoryScience: 3,
   categoryPolitics: 2,
-  categoryBrand: 3,
+  /** Curated / KB brand moment in the pool — strong but below landmark. */
+  categoryBrand: 14,
+  brandAffinity: 12,
+  nikeConverseTie: 10,
   ukCultureCombo: 2,
   /** Secondary lean — deliberately smaller than a single culture signal. */
   tonePositive: 3,
@@ -160,6 +177,11 @@ function scoreSignificance(event: CulturalEvent, text: string, landmark: boolean
   }
   if (event.category === 'science') s += W.categoryScience
   if (event.category === 'politics') s += W.categoryPolitics
+
+  if (COPY_KNOBS.preferBrandAffinity) {
+    if (BRAND_AFFINITY.test(text)) s += W.brandAffinity
+    if (NIKE_CONVERSE_TIE.test(text)) s += W.nikeConverseTie
+  }
 
   if (COPY_KNOBS.preferUkGlobalInterest && BOOST.test(text) && CULTURE.test(text)) {
     s += W.ukCultureCombo

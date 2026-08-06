@@ -32,6 +32,11 @@ export const COPY_KNOBS = {
    * Significance still dominates; landmark defining days skip the tone term.
    */
   preferPositiveWhenTied: true,
+  /**
+   * Prefer Converse / Chuck story-tied cultural news (and Nike only when the
+   * claim is about Converse) when ranking on-this-day candidates.
+   */
+  preferBrandAffinity: true,
   /** Skip live wire date-search for dates newer than this many days (and future). */
   recentLiveWireSkipDays: 548,
 } as const

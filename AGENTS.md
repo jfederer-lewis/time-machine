@@ -19,7 +19,9 @@ Knobs live in `shared/copy-knobs.ts` (day cards) and `shared/chuck-e-knobs.ts` (
 - Gemini may **discover and phrase**; Gemini is **never** the public citation host.
 - Do **not** surface aggregator “#1 song on this date” labels.
 - Prefer culturally resonant news; prefer premium-press hosts when those cites are logged.
+- Prefer Converse / Chuck-tied cultural news on Lookup when the claim already shows the tie; Nike only when about Converse.
 - Rank by cultural significance first; light positive/neutral tone lean second — never soft-pedal landmark defining days (e.g. 9/11).
+- Timeline UI = curated beats; full Converse History text = `heritageKb` for Chuck-E / date attach (not a History LP clone).
 - Never ship a card that fails `validateCopyContract` — try next candidate or curated fallback.
 - Cite must be **about the claim** on the upgrade path — Tier A alone is not enough.
 - Discovery aggregators never appear on the public Source line.

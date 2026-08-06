@@ -309,6 +309,7 @@ export async function pickMostInterestingEvent(opts: {
     '',
     'Pick the SINGLE most culturally significant settled historical event for a British / international reader.',
     'Primary: cultural / historical significance (arts, music, film, fashion, design, sport, science, human-rights, major geopolitics) with real prose.',
+    'Brand affinity: when a candidate is clearly about Converse, Chuck Taylor, All Star / Non-Skid, or Nike’s acquisition of Converse, prefer it over a merely adjacent culture stub of similar weight — that is the product’s “Chuck was there” doorway. Do not invent Converse ties; only prefer when the candidate text already shows them. Standalone iconic Nike sports days without a Converse claim do not get this preference.',
     'Secondary lean: among candidates of similar significance, prefer constructive / positive or neutral culture over routine tragedy, crime, or disaster — a nudge, not a veto. A clearly more significant hard-news day still wins.',
     'When a candidate already carries a paper-of-record source (NYT / TimesMachine, BBC, Guardian, Reuters, FT, Telegraph, AP), strongly prefer it over aggregator-only discovery stubs.',
     'Exception — never soft-pedal a landmark defining day. If the shortlist includes an event that defines that calendar date in world memory (e.g. 11 September 2001 attacks, Pearl Harbor, Hiroshima, moon landing, Armistice), pick that event. Ignoring it would be editorially wrong.',

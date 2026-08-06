@@ -52,6 +52,19 @@ export interface BrandConfig {
   palette: BrandPalette
   /** Seed dates journalists can jump to — YYYY, YYYY-MM, or YYYY-MM-DD (never invent a day). */
   featuredDates: Array<{ date: string; label: string }>
+  /**
+   * Curated public Timeline surface — short story beats, not a History LP clone.
+   */
   timeline: BrandMoment[]
+  /**
+   * Full heritage knowledge pack (e.g. Converse History landing text) for Chuck-E
+   * and date-attach. When omitted, callers fall back to `timeline`.
+   */
+  heritageKb?: BrandMoment[]
   exportFilenamePrefix: string
+}
+
+/** Full KB when present; otherwise the curated timeline. */
+export function heritageMoments(brand: BrandConfig): BrandMoment[] {
+  return brand.heritageKb?.length ? brand.heritageKb : brand.timeline
 }
