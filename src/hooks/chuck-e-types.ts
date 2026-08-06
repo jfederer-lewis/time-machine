@@ -1,4 +1,4 @@
-import type { Citation } from '../../shared/provenance'
+import type { Citation, Gloss } from '../../shared/provenance'
 
 export type ChuckEIntent = 'date' | 'product' | 'heritage' | 'general' | 'cliff_notes'
 
@@ -7,6 +7,8 @@ export interface ChuckEChatMessage {
   content: string
   isDisclosure?: boolean
   citations?: Citation[]
+  /** Dotted source glosses — hover for original cite / Converse History. */
+  glosses?: Gloss[]
   intent?: ChuckEIntent
 }
 

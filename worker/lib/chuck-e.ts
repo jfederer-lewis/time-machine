@@ -7,7 +7,7 @@ import { CHUCK_E_KNOBS } from '../../shared/chuck-e-knobs'
 import { getBrand } from '../../shared/brands'
 import { allProductFacts, getProductPack, type ProductFact } from '../../shared/products'
 import type { BrandMoment } from '../../shared/brand'
-import type { Citation, CulturalEvent, ResearchMode } from '../../shared/provenance'
+import type { Citation, CulturalEvent, Gloss, ResearchMode } from '../../shared/provenance'
 import { withHarvard } from '../../shared/provenance'
 import { parseQueryDate, toDisplayDate } from '../../shared/source-registry'
 import { assembleDateQuery, type Env } from './assemble'
@@ -19,6 +19,11 @@ import {
   validateChatReply,
   withCliffNotesMarking,
 } from './chuck-e-contract'
+import {
+  glossesFromBrandMoments,
+  glossesFromCitations,
+  glossesFromProductFacts,
+} from './chuck-e-glosses'
 
 export type ChuckEIntent = 'date' | 'product' | 'heritage' | 'general' | 'cliff_notes'
 
@@ -27,6 +32,8 @@ export interface ChuckEChatMessage {
   content: string
   isDisclosure?: boolean
   citations?: Citation[]
+  /** Dotted source glosses — hover for original cite. */
+  glosses?: Gloss[]
   intent?: ChuckEIntent
 }
 
@@ -79,7 +86,7 @@ const PRODUCT_INTENT_RE =
   /\b(shoe|sneaker|chuck|all[\s-]?star|feature|features|engineering|sole|canvas|rubber|vulcaniz|material|upper|toe\s*cap|eyelet|launch|silhouette|construction|spec|specs)\b/i
 
 const HERITAGE_INTENT_RE =
-  /\b(heritage|history|founded|founding|non[\s-]?skid|chuck\s+taylor|ankle\s+patch|signature|nike\s+acquir|malden|1917|1922|1932|novel\s+nugget|nugget)\b/i
+  /\b(heritage|history|founded|founding|non[\s-]?skid|chuck\s+taylor|ankle\s+patch|signature|nike\s+acquir|malden|1917|1922|1934|1932|novel\s+nugget|nugget)\b/i
 
 export function classifyIntent(text: string): ChuckEIntent {
   const t = text.trim()
@@ -207,7 +214,12 @@ function matchProductFacts(query: string, limit = 4): ProductFact[] {
     .map((x) => x.f)
 }
 
-function matchHeritageMoments(query: string, brandId: string, limit = 3): BrandMoment[] {
+function matchHeritageMoments(
+  query: string,
+  brandId: string,
+  limit = 3,
+  opts: { softFallback?: boolean } = {},
+): BrandMoment[] {
   const brand = getBrand(brandId)
   const q = query.toLowerCase()
   const scored = brand.timeline.map((m) => {
@@ -223,12 +235,14 @@ function matchHeritageMoments(query: string, brandId: string, limit = 3): BrandM
   const hits = scored.filter((x) => x.score > 0).sort((a, b) => b.score - a.score)
   if (hits.length) return hits.slice(0, limit).map((x) => x.m)
   // Soft fallback: return a couple of core moments when user asks generally about heritage
-  return brand.timeline.slice(0, limit)
+  if (opts.softFallback !== false) return brand.timeline.slice(0, limit)
+  return []
 }
 
 function formatProductReply(facts: ProductFact[], packIsPlaceholder: boolean): {
   content: string
   citations: Citation[]
+  glosses: Gloss[]
 } {
   if (!facts.length) {
     if (packIsPlaceholder) {
@@ -236,12 +250,14 @@ function formatProductReply(facts: ProductFact[], packIsPlaceholder: boolean): {
         content:
           "I don't have Converse-supplied engineering or feature details for the new Chuck yet — that launch pack is still pending. I can help with heritage timeline nuggets, on-this-day cultural lookups, or cliff notes from what we've already discussed. Ask me about All Star history, or give me a date.",
         citations: [],
+        glosses: [],
       }
     }
     return {
       content:
         "I don't have that product detail in the launch pack. Try asking about a specific feature, or switch to heritage / a date lookup.",
       citations: [],
+      glosses: [],
     }
   }
 
@@ -256,14 +272,23 @@ function formatProductReply(facts: ProductFact[], packIsPlaceholder: boolean): {
     const cite = citationFromProductFact(fact)
     if (cite) citations.push(cite)
   }
-  return { content: lines.join('\n'), citations }
+  return {
+    content: lines.join('\n'),
+    citations,
+    glosses: glossesFromProductFacts(facts),
+  }
 }
 
-function formatHeritageReply(moments: BrandMoment[]): { content: string; citations: Citation[] } {
+function formatHeritageReply(moments: BrandMoment[]): {
+  content: string
+  citations: Citation[]
+  glosses: Gloss[]
+} {
   if (!moments.length) {
     return {
       content: "I don't have a matching heritage moment for that. Try a year (e.g. 1917) or ask about Non-Skid / Chuck Taylor / Nike acquisition.",
       citations: [],
+      glosses: [],
     }
   }
   const lines: string[] = []
@@ -273,12 +298,17 @@ function formatHeritageReply(moments: BrandMoment[]): { content: string; citatio
     lines.push(`• **${m.date}: ${m.title}**${flag} — ${m.synopsis}`)
     citations.push(citationFromBrandMoment(m))
   }
-  return { content: lines.join('\n'), citations }
+  return {
+    content: lines.join('\n'),
+    citations,
+    glosses: glossesFromBrandMoments(moments),
+  }
 }
 
 function formatDateSpotlight(event: CulturalEvent, displayDate: string): {
   content: string
   citations: Citation[]
+  glosses: Gloss[]
 } {
   const parts = [
     `On **${displayDate}** (sourced Time Machine lookup):`,
@@ -291,9 +321,15 @@ function formatDateSpotlight(event: CulturalEvent, displayDate: string): {
   if (event.needsHumanReview || event.precision === 'period-estimate') {
     parts.push('_Flagged for human review / period estimate — verify before press use._')
   }
+  const content = parts.join('\n\n')
+  const citations = event.citations ?? []
   return {
-    content: parts.join('\n\n'),
-    citations: event.citations ?? [],
+    content,
+    citations,
+    glosses: [
+      ...(event.glosses ?? []),
+      ...glossesFromCitations(citations, content),
+    ],
   }
 }
 
@@ -301,8 +337,11 @@ function buildSystemContext(brandId: string): string {
   const brand = getBrand(brandId)
   const pack = getProductPack()
   const heritageLines = brand.timeline
-    .slice(0, 8)
-    .map((m) => `- ${m.date}: ${m.title} — ${m.synopsis}`)
+    .slice(0, 24)
+    .map(
+      (m) =>
+        `- ${m.date}: ${m.title} — ${m.synopsis} [source: ${m.citation.url}]`,
+    )
     .join('\n')
   const productLines = allProductFacts(pack)
     .slice(0, 20)
@@ -319,7 +358,7 @@ function buildSystemContext(brandId: string): string {
     pack.summary,
     productLines ? `Product facts:\n${productLines}` : 'Product facts: (none loaded yet)',
     '',
-    `Heritage timeline:\n${heritageLines}`,
+    `Heritage timeline (cite Converse History for these — never invent):\n${heritageLines}`,
   ].join('\n')
 }
 
@@ -392,6 +431,7 @@ export async function handleChuckEChat(
               role: 'assistant',
               content: coerceChatAwayFromStory(formatted.content),
               citations: formatted.citations,
+              glosses: formatted.glosses,
               intent,
             },
           }
@@ -433,6 +473,7 @@ export async function handleChuckEChat(
               `${formatted.content}\n\nMeanwhile, from the heritage timeline:\n${heritage.content}`,
             ),
             citations: heritage.citations,
+            glosses: heritage.glosses,
             intent: 'heritage',
           },
         }
@@ -444,6 +485,7 @@ export async function handleChuckEChat(
           role: 'assistant',
           content: coerceChatAwayFromStory(formatted.content),
           citations: formatted.citations,
+          glosses: formatted.glosses,
           intent,
         },
       }
@@ -460,6 +502,7 @@ export async function handleChuckEChat(
         role: 'assistant',
         content: coerceChatAwayFromStory(formatted.content),
         citations: formatted.citations,
+        glosses: formatted.glosses,
         intent,
       },
     }
@@ -489,12 +532,24 @@ export async function handleChuckEChat(
   const checked = validateChatReply(reply)
   const content = checked.ok ? reply : coerceChatAwayFromStory(reply)
 
+  // Attach Converse History cites for any heritage beats the reply (or query) touches
+  const groundedMoments = matchHeritageMoments(`${lastUser.content}\n${content}`, brandId, 4, {
+    softFallback: false,
+  })
+  const grounded = formatHeritageReply(groundedMoments)
+  const replyLooksHeritage = groundedMoments.length > 0
+
+  const citations = replyLooksHeritage ? grounded.citations : []
+  const glosses = replyLooksHeritage ? grounded.glosses : []
+
   return {
     sessionId,
     intent: intent === 'cliff_notes' ? 'general' : intent,
     message: {
       role: 'assistant',
       content,
+      citations: citations.length ? citations : undefined,
+      glosses: glosses.length ? glosses : undefined,
       intent,
     },
   }

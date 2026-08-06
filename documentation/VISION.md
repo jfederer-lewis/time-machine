@@ -2,7 +2,7 @@
 
 > Living document. Update this as the idea develops. Agents: read this before making product or architecture decisions.
 
-**Last updated:** 2026-08-06  
+**Last updated:** 2026-08-06 (positive-when-tied ranking)  
 **Client (current):** Converse  
 **Working title:** Good News, Chuck  
 **Live:** https://time-machine.jasminefederer.workers.dev  
@@ -16,6 +16,7 @@
 | `documentation/COPY_CONTRACT.md` | Day-card title / synopsis / Context / Source |
 | `documentation/SOURCES_AND_LANDSCAPE.md` | Citation allow/block + Harvard + landscape |
 | `documentation/CHUCK_E.md` | Chuck-E chatbot, cliff notes, Art. 50 disclosure |
+| `documentation/CHUCK_ECOSYSTEM_KB.md` | Chuck Ecosystem KB (SPSU27 Chuck Reset Internal Comms) |
 | `AGENTS.md` | Short non-negotiables entrypoint |
 
 ---
@@ -44,7 +45,7 @@ Every Chuck launch date (and, more broadly, any date) becomes a doorway into wha
 1. **Every historical claim must be human-verified and source-linked.** Invented history on a heritage brand is the worst available failure.
 2. Avoid making this a **listicle one-off** — it should feel like a durable press platform / archive tool.
 3. AI (Gemini etc.) may **discover** and **phrase** day facts. It must **never** be the public citation, invent quotations, or ship a claim without a **credible allowlisted source** that corroborates the date — so users can verify and read more, and so we don’t publish hallucinations.
-4. Contested dates (e.g. when Chuck’s signature hit the ankle patch) must be labelled **needs human review** / period-estimate — never presented as settled fact.
+4. Contested dates must be labelled **needs human review** / period-estimate — never presented as settled fact. (Chuck signature: brand pack now follows Converse History **1934**; older “1932” secondary lore is superseded for this product.)
 5. **Never cite aggregators / hobby time machines as sources** — including onthisday.com, youdidntnotice.com, bdayrecap.com, History.com this-day indexes. They may **discover** events only; pass 2 must find a Tier A/B (or careful C) URL and a Harvard citation.
 6. Prefer **full dates** (`YYYY-MM-DD` / `1999/april/1`) — month-day-only tools are not enough for press packs.
 7. **Never ship aggregator “#1 song on this date” labels** — not research cards. Real music moments need prose + a proper cite (e.g. Official Charts / Billboard week or article URLs).
@@ -180,6 +181,7 @@ Keys go in `.dev.vars` locally and `wrangler secret` in prod. Never commit secre
 - [x] Chuck-E floating chat widget (request/response) with Art. 50 first-message disclosure
 - [x] Chuck-E intent routing: date → assemble; product → launch pack; heritage → brand timeline
 - [x] Cliff notes extract (bullets + Harvard + AI-origin banner) — not finished press copy
+- [x] Brand timeline expanded from Converse History landing + researched exact days/months
 
 ### Not built yet (docs previously over-claimed)
 
@@ -199,7 +201,6 @@ Keys go in `.dev.vars` locally and `wrangler secret` in prod. Never commit secre
 - [ ] Wire `needsHumanReview` into the UI; editor approve/reject before export
 - [ ] Richer press export (PDF / formatted brief with Harvard block)
 - [ ] Real music facets via Official Charts / Billboard **week/article** URLs
-- [ ] Expand brand timeline as a first-class pitch surface
 - [ ] More curated exact-day packs for known Chuck/cultural doorways
 - [ ] Re-enable featured dates; optional multi-event pack
 ---
@@ -229,6 +230,7 @@ documentation/PIPELINE.md               ← retrieval / ship rules
 documentation/COPY_CONTRACT.md           ← day-card format
 documentation/SOURCES_AND_LANDSCAPE.md   ← citation law + competitor notes
 documentation/CHUCK_E.md                 ← Chuck-E chatbot + Art. 50
+documentation/CHUCK_ECOSYSTEM_KB.md      ← Chuck franchise KB (internal reset deck)
 shared/copy-knobs.ts                     ← adjustable aims
 shared/chuck-e-knobs.ts                  ← disclosure + cliff-notes rules
 shared/source-registry.ts                ← allow/block + Harvard
@@ -278,19 +280,28 @@ Record material product/architecture choices here as we go.
 | 2026-08-06 | Chuck-E floating chat on top of Time Machine pipeline | Launch desk needs shoe Q&A + heritage + date nuggets beside Lookup |
 | 2026-08-06 | Chuck-E = cliff notes for press, not finished stories | Fine line: convenience vs branded editorial |
 | 2026-08-06 | Art. 50: hardcoded first-message AI disclosure + cliff-notes AI banner | Queryable chatbot + synthetic text that may leave the app |
+| 2026-08-06 | Brand timeline expanded to mirror Converse History landing | Client surface; press packs need the same beats + better dates |
+| 2026-08-06 | Signature year = 1934 (official history), not 1932 secondary lore | Align with Converse.com + archive narrative; flag older 1932 claims |
+| 2026-08-06 | Nike close = 2003-09-04 (announce 2003-07-09) | SEC 8-K; prior pack wrongly treated announce day as close |
+| 2026-08-06 | Timeline images from Converse History LP CDN + credit link | Visual parity with client page; deep-link only |
+| 2026-08-06 | Chuck-E facts ship with citation gloss → original source | Press desks need hoverable provenance, not bare chat prose |
+| 2026-08-06 | Chuck Ecosystem KB from SPSU27 Chuck Reset; UI cite Internal Comms | Desk needs franchise architecture; PDF filename must stay out of UI |
+| 2026-08-06 | Prefer positive when interest is tied; never soft-pedal landmark defining days | “Good News, Chuck” lean without ignoring 9/11-class dates |
+| 2026-08-06 | Interest = significance (primary) + light tone lean + credibility + quality | Balance cultural weight with a slight positive/neutral bias; tone is not a veto |
 
 ---
 
 ## Open questions
 
-- Exact public calendar day for Non-Skid / All Star 1917? (Likely year-only — keep as period estimate.)
+- Exact public calendar day for Non-Skid / All Star 1917 / 1919? (Still year-only on Converse History — keep year precision.)
 - Which markets / languages first for localisation?
 - Editorial workflow: who human-verifies before export?
-- Is the brand timeline part of v1 pitch, or hold as extended idea?
+- Brand timeline is now a first-class pitch surface — confirm copy tone vs Converse.com marketing voice with client.
 - Should “Chuck launch dates” be a curated seed list supplied by Converse, or inferred from brand pack only?
 - How aggressively do we auto-scrape primary URLs from Wikipedia footnotes vs require editor pick?
 - New Chuck launch pack content (engineering / features / story) for `shared/products/new-chuck.ts`?
 - Should Chuck-E cliff-notes download require the same human-review gate as Lookup press export?
+- Wire which stable Chuck Ecosystem KB facts into a code product pack (vs markdown-only)?
 
 ---
 

@@ -27,6 +27,11 @@ export const COPY_KNOBS = {
    * interest ranking lifts them above aggregator day-indexes.
    */
   preferPremiumPress: true,
+  /**
+   * Apply a light positive / neutral tone lean inside the interest formula.
+   * Significance still dominates; landmark defining days skip the tone term.
+   */
+  preferPositiveWhenTied: true,
   /** Skip live wire date-search for dates newer than this many days (and future). */
   recentLiveWireSkipDays: 548,
 } as const

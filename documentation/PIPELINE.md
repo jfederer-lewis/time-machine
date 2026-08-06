@@ -2,7 +2,7 @@
 
 > How a date lookup becomes a day card. Agents: follow this when changing discovery, ranking, polish, or cites.  
 > Companion docs: `VISION.md` (product), `SOURCES_AND_LANDSCAPE.md` (citation law), `COPY_CONTRACT.md` (card format).  
-> **Last updated:** 2026-08-05
+> **Last updated:** 2026-08-06
 
 ---
 
@@ -63,14 +63,16 @@ FILTER
        │
        ▼
 RANK  (worker/lib/interest.ts)
-  Prefer culturally resonant UK/global news
+  Formula: significance (primary) + light positive/neutral tone lean + credibility + quality
+  Cultural / UK-global / landmark significance outweighs tone
+  Tone is a nudge only (~±3); landmark defining days skip the tone term
   Prefer candidates already cited from premium-press hosts (see interest.ts PREMIUM_PRESS)
   Soft-penalise admin trivia; wire dumps −40; year proximity (unless anyYear)
   Same-year pool if best same-year interest ≥ 2; else all years by proximity
        │
        ▼
 PICK  (Gemini shortlist, optional; top 8)
-  Same cultural + premium-press bias; sourceHint when logged
+  Same balance: significance first, positive/neutral lean second, landmark exception; sourceHint when logged
        │
        ▼
 POLISH → VALIDATE  (up to 3 candidates)
@@ -105,11 +107,26 @@ Code: `worker/lib/assemble.ts`, `worker/providers/gemini.ts`, `worker/lib/upgrad
 
 ## Interest / headline priorities
 
+Ranking is a **weighted formula** (`scoreInterestBreakdown` in `interest.ts`), not a blunt “positive wins” rule:
+
+| Term | Role |
+|------|------|
+| **Significance** (primary) | Culture / UK-global / poignant stakes / category / landmark defining day |
+| **Tone** (secondary lean) | Small positive / neutral nudge, mild routine-tragedy drag — smaller than one culture signal |
+| **Credibility** | Premium-press cites + discovery lifts |
+| **Quality** | Penalties for dumps, thin stubs, admin trivia |
+
 **Prefer**
 
 - Culturally resonant settled history: arts, music (real moments), film, fashion, design, sport, science, human rights, major geopolitics
 - UK / Europe / global stakes (“Chuck was there” for a British/international desk)
 - Events already carrying **paper-of-record** cites when logged (see `PREMIUM_PRESS` in `interest.ts`)
+- Among **similarly significant** candidates: constructive / positive or neutral culture over routine tragedy
+
+**Still ship (do not soft-pedal)**
+
+- **Landmark defining days** — events that define that calendar date in world memory (e.g. 11 September 2001, Pearl Harbor, Hiroshima, moon landing, Armistice). These score on significance alone (no tone drag). Ignoring them would be editorially wrong.
+- A **clearly more significant** hard-news day still beats a mildly positive culture stub — tone is a lean, not a veto.
 
 **Deprioritise / exclude**
 
@@ -118,7 +135,7 @@ Code: `worker/lib/assemble.ts`, `worker/providers/gemini.ts`, `worker/lib/upgrad
 - Live wire dumps / video index scrapes
 - Recent/future lookup dates: skip **Perplexity** date-search only (`recentLiveWireSkipDays`); Gemini discovery still runs in full
 
-Knobs: `preferUkGlobalInterest`, `preferPremiumPress` in `shared/copy-knobs.ts`.
+Knobs: `preferUkGlobalInterest`, `preferPremiumPress`, `preferPositiveWhenTied` (enables the tone term) in `shared/copy-knobs.ts`. Weights live as `W` in `interest.ts`.
 
 ---
 

@@ -5,7 +5,7 @@
 > Pipeline / ship gates: `documentation/PIPELINE.md`.  
 > Agents: keep Gemini prompts and validators aligned with the knobs.
 
-**Last updated:** 2026-08-05
+**Last updated:** 2026-08-06
 
 ---
 
@@ -86,11 +86,12 @@ export const COPY_KNOBS = {
   contextRequired: true,
   preferUkGlobalInterest: true,
   preferPremiumPress: true,
+  preferPositiveWhenTied: true,
   recentLiveWireSkipDays: 548,
 } as const
 ```
 
-Interest ranking (`worker/lib/interest.ts`) lifts culturally resonant UK/global news and candidates that already carry premium-press cites above aggregator-only discovery.
+Interest ranking (`worker/lib/interest.ts`) uses a weighted formula: **significance first** (culture / UK-global / landmark), then a **light positive/neutral tone lean**, plus credibility and quality. Landmark defining days (9/11-class) skip the tone term. Tone is a nudge, not a veto over clearly more significant hard news.
 
 ### Operational polish notes (not knobs)
 

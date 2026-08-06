@@ -6,7 +6,7 @@
  * Until then Chuck-E must say it does not have that detail yet rather than guess.
  *
  * Contested / period-estimate claims should set `precision: 'period-estimate'`
- * and `needsHumanReview: true` (same pattern as the 1932 ankle-patch date).
+ * and `needsHumanReview: true` (same pattern as any still-contested heritage date).
  */
 
 export type ProductFactPrecision = 'exact' | 'period-estimate' | 'unverified'

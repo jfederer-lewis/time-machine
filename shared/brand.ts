@@ -8,6 +8,15 @@ export interface BrandPalette {
   estimate: string
 }
 
+export interface BrandMomentImage {
+  /** Deep-link to brand CDN / press asset — do not rehost without license. */
+  url: string
+  alt: string
+  /** Page the asset was published on (traceability). */
+  sourcePageUrl: string
+  credit?: string
+}
+
 export interface BrandMoment {
   id: string
   /** ISO date when known; otherwise year-month or year string */
@@ -24,6 +33,8 @@ export interface BrandMoment {
     publishedAt?: string
   }
   isExactQuote: boolean
+  /** Optional visual from the brand History page (or other credited source). */
+  image?: BrandMomentImage
 }
 
 export interface BrandConfig {
