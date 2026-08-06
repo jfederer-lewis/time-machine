@@ -2,7 +2,7 @@
 
 > Living document. Update this as the idea develops. Agents: read this before making product or architecture decisions.
 
-**Last updated:** 2026-08-05  
+**Last updated:** 2026-08-06  
 **Client (current):** Converse  
 **Working title:** Good News, Chuck  
 **Live:** https://time-machine.jasminefederer.workers.dev  
@@ -15,6 +15,7 @@
 | `documentation/PIPELINE.md` | Retrieval → rank → polish → cite → ship |
 | `documentation/COPY_CONTRACT.md` | Day-card title / synopsis / Context / Source |
 | `documentation/SOURCES_AND_LANDSCAPE.md` | Citation allow/block + Harvard + landscape |
+| `documentation/CHUCK_E.md` | Chuck-E chatbot, cliff notes, Art. 50 disclosure |
 | `AGENTS.md` | Short non-negotiables entrypoint |
 
 ---
@@ -176,6 +177,9 @@ Keys go in `.dev.vars` locally and `wrangler secret` in prod. Never commit secre
 - [x] Cite upgrade with claim relevance (Full)
 - [x] Aggregator chart labels removed from day-index discovery
 - [x] Assemble never ships failing copy-contract cards
+- [x] Chuck-E floating chat widget (request/response) with Art. 50 first-message disclosure
+- [x] Chuck-E intent routing: date → assemble; product → launch pack; heritage → brand timeline
+- [x] Cliff notes extract (bullets + Harvard + AI-origin banner) — not finished press copy
 
 ### Not built yet (docs previously over-claimed)
 
@@ -184,8 +188,9 @@ Keys go in `.dev.vars` locally and `wrangler secret` in prod. Never commit secre
 - [ ] Quality labels / `needsHumanReview` badge on the day card
 - [ ] Pipeline / provider catalogue UI (`/api/providers` JSON only)
 - [ ] Fallback / live toggle in the UI (env + query param only)
-- [ ] Press export JSON / copy brief
+- [ ] Press export JSON / copy brief (Lookup path — Chuck-E cliff notes cover chat export)
 - [ ] Human verification workflow before export
+- [ ] Converse-supplied new Chuck engineering / feature pack (`shared/products/new-chuck.ts` still placeholder)
 
 ### Next (when keys / next sprint)
 
@@ -223,11 +228,16 @@ documentation/VISION.md
 documentation/PIPELINE.md               ← retrieval / ship rules
 documentation/COPY_CONTRACT.md           ← day-card format
 documentation/SOURCES_AND_LANDSCAPE.md   ← citation law + competitor notes
+documentation/CHUCK_E.md                 ← Chuck-E chatbot + Art. 50
 shared/copy-knobs.ts                     ← adjustable aims
+shared/chuck-e-knobs.ts                  ← disclosure + cliff-notes rules
 shared/source-registry.ts                ← allow/block + Harvard
 shared/provenance.ts
 shared/brands/
+shared/products/                         ← new Chuck launch pack
 worker/lib/assemble.ts                   ← orchestration
+worker/lib/chuck-e.ts                    ← Chuck-E intent router
+worker/lib/chuck-e-contract.ts           ← disclosure / no-story guards
 worker/lib/interest.ts                   ← ranking
 worker/lib/copy-contract.ts              ← validators
 worker/lib/upgrade-claim.ts              ← cite upgrade + relevance
@@ -265,6 +275,9 @@ Record material product/architecture choices here as we go.
 | 2026-08-05 | Past tense / “Chuck was there”; skip live wire for recent dates | Product reads as settled history |
 | 2026-08-05 | Polish `maxOutputTokens` ≥ ~3k (thinking models) | Flash “thoughts” ate a 520 budget → truncated JSON → empty days |
 | 2026-08-05 | `looksAbruptlyCut` must not treat `.` as truncation | Character class `[.…]` rejected every finished sentence |
+| 2026-08-06 | Chuck-E floating chat on top of Time Machine pipeline | Launch desk needs shoe Q&A + heritage + date nuggets beside Lookup |
+| 2026-08-06 | Chuck-E = cliff notes for press, not finished stories | Fine line: convenience vs branded editorial |
+| 2026-08-06 | Art. 50: hardcoded first-message AI disclosure + cliff-notes AI banner | Queryable chatbot + synthetic text that may leave the app |
 
 ---
 
@@ -276,6 +289,8 @@ Record material product/architecture choices here as we go.
 - Is the brand timeline part of v1 pitch, or hold as extended idea?
 - Should “Chuck launch dates” be a curated seed list supplied by Converse, or inferred from brand pack only?
 - How aggressively do we auto-scrape primary URLs from Wikipedia footnotes vs require editor pick?
+- New Chuck launch pack content (engineering / features / story) for `shared/products/new-chuck.ts`?
+- Should Chuck-E cliff-notes download require the same human-review gate as Lookup press export?
 
 ---
 

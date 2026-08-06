@@ -3,6 +3,7 @@ import type { BrandConfig } from '../shared/brand'
 import type { CulturalEvent, DateQueryResult, ResearchMode } from '../shared/provenance'
 import { converseBrand } from '../shared/brands/converse'
 import { CitationLine } from './components/CitationLine'
+import { ChuckEWidget } from './components/ChuckEWidget'
 import { DateDial } from './components/DateDial'
 import { GlossableText } from './components/GlossableText'
 import { TimelineView, type TimelineAxis } from './components/TimelineView'
@@ -405,6 +406,8 @@ export default function App() {
           <TimelineView brand={brand} axis={timelineAxis} onAxisChange={setTimelineAxis} />
         </main>
       ) : null}
+
+      <ChuckEWidget brand={brand} researchMode={researchMode} />
     </div>
   )
 }

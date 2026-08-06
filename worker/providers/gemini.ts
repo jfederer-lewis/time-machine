@@ -628,6 +628,50 @@ export async function verifyClaimWithGemini(opts: {
   }
 }
 
+/**
+ * Chuck-E chat turn — non-streaming, persona-guarded.
+ * Never a public citation host. No Google Search grounding for product Q&A
+ * (shoe facts must come from the supplied knowledge pack / heritage timeline).
+ * Historical world claims should already be injected via context from assembleDateQuery.
+ */
+export async function chatWithChuckE(opts: {
+  apiKey: string
+  systemContext: string
+  messages: Array<{ role: 'user' | 'assistant'; content: string }>
+}): Promise<string | null> {
+  const { apiKey, systemContext, messages } = opts
+  if (!messages.length) return null
+
+  const history = messages
+    .slice(-12)
+    .map((m) => `${m.role === 'user' ? 'Journalist' : 'Chuck-E'}: ${m.content}`)
+    .join('\n\n')
+
+  const prompt = [
+    systemContext,
+    '',
+    'Conversation so far:',
+    history,
+    '',
+    'Reply as Chuck-E only. Keep it desk-ready research notes — short paragraphs or bullets.',
+    'Do not write a finished press story, dateline, or byline-ready narrative.',
+    'If the knowledge context does not contain a product detail, say you do not have that detail yet.',
+  ].join('\n')
+
+  try {
+    const text = await generateGeminiText({
+      apiKey,
+      prompt,
+      temperature: 0.35,
+      maxOutputTokens: 1024,
+    })
+    return text?.trim() || null
+  } catch (err) {
+    console.error('[chuck-e] Gemini chat failed', err)
+    return null
+  }
+}
+
 async function generateGeminiText(opts: {
   apiKey: string
   prompt: string

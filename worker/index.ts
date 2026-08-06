@@ -1,4 +1,11 @@
 import { assembleDateQuery, listProviders, type Env } from './lib/assemble'
+import {
+  handleChuckEChat,
+  handleChuckECliffNotes,
+  openingPayload,
+  type ChuckEChatRequest,
+  type ChuckECliffNotesRequest,
+} from './lib/chuck-e'
 import { getBrand, listBrands } from '../shared/brands'
 import { parseQueryDate } from '../shared/source-registry'
 
@@ -7,9 +14,17 @@ function json(data: unknown, status = 200): Response {
     status,
     headers: {
       'Content-Type': 'application/json; charset=utf-8',
-      'Cache-Control': 'no-store',
+      'Access-Control-Allow-Origin': '*',
     },
   })
+}
+
+async function readJsonBody<T>(request: Request): Promise<T | null> {
+  try {
+    return (await request.json()) as T
+  } catch {
+    return null
+  }
 }
 
 export default {
@@ -73,6 +88,29 @@ export default {
         anyYear,
       })
       return json(result)
+    }
+
+    // Chuck-E — GET opens a session with Art. 50 disclosure; POST continues the chat
+    if (url.pathname === '/api/chuck-e/chat') {
+      if (request.method === 'GET') {
+        return json(openingPayload(url.searchParams.get('sessionId') || undefined))
+      }
+      if (request.method !== 'POST') {
+        return json({ error: 'Use GET to open or POST to chat' }, 405)
+      }
+      const body = await readJsonBody<ChuckEChatRequest>(request)
+      if (!body) return json({ error: 'Invalid JSON body' }, 400)
+      const result = await handleChuckEChat(body, env)
+      return json(result)
+    }
+
+    if (url.pathname === '/api/chuck-e/cliff-notes') {
+      if (request.method !== 'POST') {
+        return json({ error: 'POST required' }, 405)
+      }
+      const body = await readJsonBody<ChuckECliffNotesRequest>(request)
+      if (!body) return json({ error: 'Invalid JSON body' }, 400)
+      return json(handleChuckECliffNotes(body))
     }
 
     return new Response('Not found', { status: 404 })

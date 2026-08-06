@@ -6,8 +6,9 @@ Read these before changing product behaviour, retrieval, copy, or cites:
 2. **`documentation/PIPELINE.md`** — how lookup → day card works (discover → rank → polish → cite → ship)  
 3. **`documentation/COPY_CONTRACT.md`** — title / synopsis / Context / Source format  
 4. **`documentation/SOURCES_AND_LANDSCAPE.md`** — allowlist, blocklist, Harvard, competitor notes  
+5. **`documentation/CHUCK_E.md`** — Chuck-E chatbot, cliff notes, EU AI Act Art. 50 disclosure  
 
-Knobs live in `shared/copy-knobs.ts`. Keep Gemini prompts and validators aligned with the docs.  
+Knobs live in `shared/copy-knobs.ts` (day cards) and `shared/chuck-e-knobs.ts` (Chuck-E). Keep Gemini prompts and validators aligned with the docs.  
 **Canonical hosts** live in `shared/source-registry.ts` — not only the markdown tables.
 
 ## Non-negotiables (summary)
@@ -21,5 +22,6 @@ Knobs live in `shared/copy-knobs.ts`. Keep Gemini prompts and validators aligned
 - Cite must be **about the claim** on the upgrade path — Tier A alone is not enough.
 - Discovery aggregators never appear on the public Source line.
 - Ship gate = copy contract. `needsHumanReview` does **not** block ship (and is not shown in the UI yet).
+- **Chuck-E** is cliff notes for press desks, not finished stories; first message must carry hardcoded AI disclosure; cliff-notes exports must carry the AI-origin banner.
 
 When you change behaviour, update the relevant doc + decision log and bump **Last updated**.
