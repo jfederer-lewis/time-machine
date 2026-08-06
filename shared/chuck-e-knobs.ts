@@ -14,7 +14,9 @@ export const CHUCK_E_KNOBS = {
    * Must appear at the start of every new conversation — never LLM-generated.
    */
   disclosureText:
-    "Hi — I'm Chuck-E, an AI assistant for Converse press desks. I help you pull sourced facts, heritage nuggets, and editorial cliff notes about Chuck and the cultural timeline around it. I'm not a journalist and I don't write finished stories — treat everything I surface as research notes to verify before publication.",
+    "Hi — I'm Chuck-E, an AI assistant for Converse press desks. I help you pull sourced facts, heritage nuggets, and editorial cliff notes about Chuck and the cultural timeline around it.",
+  /** Launcher label when the panel is closed. */
+  launcherLabel: 'Ask Chuck-E',
   /**
    * Banner that travels with every Cliff Notes export
    * (synthetic-content marking for text that may leave the app).

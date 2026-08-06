@@ -80,7 +80,7 @@ a {
 .brand-logo {
   display: block;
   width: auto;
-  height: clamp(2rem, 4.5vw, 2.65rem);
+  height: clamp(2.75rem, 6vw, 3.5rem);
   object-fit: contain;
 }
 
@@ -460,36 +460,55 @@ a {
   align-items: center;
   gap: 0.55rem;
   border: 1px solid var(--ink);
-  background: var(--accent);
-  color: #fff;
-  padding: 0.7rem 1.05rem 0.7rem 0.7rem;
+  background: #f7f4ec;
+  color: var(--ink);
+  padding: 0.65rem 1rem 0.65rem 0.65rem;
   cursor: pointer;
-  box-shadow: 0 10px 28px color-mix(in srgb, var(--ink) 18%, transparent);
-  transition: transform 160ms ease, background 160ms ease;
+  box-shadow: 0 8px 22px color-mix(in srgb, var(--ink) 12%, transparent);
+  transition: transform 160ms ease, background 160ms ease, border-color 160ms ease;
+  /* Squared cream chip — not the red pill */
+  border-radius: 2px;
 }
 
 .chuck-e-launcher:hover {
-  background: color-mix(in srgb, var(--accent) 88%, #000);
+  background: #fffef9;
   transform: translateY(-1px);
+}
+
+.chuck-e-launcher--open {
+  padding: 0.7rem 0.85rem;
+  min-width: 2.6rem;
+  justify-content: center;
 }
 
 .chuck-e-launcher__mark {
   display: grid;
   place-items: center;
-  width: 1.85rem;
-  height: 1.85rem;
-  border-radius: 999px;
+  width: 1.7rem;
+  height: 1.7rem;
+  border: 1px solid var(--ink);
   background: #fff;
-  color: var(--accent);
-  font-weight: 700;
-  font-size: 0.85rem;
-  letter-spacing: -0.04em;
+  color: var(--ink);
+  /* Diamond / rotated square instead of round red badge */
+  transform: rotate(45deg);
+}
+
+.chuck-e-launcher__mark svg {
+  transform: rotate(-45deg);
 }
 
 .chuck-e-launcher__label {
-  font-size: 0.82rem;
+  font-size: 0.78rem;
   font-weight: 600;
-  letter-spacing: 0.02em;
+  letter-spacing: 0.04em;
+  text-transform: none;
+}
+
+.chuck-e-launcher__minimise {
+  display: block;
+  width: 0.95rem;
+  height: 1.5px;
+  background: var(--ink);
 }
 
 .chuck-e-panel {
@@ -546,6 +565,18 @@ a {
   color: var(--ink);
 }
 
+.chuck-e-icon-btn--minimise {
+  display: grid;
+  place-items: center;
+}
+
+.chuck-e-minimise-glyph {
+  display: block;
+  width: 0.85rem;
+  height: 1.5px;
+  background: currentColor;
+}
+
 .chuck-e-panel__body {
   flex: 1;
   overflow: auto;
@@ -573,8 +604,30 @@ a {
 }
 
 .chuck-e-msg--disclosure {
-  background: color-mix(in srgb, var(--estimate) 8%, #fff);
-  border-color: color-mix(in srgb, var(--estimate) 35%, var(--rule));
+  align-self: stretch;
+  max-width: 100%;
+  background: transparent;
+  border: 0;
+  border-left: 2px solid var(--rule);
+  border-radius: 0;
+  padding: 0.15rem 0 0.15rem 0.85rem;
+  color: var(--muted);
+}
+
+.chuck-e-msg--disclosure .chuck-e-msg__body {
+  font-family: var(--font-ui);
+  font-size: 0.82rem;
+  line-height: 1.45;
+  color: var(--muted);
+  font-style: normal;
+}
+
+.chuck-e-msg__disclosure-label {
+  margin: 0 0 0.35rem;
+  font-size: 0.65rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: color-mix(in srgb, var(--muted) 85%, #fff);
 }
 
 .chuck-e-msg__label {

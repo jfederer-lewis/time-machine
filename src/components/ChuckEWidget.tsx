@@ -77,11 +77,12 @@ export function ChuckEWidget({ brand, researchMode = 'lite' }: ChuckEWidgetProps
               </button>
               <button
                 type="button"
-                className="chuck-e-icon-btn"
+                className="chuck-e-icon-btn chuck-e-icon-btn--minimise"
                 onClick={() => setOpen(false)}
-                aria-label="Close Chuck-E"
+                aria-label="Minimise Chuck-E"
+                title="Minimise"
               >
-                ×
+                <span className="chuck-e-minimise-glyph" aria-hidden="true" />
               </button>
             </div>
           </header>
@@ -140,15 +141,28 @@ export function ChuckEWidget({ brand, researchMode = 'lite' }: ChuckEWidgetProps
 
       <button
         type="button"
-        className="chuck-e-launcher"
+        className={['chuck-e-launcher', open ? 'chuck-e-launcher--open' : ''].filter(Boolean).join(' ')}
         aria-expanded={open}
-        aria-controls={open ? undefined : undefined}
+        aria-label={open ? 'Minimise Chuck-E' : CHUCK_E_KNOBS.launcherLabel}
         onClick={() => setOpen((o) => !o)}
       >
-        <span className="chuck-e-launcher__mark" aria-hidden="true">
-          E
-        </span>
-        <span className="chuck-e-launcher__label">{open ? 'Close' : CHUCK_E_KNOBS.agentName}</span>
+        {open ? (
+          <span className="chuck-e-launcher__minimise" aria-hidden="true" />
+        ) : (
+          <>
+            <span className="chuck-e-launcher__mark" aria-hidden="true">
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                <path
+                  d="M2.5 3.25h11a.75.75 0 0 1 .75.75v6.5a.75.75 0 0 1-.75.75H8.2L5.1 13.6a.4.4 0 0 1-.7-.3v-1.55H2.5a.75.75 0 0 1-.75-.75V4a.75.75 0 0 1 .75-.75Z"
+                  stroke="currentColor"
+                  strokeWidth="1.25"
+                  strokeLinejoin="round"
+                />
+              </svg>
+            </span>
+            <span className="chuck-e-launcher__label">{CHUCK_E_KNOBS.launcherLabel}</span>
+          </>
+        )}
       </button>
     </div>
   )

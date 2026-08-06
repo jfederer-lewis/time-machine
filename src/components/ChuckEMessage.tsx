@@ -38,8 +38,11 @@ export function ChuckEMessage({ message }: { message: ChuckEChatMessage }) {
         .join(' ')}
       aria-label={isUser ? 'You' : isDisclosure ? 'AI disclosure' : 'Chuck-E'}
     >
-      {!isUser ? (
-        <p className="chuck-e-msg__label">{isDisclosure ? 'Chuck-E · disclosure' : 'Chuck-E'}</p>
+      {!isUser && !isDisclosure ? (
+        <p className="chuck-e-msg__label">Chuck-E</p>
+      ) : null}
+      {isDisclosure ? (
+        <p className="chuck-e-msg__disclosure-label">About this assistant</p>
       ) : null}
       <div className="chuck-e-msg__body">{renderContent(message.content)}</div>
       {message.citations && message.citations.length > 0 ? (
