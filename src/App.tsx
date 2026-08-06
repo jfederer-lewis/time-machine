@@ -7,6 +7,7 @@ import { ChuckEWidget } from './components/ChuckEWidget'
 import { DateDial } from './components/DateDial'
 import { GlossableText } from './components/GlossableText'
 import { TimelineView, type TimelineAxis } from './components/TimelineView'
+import converseLogo from './assets/converse-logo.png'
 
 type View = 'date' | 'timeline'
 
@@ -227,8 +228,13 @@ export default function App() {
     >
       <header className="topbar">
         <div className="brand-lockup">
-          <p className="brand-name">{brand.name}</p>
-          <p className="product-line">{brand.productLine}</p>
+          <img
+            className="brand-logo"
+            src={converseLogo}
+            alt={`${brand.name} ${brand.productLine}`}
+            width={160}
+            height={108}
+          />
         </div>
         <div className="topbar-actions">
           <nav className="view-nav" aria-label="Primary">
