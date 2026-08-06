@@ -151,13 +151,9 @@ export function ChuckEWidget({ brand, researchMode = 'lite' }: ChuckEWidgetProps
         ) : (
           <>
             <span className="chuck-e-launcher__mark" aria-hidden="true">
-              <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-                <path
-                  d="M2.5 3.25h11a.75.75 0 0 1 .75.75v6.5a.75.75 0 0 1-.75.75H8.2L5.1 13.6a.4.4 0 0 1-.7-.3v-1.55H2.5a.75.75 0 0 1-.75-.75V4a.75.75 0 0 1 .75-.75Z"
-                  stroke="currentColor"
-                  strokeWidth="1.25"
-                  strokeLinejoin="round"
-                />
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor">
+                {/* All Star–style five-point star */}
+                <path d="M12 2.2l2.55 7.05H22l-5.85 4.35 2.2 7.1L12 16.9l-6.35 3.8 2.2-7.1L2 9.25h7.45L12 2.2z" />
               </svg>
             </span>
             <span className="chuck-e-launcher__label">{CHUCK_E_KNOBS.launcherLabel}</span>

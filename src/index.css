@@ -484,17 +484,14 @@ a {
 .chuck-e-launcher__mark {
   display: grid;
   place-items: center;
-  width: 1.7rem;
-  height: 1.7rem;
-  border: 1px solid var(--ink);
-  background: #fff;
+  width: 1.55rem;
+  height: 1.55rem;
   color: var(--ink);
-  /* Diamond / rotated square instead of round red badge */
-  transform: rotate(45deg);
+  flex-shrink: 0;
 }
 
 .chuck-e-launcher__mark svg {
-  transform: rotate(-45deg);
+  display: block;
 }
 
 .chuck-e-launcher__label {
