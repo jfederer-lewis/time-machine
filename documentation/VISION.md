@@ -2,7 +2,7 @@
 
 > Living document. Update this as the idea develops. Agents: read this before making product or architecture decisions.
 
-**Last updated:** 2026-08-06 (curated timeline + heritage KB split)  
+**Last updated:** 2026-08-06 (Converse-feel ideas scratchpad)  
 **Client (current):** Converse  
 **Working title:** Good News, Chuck  
 **Live:** https://time-machine.jasminefederer.workers.dev  
@@ -17,6 +17,7 @@
 | `documentation/SOURCES_AND_LANDSCAPE.md` | Citation allow/block + Harvard + landscape |
 | `documentation/CHUCK_E.md` | Chuck-E chatbot, cliff notes, Art. 50 disclosure |
 | `documentation/CHUCK_ECOSYSTEM_KB.md` | Chuck Ecosystem KB (SPSU27 Chuck Reset Internal Comms) |
+| `documentation/CONVERSE_FEEL_IDEAS.md` | Scratchpad: ways to feel more Converse (not ship requirements) |
 | `AGENTS.md` | Short non-negotiables entrypoint |
 
 ---
@@ -286,6 +287,7 @@ Record material product/architecture choices here as we go.
 | 2026-08-06 | Brand timeline expanded to mirror Converse History landing | Superseded same day — see curated + heritageKb split |
 | 2026-08-06 | Timeline UI = curated beats; History LP text = `heritageKb` for chat / date attach | Don’t clone converse.com History as the product surface; still feed the full text to Chuck-E |
 | 2026-08-06 | Prefer Converse-affinity cultural news (Nike only when tied to Converse) on Lookup | Make “what happened on this day” feel more Chuck without inventing brand claims |
+| 2026-08-06 | Converse-feel ideas live in `CONVERSE_FEEL_IDEAS.md` (not VISION requirements) | Capture “era Chuck / what were they wearing” explorations without polluting the ship brief |
 | 2026-08-06 | Signature year = 1934 (official history), not 1932 secondary lore | Align with Converse.com + archive narrative; flag older 1932 claims |
 | 2026-08-06 | Nike close = 2003-09-04 (announce 2003-07-09) | SEC 8-K; prior pack wrongly treated announce day as close |
 | 2026-08-06 | Timeline images from Converse History LP CDN + credit link | Visual parity with client page; deep-link only |
@@ -308,6 +310,7 @@ Record material product/architecture choices here as we go.
 - New Chuck launch pack content (engineering / features / story) for `shared/products/new-chuck.ts`?
 - Should Chuck-E cliff-notes download require the same human-review gate as Lookup press export?
 - Wire which stable Chuck Ecosystem KB facts into a code product pack (vs markdown-only)?
+- Which Converse-feel ideas (see `CONVERSE_FEEL_IDEAS.md`) to prototype first — era silhouette chip vs attested wear vs dual spotlight?
 
 ---
 
