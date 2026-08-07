@@ -2,6 +2,7 @@
 
 > Canonical rules for what wins a day card / Chuck-E date reply.  
 > Runtime: `worker/lib/interest.ts`, `shared/converse-universe.ts`, `worker/lib/assemble.ts`, `worker/lib/chuck-e.ts`, Gemini pick prompts.  
+> **Last updated:** 2026-08-07 (Chuck-E: no world backdrop on Converse-tied answers)  
 > Knobs: `shared/copy-knobs.ts`, `shared/chuck-e-knobs.ts`.  
 > Companion: `PIPELINE.md`, `COPY_CONTRACT.md`, `CHUCK_E.md`, `SOURCES_AND_LANDSCAPE.md`.  
 > **Last updated:** 2026-08-07
@@ -62,10 +63,13 @@ Patterns + people anchors: `shared/converse-universe.ts`.
 | Direct brand text already in the candidate | Prefer over weak adjacent stub | Never invent a Converse claim |
 | Soft universe theme in candidate text | Light ranking lift | Never invent shoe facts from “basketball” alone |
 | Calendar-day people anchor (e.g. Chuck Taylor born 24 June 1901) | Optional bridge after non-landmark world news; explain who he became for Converse with cites | Not on landmark days |
-| Exact History / KB day (e.g. Nike close 4 Sep 2003) | May lead or pair with cultural backdrop | Not if a landmark defines the day |
+| Exact History / KB day (e.g. Nike close 4 Sep 2003) | May lead the reply when the ask is Converse-framed | Not if a landmark defines the day; do **not** append unrelated world “backdrop” beside it |
 | Competing brand day (Adidas, Vans, standalone Nike sports) | Soft demote | Do not use as the Chuck hook |
 
-**Chuck-E date replies:** use the same assemble pipeline as Lookup. World news may lead. Add a Converse-universe bridge **only** when sourced **and** `allowConverseTie` (not landmark). Prefer interesting significant news over a weak Chuck angle.
+**Chuck-E date replies:** use the same assemble pipeline as Lookup.
+
+- **Already Converse-tied** (framed ask + History beat, or brand spotlight): answer that beat only — no forced world-news sidecar.
+- **World-only day** (e.g. 1 April 1999 with no Converse claim): answer the world fact; optionally add **one light** sourced Converse bridge (same-day History / calendar-day people anchor) when it exists — never invent, never force.
 
 ---
 
@@ -89,9 +93,9 @@ Brand / universe ──►  soft colour when honest — never overrides landmark
 parse date → assembleDateQuery (anyYear for calendar fan-out)
   → world spotlight vs brand moment
   → if landmark: world only; no Converse append
-  → else if Converse-framed ask: brand lead + optional cultural backdrop
-  → else if world lead + sourced tie: optional “In the Converse universe…”
-  → cites / glosses (title + date + publisher)
+  → else if Converse-tied (framed ask / brand spotlight): brand answer only — no world backdrop
+  → else if world lead + sourced same-day/calendar tie: optional light Converse bridge
+  → cites / glosses
 ```
 
 ---
@@ -108,4 +112,5 @@ Culture / fashion / museum hosts for claim-relevant cites: `shared/source-regist
 |------|----------|-----|
 | 2026-08-07 | Codify editorial schema (significance > tone; landmark no Chuck bridge; soft universe) | Agents need one place; brand activation must not undermine hard history |
 | 2026-08-07 | Soft universe affinity + people anchors | Chuck-adjacent on-this-day without inventing claims |
+| 2026-08-07 | No world backdrop on Converse-tied Chuck-E answers; light bridge only when world-only | Backdrop was noise on Swooshed-class asks; April-1-style dates may lightly re-anchor |
 | 2026-08-06 | Prefer positive when tied; never soft-pedal landmarks | Good News, Chuck lean without ignoring 9/11-class dates |

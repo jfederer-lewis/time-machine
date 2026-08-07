@@ -5,7 +5,7 @@
 
 import type { CulturalEvent, Gloss } from '../../shared/provenance'
 import { fetchWikipediaSummary } from '../providers/wikipedia-summary'
-import { firstSentence } from './clean-text'
+import { firstSentence, clipToCompleteSentences } from './clean-text'
 
 const STOP = new Set([
   'a',
@@ -492,9 +492,5 @@ export async function attachWikipediaGlossesForProse(
 }
 
 function cleanWikiGlossBody(extract: string): string {
-  const s = firstSentence(extract) || extract
-  if (s.length <= 140) return s
-  const cut = s.slice(0, 140)
-  const at = Math.max(cut.lastIndexOf('. '), cut.lastIndexOf('; '))
-  return (at > 60 ? cut.slice(0, at + 1) : `${cut.trimEnd()}…`).trim()
+  return clipToCompleteSentences(firstSentence(extract) || extract, 160)
 }

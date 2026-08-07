@@ -1,5 +1,6 @@
 import { useEffect, useId, useState } from 'react'
 import { parseQueryDate } from '../../shared/source-registry'
+import { LoadingIndicator } from './LoadingIndicator'
 
 interface DateDialProps {
   value: string
@@ -183,11 +184,16 @@ export function DateDial({
 
         <button
           type="button"
-          className="btn-primary"
+          className={['btn-primary', loading ? 'btn-primary--loading' : ''].filter(Boolean).join(' ')}
           onClick={trySubmit}
           disabled={loading || !canSubmit}
+          aria-busy={loading || undefined}
         >
-          {loading ? 'Fetching…' : 'Look up'}
+          {loading ? (
+            <LoadingIndicator compact className="btn-loading" label="Fetching" decorative />
+          ) : (
+            'Look up'
+          )}
         </button>
       </div>
 

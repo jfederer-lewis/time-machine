@@ -170,6 +170,29 @@ export function firstSentence(text: string): string {
   return sentences[0] || text.trim()
 }
 
+/**
+ * Soft length for gloss / snippet prose — always ends on a complete sentence.
+ * Never mid-sentence ellipsis. If the first sentence alone exceeds softMax, keep it whole.
+ */
+export function clipToCompleteSentences(text: string, softMax = 160): string {
+  const cleaned = String(text || '').replace(/\s+/g, ' ').trim()
+  if (!cleaned) return ''
+  if (cleaned.length <= softMax) return cleaned
+
+  const sentences = splitSentences(cleaned)
+  if (!sentences.length) return cleaned
+
+  let out = ''
+  for (const sentence of sentences) {
+    const next = out ? `${out} ${sentence}` : sentence
+    if (out && next.length > softMax) break
+    out = next
+    // One full sentence is enough for a gloss even when over softMax
+    if (out.length >= softMax * 0.55) break
+  }
+  return out.trim() || sentences[0]
+}
+
 /** Prefer a complete sentence; strip trailing period for use as a title. */
 export function firstCompleteClause(text: string): string {
   return firstSentence(text).replace(/[.!?]$/, '').trim()

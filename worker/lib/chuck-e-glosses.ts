@@ -1,14 +1,16 @@
 import type { BrandMoment } from '../../shared/brand'
 import type { Citation, Gloss } from '../../shared/provenance'
 import type { ProductFact } from '../../shared/products'
+import { clipToCompleteSentences } from './clean-text'
 import { isYearLikeTerm } from './gloss-service'
 
-/** Soft ceiling for popover body — desks skim, not read essays. */
-const GLOSS_BODY_MAX = 140
+/** Soft ceiling for popover body — desks skim; always whole sentences. */
+const GLOSS_BODY_MAX = 160
 
 /**
  * Clean source snippets for gloss popovers: short readable prose only.
  * Strip bibliographic wrappers, title echoes, and History-meta asides.
+ * Never cut mid-sentence.
  */
 export function cleanGlossSnippet(raw: string, max = GLOSS_BODY_MAX): string {
   let s = String(raw || '')
@@ -33,10 +35,7 @@ export function cleanGlossSnippet(raw: string, max = GLOSS_BODY_MAX): string {
   s = s.replace(/\s*Available at:\s*\S+/gi, '').trim()
   s = s.replace(/\s+per\s+[A-Z][^.]{2,40}\.\s*$/g, '').trim()
 
-  if (s.length <= max) return s
-  const cut = s.slice(0, max)
-  const at = Math.max(cut.lastIndexOf('. '), cut.lastIndexOf('; '), cut.lastIndexOf(', '))
-  return (at > max * 0.4 ? cut.slice(0, at + 1) : `${cut.trimEnd()}…`).trim()
+  return clipToCompleteSentences(s, max)
 }
 
 /** Avoid “Swooshed. Swooshed was…” — drop a leading title echo. */

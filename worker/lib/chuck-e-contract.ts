@@ -160,10 +160,12 @@ const ABRUPT_CUT_FALLBACK =
 
 /**
  * Never ship mid-sentence truncation. Prefer salvaged complete prose, then a short retry cue.
+ * Also strips report-brief scaffolding before ship.
  */
 export function ensureCompleteChatReply(text: string): string {
-  if (!looksLikeIncompleteChatReply(text)) return text
-  return salvageCompleteChatReply(text) || ABRUPT_CUT_FALLBACK
+  const cleaned = stripChatReportScaffolding(text)
+  if (!looksLikeIncompleteChatReply(cleaned)) return cleaned
+  return salvageCompleteChatReply(cleaned) || ABRUPT_CUT_FALLBACK
 }
 
 export interface CliffNotesDraft {
@@ -227,17 +229,72 @@ export function coerceToCliffNotesBullets(text: string, max: number = CHUCK_E_KN
   return sentences.slice(0, max)
 }
 
+/**
+ * Strip report-brief scaffolding Gemini sometimes invents (### headings, Pointers to Cite, etc.).
+ * Chat should stay prose + optional bullets; cites live in the UI.
+ */
+const REPORT_SECTION_LINE =
+  /^(beat summary|strategic(?:\s*&\s*|\s+and\s+)?cultural significance|heritage preservation|global infrastructure|cultural positioning|pointers? to cite|source anchor|desk guidance|transaction terms|operating model|press desk research notes)\s*:?\s*$/i
+
+const REPORT_BULLET_DROP =
+  /^\s*([-*•]|\d+[.)])\s*(source anchor|desk guidance)\s*:/i
+
+const REPORT_BULLET_UNLABEL =
+  /^\s*([-*•]|\d+[.)])\s*(event|transaction terms|operating model|heritage preservation|global infrastructure|cultural positioning)\s*:\s*/i
+
+export function stripChatReportScaffolding(text: string): string {
+  const lines = text.replace(/\r\n/g, '\n').split('\n')
+  const out: string[] = []
+  let skippingCiteTail = false
+
+  for (const raw of lines) {
+    const line = raw.trimEnd()
+    const trimmed = line.trim()
+
+    if (/^#{1,6}\s/.test(trimmed)) {
+      // Keep a useful title fragment after hashes when it's just the beat name
+      const bare = trimmed
+        .replace(/^#{1,6}\s+/, '')
+        .replace(/\s*[—–-]\s*Press Desk.*$/i, '')
+        .trim()
+      if (bare && !REPORT_SECTION_LINE.test(bare) && !/^press desk\b/i.test(bare)) {
+        out.push(`**${bare}**`)
+      }
+      continue
+    }
+
+    if (REPORT_SECTION_LINE.test(trimmed)) {
+      if (/^pointers? to cite/i.test(trimmed)) skippingCiteTail = true
+      continue
+    }
+
+    if (skippingCiteTail || REPORT_BULLET_DROP.test(trimmed)) continue
+
+    // Drop inline “Source Anchor:” / “Desk Guidance:” lines even without a bullet
+    if (/^(source anchor|desk guidance)\s*:/i.test(trimmed)) continue
+
+    if (REPORT_BULLET_UNLABEL.test(trimmed)) {
+      const rest = trimmed.replace(REPORT_BULLET_UNLABEL, '').trim()
+      if (rest) out.push(`• ${rest}`)
+      continue
+    }
+
+    out.push(line)
+  }
+
+  return out
+    .join('\n')
+    .replace(/\n{3,}/g, '\n\n')
+    .trim()
+}
+
 /** Soft rewrite when chat reply looks like a finished story. */
 export function coerceChatAwayFromStory(text: string): string {
-  if (!looksLikeFinishedStory(text)) return ensureCompleteChatReply(text)
-  const bullets = coerceToCliffNotesBullets(text, 6)
+  const cleaned = stripChatReportScaffolding(text)
+  if (!looksLikeFinishedStory(cleaned)) return ensureCompleteChatReply(cleaned)
+  const bullets = coerceToCliffNotesBullets(cleaned, 6)
   if (bullets.length === 0) {
-    return "I can share research notes and sourced facts, but I don't write finished press stories. Ask me for cliff notes, a feature, or a date in the timeline."
+    return "I can share sourced facts and short notes, but I don't write finished press stories. Ask me for cliff notes, a feature, or a date in the timeline."
   }
-  return ensureCompleteChatReply(
-    [
-      'Here are research notes (not a finished story):',
-      ...bullets.map((b) => `• ${b}`),
-    ].join('\n'),
-  )
+  return ensureCompleteChatReply(bullets.map((b) => `• ${b}`).join('\n'))
 }

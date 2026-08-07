@@ -394,12 +394,8 @@ function formatHeritageReply(moments: BrandMoment[]): {
   }
 }
 
-function formatUniverseAnchor(anchor: ConverseUniverseAnchor): {
-  content: string
-  citations: Citation[]
-  glosses: Gloss[]
-} {
-  const cite = withHarvard({
+function citationFromUniverseAnchor(anchor: ConverseUniverseAnchor): Citation {
+  return withHarvard({
     title: anchor.citation.title,
     url: anchor.citation.url,
     publisher: anchor.citation.publisher,
@@ -413,14 +409,29 @@ function formatUniverseAnchor(anchor: ConverseUniverseAnchor): {
     isExactQuote: false,
     tier: citationTier(anchor.citation.url) === 'unknown' ? 'C' : citationTier(anchor.citation.url),
   })
-  const content = [
-    `**${anchor.title}**`,
-    anchor.synopsis,
-    anchor.converseTie,
-  ].join('\n\n')
+}
+
+/**
+ * Light optional Converse colour when the day answer is otherwise world-only.
+ * Never a second full beat card — one short prose nudge, only when sourced.
+ */
+function formatLightConverseBridge(opts: {
+  brandSpotlight: CulturalEvent | null
+  universeAnchors: ConverseUniverseAnchor[]
+}): { content: string; citations: Citation[]; glosses: Gloss[] } | null {
+  const { brandSpotlight, universeAnchors } = opts
+  if (brandSpotlight) {
+    return {
+      content: `Also on this calendar day for Converse — **${brandSpotlight.title}**: ${brandSpotlight.synopsis}`,
+      citations: [...(brandSpotlight.citations ?? [])],
+      glosses: sourceGlossFromEvent(brandSpotlight),
+    }
+  }
+  const anchor = universeAnchors[0]
+  if (!anchor) return null
   return {
-    content,
-    citations: [cite],
+    content: `${anchor.synopsis} ${anchor.converseTie}`,
+    citations: [citationFromUniverseAnchor(anchor)],
     glosses: [],
   }
 }
@@ -433,10 +444,10 @@ function formatDateSpotlight(event: CulturalEvent, _displayDate?: string): {
   // Lead with the fact — not “On {date}…” (the user already asked for that day).
   const parts = [`**${event.title}**`, event.synopsis]
   if (event.whyItMatters) {
-    parts.push(`Context: ${event.whyItMatters}`)
+    parts.push(event.whyItMatters)
   }
   if (event.needsHumanReview || event.precision === 'period-estimate') {
-    parts.push('_Flagged for human review / period estimate — verify before press use._')
+    parts.push('_Period estimate / needs a human check before press use._')
   }
   const content = parts.join('\n\n')
   const citations = dedupeCitationsByUrl(event.citations ?? [])
@@ -669,58 +680,32 @@ export async function handleChuckEChat(
             }
           }
 
-          // Cultural backdrop that day (world news) — still only when Converse-framed and not a landmark
+          // Already on a Converse beat (framed ask or brand spotlight) → stay there.
+          // Do NOT append world “cultural backdrop” beside a Converse-tied answer.
+          // Only when the day answer is world-only: optional light Converse bridge if a
+          // sourced same-day / calendar-day tie exists — never invent, never force.
+          const answerAlreadyConverse =
+            spotlight.category === 'brand' ||
+            Boolean(preferBrand && brandSpotlight && spotlight.id === brandSpotlight.id)
+
           if (
             allowConverseTie &&
-            preferBrand &&
-            brandSpotlight &&
-            worldSpotlight &&
-            worldSpotlight.id !== brandSpotlight.id
-          ) {
-            content = [
-              content,
-              '',
-              'Cultural backdrop that day:',
-              `**${worldSpotlight.title}**`,
-              worldSpotlight.synopsis,
-              worldSpotlight.whyItMatters ? `Context: ${worldSpotlight.whyItMatters}` : '',
-            ]
-              .filter(Boolean)
-              .join('\n\n')
-            citations.push(...(worldSpotlight.citations ?? []))
-            sourceGlosses.push(...glossesFromCitations(worldSpotlight.citations ?? [], content))
-          } else if (
-            // Broad on-this-day: optional Converse-universe bridge only when it does not feel forced
-            allowConverseTie &&
-            !preferBrand &&
-            spotlight.category !== 'brand' &&
-            (brandSpotlight || universeAnchors.length)
-          ) {
-            const tieParts: string[] = []
-            if (brandSpotlight && brandSpotlight.id !== spotlight.id) {
-              tieParts.push(`**${brandSpotlight.title}**`, brandSpotlight.synopsis)
-              citations.push(...(brandSpotlight.citations ?? []))
-              sourceGlosses.push(...sourceGlossFromEvent(brandSpotlight))
-            }
-            for (const anchor of universeAnchors.slice(0, 1)) {
-              if (brandSpotlight?.id === anchor.id) continue
-              const formattedAnchor = formatUniverseAnchor(anchor)
-              tieParts.push(formattedAnchor.content)
-              citations.push(...formattedAnchor.citations)
-            }
-            if (tieParts.length) {
-              content = [content, '', ...tieParts].join('\n\n')
-            }
-          } else if (
-            allowConverseTie &&
-            preferBrand &&
-            !brandSpotlight &&
-            universeAnchors.length &&
+            !answerAlreadyConverse &&
             spotlight.category !== 'brand'
           ) {
-            const formattedAnchor = formatUniverseAnchor(universeAnchors[0])
-            content = [formattedAnchor.content, '', content].join('\n\n')
-            citations.unshift(...formattedAnchor.citations)
+            const bridgeBrand =
+              brandSpotlight && brandSpotlight.id !== spotlight.id ? brandSpotlight : null
+            const bridge = formatLightConverseBridge({
+              brandSpotlight: bridgeBrand,
+              universeAnchors: bridgeBrand
+                ? []
+                : universeAnchors.filter((a) => a.id !== brandSpotlight?.id),
+            })
+            if (bridge) {
+              content = [content, '', bridge.content].join('\n\n')
+              citations.push(...bridge.citations)
+              sourceGlosses.push(...bridge.glosses)
+            }
           }
 
           const glosses = await finalizeChuckEGlosses(content, sourceGlosses)

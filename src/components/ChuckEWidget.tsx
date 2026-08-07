@@ -6,6 +6,7 @@ import { useChuckEChat } from '../hooks/useChuckEChat'
 import { looksLikeCompleteQuery, useSpeechDictation } from '../hooks/useSpeechDictation'
 import { ChuckEMessage } from './ChuckEMessage'
 import { CliffNotesPanel } from './CliffNotesPanel'
+import { LoadingIndicator } from './LoadingIndicator'
 
 const TALL_STORAGE_KEY = 'tm-chuck-e-tall'
 
@@ -210,9 +211,16 @@ export function ChuckEWidget({ brand, researchMode = 'lite' }: ChuckEWidgetProps
               </div>
             ) : null}
             {loading ? (
-              <p className="chuck-e-pending" aria-live="polite">
-                Looking that up…
-              </p>
+              <div className="chuck-e-msg chuck-e-msg--assistant chuck-e-msg--pending">
+                <p className="chuck-e-msg__label">{CHUCK_E_KNOBS.agentName}</p>
+                <LoadingIndicator compact label="Looking that up" />
+              </div>
+            ) : null}
+            {cliffLoading ? (
+              <div className="chuck-e-msg chuck-e-msg--assistant chuck-e-msg--pending">
+                <p className="chuck-e-msg__label">{CHUCK_E_KNOBS.agentName}</p>
+                <LoadingIndicator compact label="Extracting cliff notes" />
+              </div>
             ) : null}
             {error ? <p className="chuck-e-error">{error}</p> : null}
             {voiceError ? (

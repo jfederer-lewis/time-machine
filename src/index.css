@@ -797,14 +797,23 @@ a {
   background: #fffef9;
 }
 
-.chuck-e-pending,
-.chuck-e-error {
+.chuck-e-pending {
+  margin: 0.15rem 0 0;
+}
+
+.chuck-e-msg--pending {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.chuck-e-msg--pending .loading-indicator {
   margin: 0;
-  font-size: 0.82rem;
-  color: var(--muted);
 }
 
 .chuck-e-error {
+  margin: 0;
+  font-size: 0.82rem;
   color: var(--accent);
 }
 
@@ -1125,10 +1134,154 @@ a {
   margin: 2.5rem 0 0;
   padding-top: 2.25rem;
   border-top: 1px solid var(--rule);
+  animation: fade 300ms ease both;
+}
+
+.loading-indicator {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.85rem;
+}
+
+.loading-indicator--compact {
+  flex-direction: row;
+  align-items: center;
+  gap: 0.55rem;
+}
+
+.loading-indicator__clock {
+  display: grid;
+  place-items: center;
+  width: 2.35rem;
+  height: 2.35rem;
+  color: var(--ink);
+}
+
+.loading-indicator--compact .loading-indicator__clock {
+  width: 1.35rem;
+  height: 1.35rem;
+}
+
+.loading-indicator__svg {
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+
+.loading-indicator__face {
+  stroke: var(--ink);
+  stroke-width: 1.5;
+  fill: color-mix(in srgb, var(--paper) 70%, #fff);
+}
+
+.loading-indicator__hand-group {
+  transform-origin: 16px 16px;
+  animation: loading-hand 1.4s cubic-bezier(0.45, 0.05, 0.55, 0.95) infinite;
+}
+
+.loading-indicator__hand {
+  stroke: var(--accent);
+  stroke-width: 1.5;
+  stroke-linecap: round;
+}
+
+.btn-primary--loading {
+  opacity: 1;
+  cursor: wait;
+  min-width: 8.5rem;
+}
+
+.btn-primary--loading:disabled {
+  opacity: 1;
+}
+
+.btn-loading {
+  gap: 0.45rem;
+  color: inherit;
+}
+
+.btn-loading .loading-indicator__clock {
+  width: 1.1rem;
+  height: 1.1rem;
+  color: inherit;
+}
+
+.btn-loading .loading-indicator__face {
+  stroke: currentColor;
+  fill: transparent;
+}
+
+.btn-loading .loading-indicator__hand {
+  stroke: var(--accent-soft);
+}
+
+.btn-loading .loading-indicator__label {
+  color: inherit;
+  font-size: inherit;
+  letter-spacing: inherit;
+}
+
+.loading-indicator__label {
+  margin: 0;
+  display: flex;
+  align-items: baseline;
+  gap: 0.05rem;
   color: var(--muted);
   font-size: 0.95rem;
   letter-spacing: 0.04em;
-  animation: fade 300ms ease both;
+}
+
+.loading-indicator--compact .loading-indicator__label {
+  font-size: 0.82rem;
+  letter-spacing: 0.02em;
+}
+
+.loading-indicator__dots {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0.12rem;
+  margin-left: 0.15rem;
+  min-width: 1.1rem;
+}
+
+.loading-indicator__dots span {
+  width: 0.22rem;
+  height: 0.22rem;
+  border-radius: 50%;
+  background: currentColor;
+  opacity: 0.25;
+  animation: loading-dot 1.2s ease-in-out infinite;
+}
+
+.loading-indicator__dots span:nth-child(2) {
+  animation-delay: 0.2s;
+}
+
+.loading-indicator__dots span:nth-child(3) {
+  animation-delay: 0.4s;
+}
+
+@keyframes loading-hand {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes loading-dot {
+  0%,
+  80%,
+  100% {
+    opacity: 0.22;
+    transform: translateY(0);
+  }
+  40% {
+    opacity: 1;
+    transform: translateY(-1px);
+  }
 }
 
 .spotlight {
@@ -1934,11 +2087,23 @@ a {
   .tl-h__item,
   .tl-h__progress-fill,
   .tl-v__track-fill,
-  .settings-dropdown {
+  .settings-dropdown,
+  .loading-indicator__hand-group,
+  .loading-indicator__dots span {
     transition: none !important;
     animation: none !important;
+  }
+  .tl-v__item,
+  .tl-v__item.is-in .tl-v__copy,
+  .tl-h__item,
+  .tl-h__progress-fill,
+  .tl-v__track-fill,
+  .settings-dropdown {
     opacity: 1 !important;
     transform: none !important;
+  }
+  .loading-indicator__dots span {
+    opacity: 0.55;
   }
 }
 

@@ -6,6 +6,7 @@ import { CitationLine } from './components/CitationLine'
 import { ChuckEWidget } from './components/ChuckEWidget'
 import { DateDial } from './components/DateDial'
 import { GlossableText } from './components/GlossableText'
+import { LoadingIndicator } from './components/LoadingIndicator'
 import { TimelineView, type TimelineAxis } from './components/TimelineView'
 import converseLogo from './assets/converse-logo.png'
 
@@ -408,13 +409,14 @@ export default function App() {
 
           {error ? <p className="error-banner">{error}</p> : null}
 
-          {loading && !result ? (
-            <p className="results-pending" aria-live="polite">
-              Fetching…
-            </p>
+          {loading ? (
+            <LoadingIndicator
+              className="results-pending"
+              label={researchMode === 'full' ? 'Researching this day' : 'Looking up this day'}
+            />
           ) : null}
 
-          {result ? (
+          {result && !loading ? (
             <section className="results results--reveal" aria-live="polite">
               <header className="results-head">
                 <h2 className="result-frame">

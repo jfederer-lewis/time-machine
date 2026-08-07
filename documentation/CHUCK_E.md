@@ -2,7 +2,7 @@
 
 > Living document. Agents: read this before changing Chuck-E persona, disclosure, cliff notes, or routing.  
 > Companion docs: `VISION.md`, `PIPELINE.md`, **`EDITORIAL_SCHEMA.md`** (ranking / landmarks / universe), `COPY_CONTRACT.md`, `SOURCES_AND_LANDSCAPE.md`, **`CHUCK_ECOSYSTEM_KB.md`** (Chuck franchise product / strategy KB).  
-> **Last updated:** 2026-08-07 (beat-first answers / wiki glosses)  
+> **Last updated:** 2026-08-07 (no forced backdrop; light Converse bridge only when needed)  
 
 ---
 
@@ -23,7 +23,17 @@ The Time Machine date lookup answers “what else happened on this day.” Chuck
 
 ### Editorial line (non-negotiable)
 
-Chuck-E helps media **pull data and consolidate editorial cliff notes**. It must **not** write a finished press story. Convenience for desks stops short of branded editorial that could be pasted into an article as-is.
+Chuck-E helps media **pull data** and, when asked, **extract editorial cliff notes**. It must **not** write a finished press story. Convenience for desks stops short of branded editorial that could be pasted into an article as-is.
+
+### Chat voice vs cliff notes vs Lookup
+
+| Surface | Shape |
+|---------|--------|
+| **Chuck-E chat** | Conversational: 1–2 short paragraphs and optional plain bullets — like a sharp ChatGPT reply. No `###` headings, no “Beat Summary / Pointers to Cite”, no jargon padding. Cites live in glosses / Sources, not in the body. |
+| **Cliff notes export** | Separate action — bullets + Harvard + AI banner. |
+| **Lookup day cards** | Curated title / synopsis / Context / Source — different product surface. |
+
+Soft length aim for chat: ~900 chars (`chatReplySoftMaxChars`). Theme spreads may run a little longer; never hard-truncate mid-sentence.
 
 ### Provenance line (non-negotiable)
 
@@ -65,15 +75,15 @@ Shown after disclosure until the first user turn (`CHUCK_E_KNOBS.promptHints`):
 
 **Canonical:** `documentation/EDITORIAL_SCHEMA.md`.
 
-Chuck-E date turns use the **same assemble pipeline** as Lookup (Wikipedia / day-indexes; Full adds Gemini + Perplexity). Answers may be broad cultural “on this day” facts — then, when a **sourced** tie exists **and it is not forced**, briefly relate them to the Converse universe:
+Chuck-E date turns use the **same assemble pipeline** as Lookup (Wikipedia / day-indexes; Full adds Gemini + Perplexity).
 
-| Tie type | Example |
-|----------|---------|
-| Exact History / KB day | Nike close 4 Sep 2003 |
-| Same calendar day (MM–DD), any year | Chuck Taylor born **24 June 1901** → who he became for Converse (Hall of Fame + History join / signature years) |
-| Soft affinity in ranking | Basketball, skate, punk/grunge, canvas / youth culture, self-expression — light lift only; **soft-demote** competing footwear brands (Nike only when the claim is about Converse) |
+| Situation | Behaviour |
+|-----------|-----------|
+| Ask / answer already Converse-tied (e.g. 4 Sep 2003 / Swooshed) | Stay on that beat. **Do not** append unrelated world “cultural backdrop.” |
+| Broad date with no Converse claim (e.g. 1 April 1999) | Answer the world fact. If a **sourced** same-day History beat or calendar-day people anchor exists, optionally add **one light** Converse bridge — never invent, never force. |
+| Soft affinity in ranking only | Basketball, skate, punk/grunge, canvas / youth culture — light lift in Lookup ranking; **soft-demote** competing footwear brands (Nike only when about Converse). |
 
-**Do not force.** Interesting / significant world news still wins when it outweighs a weak Chuck angle.
+**Do not force either way.** No Chuck angle is fine when nothing honest exists; no world-news sidecar when the answer is already on Converse.
 
 **Landmark defining days (non-negotiable):** 9/11-class dates, Pearl Harbor, Hiroshima, etc. must be acknowledged clearly. Never soft-pedal them for brand tone. **Never** attach a Converse campaign, heritage nugget, or “universe” bridge beside them — that reads as tasteless next to casualties / world memory. Brand moments do not compete for the spotlight on those days.
 
@@ -136,7 +146,7 @@ When the chat mentions music, scenes, collabs, humanitarian / (PRODUCT) RED, fil
 
 Skip household brands (Nike, Converse, …), countries, bare product words, and years — prefer silence over underlines people already understand. Obscure fashion / streetwear houses named in the reply may gloss. Cap entity glosses per reply so the text stays calm.
 
-**Dated answers:** lead with the beat title and what happened — not “On 4 September 2003…” or a list of years.
+**Dated answers:** open in prose with the beat title and what happened — not “On 4 September 2003…”, a list of years, or a titled research memo.
 
 Never reuse a citation gloss on an entity surname/token in the synopsis (that made “Simpsons” open the collab roundup cite).
 
@@ -162,7 +172,7 @@ Never reuse a citation gloss on an entity surname/token in the synopsis (that ma
 - **Anchor in Converse History** (`heritageKb`): years, silhouette names (Non-Skid, All Star, Chuck 70, One Star, Jack Purcell, Pro Leather, Pro Stars, Weapon), people, named campaigns/collabs already in the pack.
 - **Theme depth:** sports / music / collabs / cause → several beats across decades, not one paragraph of generalities.
 - **Date / zeitgeist + culture press** can pull Lookup discovery / cite upgrade — prefer claim-relevant cites from premium press, museums, and culture titles when grounded search surfaces them (Guardian, NYT, BBC, **Vogue / Teen Vogue / global Vogues**, **Dazed**, **i-D**, System, Highsnobiety, Hypebeast, BoF, WWD, Tate / Met / MoMA / V&A, music press, etc.). Gemini still **never** appears as the public citation host. Registry is canonical (`shared/source-registry.ts`); Reddit and similar UGC stay blocked.
-- Prefer answers that feel like **briefing colour** (scenes, turning points, named objects) over generic brand adjectives.
+- Prefer answers that feel like **briefing colour** (scenes, turning points, named objects) over generic brand adjectives or corporate strategy speak.
 
 ### Synopsis (one paragraph)
 
@@ -184,7 +194,7 @@ ChuckEWidget (floating launcher)
 
 | Intent | Behaviour |
 |--------|-----------|
-| `date` | Parse date → `assembleDateQuery` → for Converse-framed asks, Gemini **grounded enrich** on that day’s History beat (sibling milestones stay out unless queried) → optional cultural backdrop + cites + glosses |
+| `date` | Parse date → `assembleDateQuery` → Converse-framed + History beat → Gemini **grounded enrich** on that day only (no world backdrop). World-only days → optional light Converse bridge if sourced |
 | `product` | Match `shared/products/new-chuck.ts` facts; if placeholder/empty, refuse to invent |
 | `heritage` | Match full History KB (`brand.heritageKb` via `heritageMoments`) + Converse History cites + citation glosses. Soft general fallback uses curated `timeline` beats. |
 | `general` | `chatWithChuckE()` with persona guardrails; when reply/query hits timeline beats, attach History cites + glosses |
@@ -192,7 +202,7 @@ ChuckEWidget (floating launcher)
 
 Gemini is **never** the public citation host. Historical world claims go through the Time Machine pipeline. Shoe facts come from the product pack only. Heritage beats cite **Converse History** (`landing-converse-history`). Chat and cliff-notes footers list each source URL **once** (same History LP across several beats is not repeated).
 
-**Never ship mid-sentence chat cuts.** Chuck-E `chatMaxOutputTokens` is **4096** (Flash “thoughts” eat smaller budgets; enough headroom without inviting novel-length turns). Soft length aim is ~2800 chars — cover the beats needed; never hard-truncate. Replies that still look abruptly cut are salvaged to the last complete sentence/line or replaced with a short retry cue — never left dangling (e.g. “…from our”).
+**Never ship mid-sentence chat cuts.** Chuck-E `chatMaxOutputTokens` is **4096** (Flash “thoughts” eat smaller budgets). Soft length aim is ~900 chars — concise and sharp; never hard-truncate. Report-shaped scaffolding (`###` headings, Pointers to Cite, etc.) is stripped before ship. Replies that still look abruptly cut are salvaged to the last complete sentence/line or replaced with a short retry cue — never left dangling (e.g. “…from our”).
 
 Citation glosses are built in `worker/lib/chuck-e-glosses.ts` and rendered via `GlossableText` in `ChuckEMessage`.
 
@@ -274,7 +284,7 @@ Runtime: wire stable framing into product packs before treating it as auto-shipp
 | 2026-08-06 | Ecosystem KB: refuse launches / talent / prices / rollouts as public fact | Internal planning must not leak as press-ready confirmation |
 | 2026-08-07 | Deduplicate chat / cliff-notes cites by URL | Same Converse History page must not repeat once per heritage beat |
 | 2026-08-07 | Chuck-E chat `maxOutputTokens` ≥ ~3k + abrupt-cut salvage | Flash thoughts ate 1024 → mid-sentence cuts (“…from our”) must never ship |
-| 2026-08-07 | Chuck-E chat budget → 4096 tokens / ~2800-char soft aim | Enough headroom vs 1024 cuts; cheaper middle ground than 8192 |
+| 2026-08-07 | Chuck-E chat budget → 4096 tokens (soft length later tightened to ~900) | Enough headroom vs 1024 cuts; soft aim is prompt-only |
 | 2026-08-07 | Gloss popovers z-index above Chuck-E panel; hyphenated gloss tokens | Hover cites were painting behind the chat; Non-Skid-style terms never matched |
 | 2026-08-07 | Optional voice dictation via browser Web Speech (Chrome/Edge); fill composer, do not auto-send | Fast mic path with no new API key; desks can edit before Send; Safari needs cloud STT later if required |
 | 2026-08-07 | Opening hints: basketball / 4 Sep 2003 entry point / music–scenes; sports theme pulls multiple History beats (incl. 1984 Olympics Pro Stars) | Doors stay spoiler-light; answers dig into History LP + zeitgeist; KB 1984 enriched from landing page |
@@ -292,6 +302,8 @@ Runtime: wire stable framing into product packs before treating it as auto-shipp
 | 2026-08-07 | Gloss popovers: term + short body + quiet source; always selectable | Drop year/subtitle stack and loud “Read more”; desks need digestible copyable notes |
 | 2026-08-07 | Date replies lead with beat title; years never gloss; Wikipedia entity glosses via API | Don’t open with the queried date or underline 2003; wiki-style entity links + source on the fact title |
 | 2026-08-07 | Wikipedia glosses = people / venues / iconic events only; keep underlines sparse | Help understanding without visual noise for desks who already know |
+| 2026-08-07 | Chuck-E chat = concise prose (+ optional bullets), not report briefs; soft ~900 chars; strip ### / Pointers to Cite | Chat ≠ Lookup day cards / cliff-notes export; desks want sharp digests without jargon or cite blocks in the body |
+| 2026-08-07 | No world backdrop on Converse-tied date answers; light Converse bridge only for world-only days | Backdrop was forced noise; re-anchor only when the day has no Converse hook |
 
 ---
 

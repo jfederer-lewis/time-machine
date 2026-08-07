@@ -3,7 +3,7 @@
  * Glosses are context, never the public citation for a claim.
  */
 
-import { firstSentence } from '../lib/clean-text'
+import { firstSentence, clipToCompleteSentences } from '../lib/clean-text'
 const USER_AGENT = 'TimeMachinePressPrototype/0.1 (heritage press tool; research@local)'
 
 export type WikiSummaryHit = {
@@ -62,9 +62,7 @@ export async function fetchWikipediaSummary(titleOrTerm: string): Promise<WikiSu
   if (payload.type === 'disambiguation') return null
 
   let extract = firstSentence(payload.extract || '')
-  if (extract.length > 220) {
-    extract = `${extract.slice(0, 217).trimEnd()}…`
-  }
+  extract = clipToCompleteSentences(extract, 220)
   const pageUrl = payload.content_urls?.desktop?.page || payload.content_urls?.mobile?.page || ''
   if (!extract || !pageUrl) return null
 
