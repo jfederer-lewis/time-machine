@@ -3,7 +3,7 @@
 > Companion to `VISION.md` and `PIPELINE.md`. Agents must follow the citation rules here.  
 > **Canonical host lists:** `shared/source-registry.ts` (`CITATION_ALLOWLIST` / `CITATION_BLOCKLIST`).  
 > Tables below summarise intent; if a host is missing from the registry, it is **not** allowlisted yet.  
-> **Last updated:** 2026-08-05  
+> **Last updated:** 2026-08-07 (fashion journalism + archives)  
 > **Visual note:** Existing “on this day” products are functional references only — **do not copy their UI.**
 
 ---
@@ -81,14 +81,15 @@ Full runtime map: `documentation/PIPELINE.md`.
 
 ## Never cite (blocklist)
 
-Registered in `CITATION_BLOCKLIST` (discovery-only):
+Registered in `CITATION_BLOCKLIST` (discovery-only or blocked):
 
 - youdidntnotice.com  
 - bdayrecap.com  
 - onthisday.com  
 - history.com  
+- reddit.com / old.reddit.com  
 
-Also never: AI chat answers as bibliographic host, unsourced social, SEO farms; Gemini / Perplexity as the Source **host** (they may retrieve).
+Also never: AI chat answers as bibliographic host, unsourced social, SEO farms, forum / UGC dumps; Gemini / Perplexity as the Source **host** (they may retrieve).
 
 Wikipedia: allowlisted as **bridge** (`gloss-bridge`). Provisional public cite OK when best available summary — prefer upgrading in Full. Label quality honestly (`needs-human-review` often set).
 
@@ -113,9 +114,10 @@ Hosts marked *aspirational* below are **not** registered yet — do not assume t
 | National Diet Library | ndl.go.jp | |
 | NLA / Trove | nla.gov.au, trove.nla.gov.au | |
 | Official Charts / Billboard | officialcharts.com, billboard.com | Music — full cards only |
-| Museums | si.edu, vam.ac.uk, moma.org | |
+| Museums / cultural institutions | si.edu, smithsonianmag.com, vam.ac.uk, moma.org, metmuseum.org, tate.org.uk, britishmuseum.org, guggenheim.org, whitney.org, nga.gov, nationalgallery.org.uk, artic.edu, sfmoma.org, lacma.org, rijksmuseum.nl, designmuseum.org | Prefer collection / exhibition / article URLs about the claim |
+| Fashion museums / archives / councils | fashionmuseum.co.uk, fitnyc.edu, museumatfit.com, palaisgalliera.paris.fr, madparis.fr, kci.or.jp, europeana.eu, fashionheritage.eu, cfda.com, britishfashioncouncil.co.uk, londonfashionweek.co.uk | Costume / fashion heritage records; claim-relevant council notices |
 
-*Aspirational (not in registry):* EUR-Lex host, LAC-BAC / canada.ca, Deutsche Nationalbibliothek, RIAA, additional museum hosts.
+*Aspirational (not in registry):* EUR-Lex host, LAC-BAC / canada.ca, Deutsche Nationalbibliothek, RIAA.
 
 ### Tier B — papers / wires (registered)
 
@@ -123,24 +125,46 @@ Hosts marked *aspirational* below are **not** registered yet — do not assume t
 |--------|---------|
 | NYT / TimesMachine | nytimes.com, timesmachine.nytimes.com |
 | Guardian | theguardian.com |
-| Telegraph | telegraph.co.uk |
+| Telegraph / Independent | telegraph.co.uk, independent.co.uk |
 | Reuters / AP / AFP | reuters.com, apnews.com, afp.com |
 | BBC articles | bbc.co.uk, bbc.com |
-| FT / WaPo / Le Monde | ft.com, washingtonpost.com, lemonde.fr |
+| FT / WaPo / LA Times | ft.com, washingtonpost.com, latimes.com |
+| New Yorker / Atlantic / TIME / Vanity Fair | newyorker.com, theatlantic.com, time.com, vanityfair.com |
+| Le Monde | lemonde.fr |
 | Asahi / Nikkei | asahi.com, nikkei.com |
 | SCMP | scmp.com |
 | The Hindu / Indian Express | thehindu.com, indianexpress.com |
-| SMH | smh.com.au |
+| SMH / The Age | smh.com.au, theage.com.au |
 
-*Aspirational:* theage.com.au (not registered).
+### Tier B — fashion / culture press (registered)
+
+Claim-relevant features only — editorial culture titles, not Reddit / forums / pure affiliate dumps.
+
+| Source | Host(s) |
+|--------|---------|
+| Vogue family | vogue.com, vogue.co.uk, teenvogue.com, voguebusiness.com, vogue.fr / .it / .de / .es / .jp / .in / .me / .sg / .hk / .mx / .pt / .ua, vogue.com.au, voguescandinavia.com |
+| Dazed Media / indie culture | dazeddigital.com, i-d.co, anothermag.com, nowness.com, theface.com, hungertv.com, showstudio.com |
+| System / street / trade | system-magazine.com, highsnobiety.com, hypebeast.com, hypebae.com, wwd.com, businessoffashion.com, footwearnews.com, fashionnetwork.com, fashionunited.com, fashionista.com, models.com |
+| Glossies / lifestyle | harpersbazaar.com (+ .co.uk / .com.au), elle.com, elleuk.com, gq.com, gq-magazine.co.uk, esquire.com, esquireme.com, tatler.com, tatlerasia.com, vanityfair.com, wmagazine.com, marieclaire.com (+ .co.uk), graziamagazine.com, graziadaily.co.uk, stylist.co.uk, whowhatwear.com, refinery29.com |
+| L’Officiel / indie glossies | lofficielusa.com, lofficiel.com, numero.com, purple.fr, 032c.com, documentjournal.com, 10magazine.com, hero-magazine.com, wonderlandmagazine.com |
+| NY culture desks | thecut.com, nymag.com |
+| Design / art | wallpaper.com, frieze.com, artforum.com, interviewmagazine.com |
+| Music / youth | rollingstone.com, pitchfork.com, nme.com, thefader.com, complex.com |
+| Sneaker press | sneakernews.com, nicekicks.com |
+| AU fashion | fashionjournal.com.au, russh.com |
+| Forbes / Yahoo (syndicated) | forbes.com, yahoo.com |
 
 ### Tier C / bridge (registered)
 
-- britannica.com  
-- converse.com / about.nike.com — **brand claims only**  
-- wikipedia.org / en.wikipedia.org — bridge  
+Editorial commerce essays only — prefer non-PDP URLs; still weaker than Tier B.
 
-*Aspirational:* peer-reviewed DOI / university collections (no hosts registered).
+- ssense.com, net-a-porter.com, mrporter.com — magazine / journal features  
+- urbanindustry.co.uk — retail journal; defer to Converse History on contested dates  
+- converse.com / about.nike.com — brand claims only  
+- britannica.com  
+- wikipedia.org / en.wikipedia.org — bridge (e.g. [Chuck Taylor All-Stars](https://en.wikipedia.org/wiki/Chuck_Taylor_All-Stars); upgrade footnotes when possible)  
+
+*Aspirational:* additional regional L’Officiel / Grazia editions; university fashion collections.
 
 ### What `verify.ts` does
 
@@ -217,3 +241,7 @@ UI shows the full Harvard string + URL link — not a compact `open hostname →
 | 2026-08-05 | Sources exist to verify date + let users read more — not to ban LLM discovery |
 | 2026-08-05 | Registry is canonical; doc tables mark aspirational hosts explicitly |
 | 2026-08-05 | Harvard display omits Accessed; Wikipedia bridge may render as Source in Lite |
+| 2026-08-07 | Register vogue.co.uk / vogue.com / dazeddigital.com as Tier B culture press | Chuck-E collabs / scenes / cause answers; Nike Magazine stays Tier C brand narrative |
+| 2026-08-07 | Register Footwear News / Yahoo, Tatler Asia, Esquire ME, L’Officiel USA (Tier B); Urban Industry Tier C | Collab + film/TV + secondary history colour; Wikipedia remains gloss-bridge |
+| 2026-08-07 | Expand culture allowlist: global Vogues / Teen Vogue, museums (Met, Tate, …), i-D, System, Highsnobiety, Hypebeast, BoF, WWD, glossies, music press; block Reddit | Credible cultural publishers ship as cites; forums stay out |
+| 2026-08-07 | Add fashion journalism + costume archives (The Cut, W, Vogue Business, The Face, SHOWstudio, FIT / Galliera / KCI, CFDA / BFC, sneaker press, …) | Chuck-E collab / culture answers lean on fashion desks and heritage collections |

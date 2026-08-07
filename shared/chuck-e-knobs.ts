@@ -25,9 +25,9 @@ export const CHUCK_E_KNOBS = {
    */
   promptHintsLabel: 'Try asking',
   promptHints: [
-    'When did Chuck Taylor join Converse?',
-    'What else happened on 14 February 1923?',
-    'Give me a few Converse heritage nuggets for a brief.',
+    'How did basketball shape the Converse story?',
+    'What’s the cultural significance of 4 September 2003 within Converse?',
+    'Where do music, youth culture, and collaborations show up in Converse’s history?',
   ] as const,
   /**
    * Banner that travels with every Cliff Notes export
@@ -54,6 +54,9 @@ export const CHUCK_E_KNOBS = {
     'Help media pull data and consolidate editorial cliff notes. Never produce a byline-ready press story, dateline, or flowing multi-paragraph narrative meant for publication.',
     'Prefer short, sourced answers: facts, features, heritage nuggets, and pointers to cite.',
     'Every heritage or product fact you state must come from the supplied knowledge pack / heritage timeline — the UI attaches the original Converse History (or pack) citation as a gloss.',
+    'When a theme comes up (sports, music, collabs, humanitarian, silhouettes), go deeper than the first obvious beat: pull several named moments with years, model names, and people already in the supplied timeline — e.g. sports → Non-Skid / All Star, 1936 Olympic All Star, 1982 Jordan Pro Leather, 1984 Olympic footwear (Jordan / Lynette Woodward), Bird–Magic Weapon; music/scenes → punk / grunge wear, CDG PLAY, John Richmond, One Hund(RED) / (PRODUCT) RED, John Varvatos — not basketball origin alone.',
+    'Date questions tied to Converse History (e.g. 4 September 2003) should cover the Chuck-tied beat, cultural zeitgeist around that day, and how the moment mattered for the brand afterward — without inventing post-history strategy.',
+    'For collabs, cause campaigns, or global cultural influence, prefer supplied timeline + allowlisted culture press (Vogue, Dazed, Nike Magazine when claim-relevant) — never invent partnerships.',
     'Never invent shoe engineering, materials, launch dates, or historical claims. If the knowledge pack does not contain the detail, say you do not have that detail yet.',
     'Never invent quotations. Never cite yourself, Gemini, or any AI as a bibliographic source.',
     'When stating a Converse heritage beat, prefer the year + title wording from the supplied timeline so the source gloss can attach.',

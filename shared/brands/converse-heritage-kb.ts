@@ -5,9 +5,10 @@ import {
 } from './converse-heritage-media'
 
 /**
- * Full Converse History landing beats — knowledge pack for Chuck-E / date attach.
- * Not the public Timeline surface (that stays curated in converse.ts).
- * Source narrative: https://www.converse.com/uk/en/landing-converse-history
+ * Heritage + culture knowledge pack for Chuck-E / date attach.
+ * Core narrative: https://www.converse.com/uk/en/landing-converse-history
+ * Secondary culture colour (collabs / scenes / cause): claim-relevant Vogue, Dazed, Nike Magazine —
+ * not the public Timeline surface (that stays curated in converse.ts).
  */
 
 const HISTORY_URL = CONVERSE_HISTORY_PAGE_UK
@@ -297,6 +298,24 @@ export const CONVERSE_HERITAGE_KB: BrandMoment[] = withHeritageImages([
       isExactQuote: false,
     },
     {
+      id: 'cv-1970s-punk-dazed',
+      date: '1977',
+      precision: 'year',
+      title: 'Punk takes the Chuck',
+      synopsis:
+        'In the 1970s the All Star was adopted by punk — Dazed charts Sex Pistols and Ramones among the early music-scene wearers who treated the shoe as everyday uniform rather than basketball kit.',
+      reference:
+        'Ted Stansfield / Dazed (30 July 2015) ‘How this shoe became a subcultural icon’. Available at: https://www.dazeddigital.com/fashion/article/25679/1/converse-chuck-taylor-s',
+      citation: {
+        title: 'How this shoe became a subcultural icon',
+        url: 'https://www.dazeddigital.com/fashion/article/25679/1/converse-chuck-taylor-s',
+        publisher: 'Dazed',
+        author: 'Ted Stansfield',
+        publishedAt: '2015-07-30',
+      },
+      isExactQuote: false,
+    },
+    {
       id: 'cv-1982-lab',
       date: '1982',
       precision: 'year',
@@ -334,9 +353,9 @@ export const CONVERSE_HERITAGE_KB: BrandMoment[] = withHeritageImages([
       precision: 'year',
       title: 'Official Olympic footwear',
       synopsis:
-        'Converse was official footwear sponsor of the 1984 Olympics; the U.S. men’s and women’s basketball teams won gold in Converse shoes.',
+        'Converse was official footwear sponsor of the 1984 Olympics; the U.S. men’s and women’s basketball teams won gold in Converse shoes — most notably Michael Jordan and Lynette Woodward, both wearing Pro Stars.',
       reference:
-        'Converse History entry for 1984 (“Official Olympic footwear”).',
+        'Converse History entry for 1984 (“Official Olympic footwear”): gold-medal U.S. teams; Jordan and Lynette Woodward in Pro Stars.',
       citation: {
         title: 'Converse History',
         url: HISTORY_URL,
@@ -373,6 +392,24 @@ export const CONVERSE_HERITAGE_KB: BrandMoment[] = withHeritageImages([
         title: 'Converse History',
         url: HISTORY_URL,
         publisher: 'Converse',
+      },
+      isExactQuote: false,
+    },
+    {
+      id: 'cv-1990s-grunge-dazed',
+      date: '1991',
+      precision: 'year',
+      title: 'Grunge and the All Star',
+      synopsis:
+        'Grunge-era culture favoured cheap, durable trainers; Dazed notes Kurt Cobain among the All Star’s iconic music fans as the silhouette moved from court to subcultural staple.',
+      reference:
+        'Ted Stansfield / Dazed (30 July 2015) ‘How this shoe became a subcultural icon’. Available at: https://www.dazeddigital.com/fashion/article/25679/1/converse-chuck-taylor-s',
+      citation: {
+        title: 'How this shoe became a subcultural icon',
+        url: 'https://www.dazeddigital.com/fashion/article/25679/1/converse-chuck-taylor-s',
+        publisher: 'Dazed',
+        author: 'Ted Stansfield',
+        publishedAt: '2015-07-30',
       },
       isExactQuote: false,
     },
@@ -446,13 +483,49 @@ export const CONVERSE_HERITAGE_KB: BrandMoment[] = withHeritageImages([
       precision: 'year',
       title: 'One Hund(RED)',
       synopsis:
-        'The One Hund(RED) artists campaign brought over 100 artists to stamp the All Star — an early Converse campaign empowering communities for a cause.',
+        'The One Hund(RED) artists campaign brought over 100 artists to stamp the All Star — an early Converse × (PRODUCT) RED partnership empowering communities against AIDS and related global health crises.',
       reference:
-        'Converse History entry for 2008 (“Red and ready empower” / “Red and power ready”).',
+        'Converse History 2008 (“Red and ready empower” / “Red and power ready”). Corroborated by Nike Magazine “Journey of an Icon” (1HUND(RED) Artists) and British Vogue (26 Feb 2008) on Converse’s (PRODUCT) RED work.',
       citation: {
         title: 'Converse History',
         url: HISTORY_URL,
         publisher: 'Converse',
+      },
+      isExactQuote: false,
+    },
+    {
+      id: 'cv-2008-vogue-century',
+      date: '2008-02-26',
+      precision: 'exact-day',
+      title: 'Century collabs & (PRODUCT) RED',
+      synopsis:
+        'British Vogue noted Converse’s centennial year collaborations with designer John Varvatos and (PRODUCT) RED — “to help assist in the global emergency and epidemic of AIDS, malaria and tuberculosis in Africa.”',
+      reference:
+        'Ally Pyle / Vogue (26 February 2008) ‘ALL STARS’, British Vogue. Available at: https://www.vogue.co.uk/article/all-stars',
+      citation: {
+        title: 'ALL STARS',
+        url: 'https://www.vogue.co.uk/article/all-stars',
+        publisher: 'British Vogue',
+        author: 'Ally Pyle',
+        publishedAt: '2008-02-26',
+      },
+      isExactQuote: false,
+    },
+    {
+      id: 'cv-2008-cobain-fn',
+      date: '2008-05',
+      precision: 'month',
+      title: 'Converse x Kurt Cobain',
+      synopsis:
+        'In May 2008 Converse released a Kurt Cobain collection with notebook artwork, scribbles and distressed detailing nodding to how he wore broken-in Chuck Taylors.',
+      reference:
+        'Amina Ayoud / Footwear News via Yahoo (12 December 2023) ‘Converse’s Most Iconic Collaborations: From Maison Margiela to the Simpsons’. Available at: https://www.yahoo.com/lifestyle/converse-most-iconic-collaborations-maison-223606495.html',
+      citation: {
+        title: 'Converse’s Most Iconic Collaborations: From Maison Margiela to the Simpsons',
+        url: 'https://www.yahoo.com/lifestyle/converse-most-iconic-collaborations-maison-223606495.html',
+        publisher: 'Footwear News',
+        author: 'Amina Ayoud',
+        publishedAt: '2023-12-12',
       },
       isExactQuote: false,
     },
@@ -501,6 +574,42 @@ export const CONVERSE_HERITAGE_KB: BrandMoment[] = withHeritageImages([
         title: 'Converse History',
         url: HISTORY_URL,
         publisher: 'Converse',
+      },
+      isExactQuote: false,
+    },
+    {
+      id: 'cv-2014-margiela-fn',
+      date: '2014-05-23',
+      precision: 'exact-day',
+      title: 'Converse x Maison Margiela',
+      synopsis:
+        'Converse and Maison Margiela released hand-painted white Chuck Taylor All Star Hi and Jack Purcell pairs — paint meant to chip with wear, echoing Margiela’s Bianchetto Tabi treatment.',
+      reference:
+        'Amina Ayoud / Footwear News via Yahoo (12 December 2023) ‘Converse’s Most Iconic Collaborations: From Maison Margiela to the Simpsons’ (release dated 23 May 2014). Available at: https://www.yahoo.com/lifestyle/converse-most-iconic-collaborations-maison-223606495.html',
+      citation: {
+        title: 'Converse’s Most Iconic Collaborations: From Maison Margiela to the Simpsons',
+        url: 'https://www.yahoo.com/lifestyle/converse-most-iconic-collaborations-maison-223606495.html',
+        publisher: 'Footwear News',
+        author: 'Amina Ayoud',
+        publishedAt: '2023-12-12',
+      },
+      isExactQuote: false,
+    },
+    {
+      id: 'cv-2014-simpsons-fn',
+      date: '2014-09',
+      precision: 'month',
+      title: 'Converse x The Simpsons',
+      synopsis:
+        'In September 2014 Converse released a Chuck Taylor All Stars × The Simpsons pack (high and low) with character graphics — timed to the show’s anniversary presence in Germany per Footwear News.',
+      reference:
+        'Amina Ayoud / Footwear News via Yahoo (12 December 2023) ‘Converse’s Most Iconic Collaborations: From Maison Margiela to the Simpsons’. Available at: https://www.yahoo.com/lifestyle/converse-most-iconic-collaborations-maison-223606495.html',
+      citation: {
+        title: 'Converse’s Most Iconic Collaborations: From Maison Margiela to the Simpsons',
+        url: 'https://www.yahoo.com/lifestyle/converse-most-iconic-collaborations-maison-223606495.html',
+        publisher: 'Footwear News',
+        author: 'Amina Ayoud',
+        publishedAt: '2023-12-12',
       },
       isExactQuote: false,
     },
@@ -569,6 +678,41 @@ export const CONVERSE_HERITAGE_KB: BrandMoment[] = withHeritageImages([
       isExactQuote: false,
     },
     {
+      id: 'cv-2021-lofficiel-film',
+      date: '2021-03-24',
+      precision: 'exact-day',
+      title: 'Chucks on screen',
+      synopsis:
+        'L’Officiel USA surveyed iconic Converse moments in film and TV — from Marty McFly’s skate shoes to Marie Antoinette’s on-screen Chucks — useful desk colour for screen-culture angles.',
+      reference:
+        'Orquídea Alburquerque / L’Officiel USA (24 March 2021) ‘9 Iconic Converse Moments in Film and TV History’. Available at: https://www.lofficielusa.com/film-tv/converse-movie-moments-marie-antoinette',
+      citation: {
+        title: '9 Iconic Converse Moments in Film and TV History',
+        url: 'https://www.lofficielusa.com/film-tv/converse-movie-moments-marie-antoinette',
+        publisher: "L'Officiel USA",
+        author: 'Orquídea Alburquerque',
+        publishedAt: '2021-03-24',
+      },
+      isExactQuote: false,
+    },
+    {
+      id: 'cv-2021-tatler-iconic',
+      date: '2021-09-06',
+      precision: 'exact-day',
+      title: 'Iconic closet staples (Tatler Asia)',
+      synopsis:
+        'Tatler Asia’s 2021 round-up ranked cult Converse staples — Non-Skid roots, Chuck 70, classic All Star, CDG PLAY hearts, Pro Leather, Fear of God ESSENTIALS, Run Star Hike, Kim Jones and Keith Haring — as wardrobe icons rather than one silhouette alone.',
+      reference:
+        'Tatler Asia (6 September 2021) ‘10 Of The Most Iconic Converse Sneakers To Have In Your Closet’. Available at: https://www.tatlerasia.com/style/fashion/sneaker-series-most-iconic-converse-shoes',
+      citation: {
+        title: '10 Of The Most Iconic Converse Sneakers To Have In Your Closet',
+        url: 'https://www.tatlerasia.com/style/fashion/sneaker-series-most-iconic-converse-shoes',
+        publisher: 'Tatler Asia',
+        publishedAt: '2021-09-06',
+      },
+      isExactQuote: false,
+    },
+    {
       id: 'cv-2021',
       date: '2021-09-02',
       precision: 'exact-day',
@@ -585,6 +729,23 @@ export const CONVERSE_HERITAGE_KB: BrandMoment[] = withHeritageImages([
       isExactQuote: false,
     },
     {
+      id: 'cv-2022-urban-industry',
+      date: '2022-09-05',
+      precision: 'exact-day',
+      title: 'A brief All Star history (Urban Industry)',
+      synopsis:
+        'Urban Industry’s overview traces the All Star from court shoe to punk, rock, hip-hop and indie staple, then Nike-era heritage revival after the 2003 acquisition — useful narrative colour; defer to Converse History on contested signature / join years.',
+      reference:
+        'Urban Industry (5 September 2022; updated 29 May 2026) ‘A Brief History of the Converse Chuck Taylor All Star’. Available at: https://www.urbanindustry.co.uk/blogs/news/a-brief-history-of-the-converse-chuck-taylor-all-star',
+      citation: {
+        title: 'A Brief History of the Converse Chuck Taylor All Star',
+        url: 'https://www.urbanindustry.co.uk/blogs/news/a-brief-history-of-the-converse-chuck-taylor-all-star',
+        publisher: 'Urban Industry',
+        publishedAt: '2022-09-05',
+      },
+      isExactQuote: false,
+    },
+    {
       id: 'cv-2023',
       date: '2023-05-02',
       precision: 'exact-day',
@@ -597,6 +758,24 @@ export const CONVERSE_HERITAGE_KB: BrandMoment[] = withHeritageImages([
         title: 'Converse History',
         url: HISTORY_URL,
         publisher: 'Converse',
+      },
+      isExactQuote: false,
+    },
+    {
+      id: 'cv-2023-rick-owens-fn',
+      date: '2023-05-16',
+      precision: 'exact-day',
+      title: 'Converse x Rick Owens DRKSHDW',
+      synopsis:
+        'Converse and Rick Owens DRKSHDW released a laceless hot-pink TURBODRK Chuck 70 (16 May 2023) — one beat in a longer high-fashion collab run that Footwear News groups with Margiela, CDG and other house partnerships.',
+      reference:
+        'Amina Ayoud / Footwear News via Yahoo (12 December 2023) ‘Converse’s Most Iconic Collaborations: From Maison Margiela to the Simpsons’. Available at: https://www.yahoo.com/lifestyle/converse-most-iconic-collaborations-maison-223606495.html',
+      citation: {
+        title: 'Converse’s Most Iconic Collaborations: From Maison Margiela to the Simpsons',
+        url: 'https://www.yahoo.com/lifestyle/converse-most-iconic-collaborations-maison-223606495.html',
+        publisher: 'Footwear News',
+        author: 'Amina Ayoud',
+        publishedAt: '2023-12-12',
       },
       isExactQuote: false,
     },

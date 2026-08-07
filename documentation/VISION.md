@@ -2,7 +2,7 @@
 
 > Living document. Update this as the idea develops. Agents: read this before making product or architecture decisions.
 
-**Last updated:** 2026-08-07 (Timeline UI text-only revert)  
+**Last updated:** 2026-08-07 (culture allowlist expansion)  
 **Client (current):** Converse  
 **Working title:** Good News, Chuck  
 **Live:** https://time-machine.jasminefederer.workers.dev  
@@ -180,6 +180,7 @@ Keys go in `.dev.vars` locally and `wrangler secret` in prod. Never commit secre
 - [x] Aggregator chart labels removed from day-index discovery
 - [x] Assemble never ships failing copy-contract cards
 - [x] Chuck-E floating chat widget (request/response) with Art. 50 first-message disclosure
+- [x] Chuck-E opening “Try asking” hints + extended entry-point doc (`CHUCK_E.md`)
 - [x] Chuck-E intent routing: date → assemble; product → launch pack; heritage → brand timeline
 - [x] Cliff notes extract (bullets + Harvard + AI-origin banner) — not finished press copy
 - [x] Brand timeline: curated surface + full History KB (`heritageKb`) for Chuck-E / date attach
@@ -205,6 +206,11 @@ Keys go in `.dev.vars` locally and `wrangler secret` in prod. Never commit secre
 - [ ] Richer press export (PDF / formatted brief with Harvard block)
 - [ ] Real music facets via Official Charts / Billboard **week/article** URLs
 - [ ] More curated exact-day packs for known Chuck/cultural doorways
+- [ ] Wire stable Chuck Ecosystem facts into a product pack for Signature / 70 Premium answers
+- [x] Register Vogue + Dazed (Tier B); Nike Magazine remains Tier C brand narrative for Chuck culture colour
+- [x] Register Footwear News/Yahoo, Tatler Asia, Esquire ME, L’Officiel USA; Urban Industry Tier C; gloss Harvard title/date/publisher
+- [x] Expand culture allowlist (global Vogues, museums, i-D, System, street/trade press, glossies); block Reddit
+- [ ] Evaluate further niche hosts case-by-case (regional L’Officiel editions, university collections, …)
 - [ ] Re-enable featured dates; optional multi-event pack
 ---
 
@@ -296,6 +302,11 @@ Record material product/architecture choices here as we go.
 | 2026-08-06 | Chuck Ecosystem KB from SPSU27 Chuck Reset; UI cite Internal Comms | Desk needs franchise architecture; PDF filename must stay out of UI |
 | 2026-08-06 | Prefer positive when interest is tied; never soft-pedal landmark defining days | “Good News, Chuck” lean without ignoring 9/11-class dates |
 | 2026-08-06 | Interest = significance (primary) + light tone lean + credibility + quality | Balance cultural weight with a slight positive/neutral bias; tone is not a veto |
+| 2026-08-07 | Chuck-E opening hints + sports-depth heritage matching | Entry-point date prompt (4 Sep 2003); sports queries boost Olympics / Weapon / Jordan beats from History LP |
+| 2026-08-07 | Vogue + Dazed on citation allowlist; heritage KB gains Varvatos/(PRODUCT) RED + punk/grunge colour | Collabs / humanitarian / scenes answers need culture-press cites (History still primary brand anchor) |
+| 2026-08-07 | Gloss/footer cites always show title + date + publisher; FN/Tatler/L’Officiel/Urban Industry collab & screen beats | Desk needs full bibliographic handle even when only a gloss is visible |
+| 2026-08-07 | Broad culture-press + museum allowlist; Reddit blocked | Ship claim-relevant Vogue/i-D/System/museum cites; keep forums out of Harvard |
+| 2026-08-07 | Fashion journalism + costume-archive hosts registered | Trade desks, indie glossies, FIT/Galliera/KCI, CFDA/BFC for collab/heritage colour |
 
 ---
 
@@ -311,6 +322,7 @@ Record material product/architecture choices here as we go.
 - New Chuck launch pack content (engineering / features / story) for `shared/products/new-chuck.ts`?
 - Should Chuck-E cliff-notes download require the same human-review gate as Lookup press export?
 - Wire which stable Chuck Ecosystem KB facts into a code product pack (vs markdown-only)?
+- Add a Chuck-E “More ways to ask” / read-more panel, or keep extended prompts docs-only?
 - Which Converse-feel ideas (see `CONVERSE_FEEL_IDEAS.md`) to prototype first — era silhouette chip vs attested wear vs dual spotlight?
 
 ---

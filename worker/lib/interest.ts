@@ -96,9 +96,38 @@ const PREMIUM_PRESS: Array<{ re: RegExp; score: number }> = [
   { re: /(^|\.)nytimes\.com$|timesmachine\.nytimes\.com/i, score: 14 },
   { re: /(^|\.)bbc\.(co\.uk|com)$/i, score: 13 },
   { re: /(^|\.)theguardian\.com$/i, score: 13 },
-  { re: /(^|\.)ft\.com$|(^|\.)telegraph\.co\.uk$/i, score: 11 },
-  { re: /(^|\.)reuters\.com$|(^|\.)apnews\.com$|(^|\.)washingtonpost\.com$/i, score: 11 },
+  { re: /(^|\.)ft\.com$|(^|\.)telegraph\.co\.uk$|(^|\.)independent\.co\.uk$/i, score: 11 },
+  { re: /(^|\.)reuters\.com$|(^|\.)apnews\.com$|(^|\.)washingtonpost\.com$|(^|\.)latimes\.com$/i, score: 11 },
+  { re: /(^|\.)newyorker\.com$|(^|\.)theatlantic\.com$|(^|\.)vanityfair\.com$/i, score: 10 },
   { re: /(^|\.)lemonde\.fr$|(^|\.)asahi\.com$|(^|\.)thehindu\.com$/i, score: 9 },
+  {
+    re: /(^|\.)(metmuseum|moma|tate|vam|si|guggenheim|whitney|britishmuseum|designmuseum)\.(org|edu|gov|ac\.uk|uk)$|(^|\.)smithsonianmag\.com$/i,
+    score: 12,
+  },
+  {
+    re: /(^|\.)vogue\.(co\.uk|com|fr|it|de|es|jp|in|me|sg|hk|mx|pt|ua)$|(^|\.)vogue\.com\.au$|(^|\.)teenvogue\.com$|(^|\.)voguescandinavia\.com$/i,
+    score: 8,
+  },
+  {
+    re: /(^|\.)dazeddigital\.com$|(^|\.)i-d\.co$|(^|\.)anothermag\.com$|(^|\.)system-magazine\.com$|(^|\.)highsnobiety\.com$|(^|\.)hypebeast\.com$/i,
+    score: 8,
+  },
+  {
+    re: /(^|\.)wwd\.com$|(^|\.)businessoffashion\.com$|(^|\.)footwearnews\.com$|(^|\.)harpersbazaar\.(com|co\.uk|com\.au)$|(^|\.)elle(uk)?\.com$|(^|\.)gq(-magazine\.co\.uk|\.com)$/i,
+    score: 7,
+  },
+  {
+    re: /(^|\.)(esquire|esquireme|tatler|tatlerasia|lofficielusa|lofficiel|wallpaper|frieze|artforum|interviewmagazine|rollingstone|pitchfork|nme|thefader|forbes|yahoo|voguebusiness|wmagazine|thecut|nymag|fashionista|fashionnetwork|fashionunited|showstudio|theface|hungertv|documentjournal|complex|sneakernews|nicekicks|hypebae)\.com$/i,
+    score: 7,
+  },
+  {
+    re: /(^|\.)(10magazine|hero-magazine|wonderlandmagazine|whowhatwear|refinery29|marieclaire|graziamagazine|stylist|fashionjournal|russh)\.(com|co\.uk|com\.au)$|(^|\.)numero\.com$|(^|\.)purple\.fr$|(^|\.)032c\.com$|(^|\.)graziadaily\.co\.uk$/i,
+    score: 6,
+  },
+  {
+    re: /(^|\.)(fashionmuseum\.co\.uk|fitnyc\.edu|museumatfit\.com|palaisgalliera\.paris\.fr|madparis\.fr|kci\.or\.jp|europeana\.eu|fashionheritage\.eu|cfda\.com|britishfashioncouncil\.co\.uk|londonfashionweek\.co\.uk)$/i,
+    score: 11,
+  },
 ]
 
 export type InterestBreakdown = {

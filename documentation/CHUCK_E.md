@@ -2,7 +2,7 @@
 
 > Living document. Agents: read this before changing Chuck-E persona, disclosure, cliff notes, or routing.  
 > Companion docs: `VISION.md`, `PIPELINE.md`, `COPY_CONTRACT.md`, `SOURCES_AND_LANDSCAPE.md`, **`CHUCK_ECOSYSTEM_KB.md`** (Chuck franchise product / strategy KB).  
-> **Last updated:** 2026-08-07 (prompt hints)
+> **Last updated:** 2026-08-07 (collab press + gloss Harvard cites)
 
 ---
 
@@ -42,6 +42,95 @@ Any queryable “Chuck” is a chatbot and needs AI disclosure at first interact
 | Avoid mistaking AI for finished journalism | Cliff notes are bullet-shaped; `chuck-e-contract.ts` rejects / coerces finished-story shapes. |
 
 Legal/brand should review `shared/chuck-e-knobs.ts` disclosure and banner strings once — they are the source of truth.
+
+---
+
+## Opening hints & entry points
+
+Chuck-E is a **heritage play**: UI prompts are **doors in** — short, curious, not spoilers. Answers should still go deep: named History dates, models, people, and (for date turns) cultural zeitgeist + why the day mattered for Converse.
+
+Primary public source for brand beats: [Converse History](https://www.converse.com/uk/en/landing-converse-history) (`heritageKb`). Desks can ask Chuck-E to dig past the first hit; thematic questions should pull **several** citable moments, not a single origin story.
+
+### UI (three clickable hints)
+
+Shown after disclosure until the first user turn (`CHUCK_E_KNOBS.promptHints`):
+
+| Door | Prompt (knobs) | Answer should still cover |
+|------|----------------|---------------------------|
+| Theme / sport | How did basketball shape the Converse story? | Court lineage **plus** iconic sports beats (see below) — not Non-Skid alone |
+| Date entry point | What’s the cultural significance of 4 September 2003 within Converse? | Door stays light (no “Nike acquired…” spoiler). Reply: Chuck-tied beat (acquisition close), zeitgeist that day, and how the hinge mattered for the brand afterward — without inventing post-History strategy |
+| Music / scenes | Where do music, youth culture, and collaborations show up in Converse’s history? | Punk/grunge wear, fashion collabs, One Hund(RED) / (PRODUCT) RED, CDG PLAY — not fashion fluff alone |
+
+Composer placeholder stays short: new Chuck / heritage / a date.
+
+### Iconic sports / performance beats (go deeper)
+
+When the chat mentions sports, basketball, Olympics, NCAA, etc., prefer a **spread** of History-backed moments — e.g.:
+
+| Year / day | Beat (History) |
+|------------|----------------|
+| 1917 / 1919 | Non-Skid → All Star basketball shoe |
+| 1922 | Chuck Taylor joins |
+| 1924 | Edmonton Grads sponsorship |
+| 1936 | First U.S. Olympic men’s basketball team / white All Star colorway |
+| 1939-03-27 | First NCAA title game — both teams in All Stars |
+| 1982-03-29 | Jordan / UNC title in Pro Leather |
+| **1984** | Official Olympic footwear; U.S. men’s & women’s gold — Michael Jordan & Lynette Woodward in **Pro Stars** |
+| 1986 | Weapon + Bird–Magic “Choose Your Weapon” |
+| 2021 | Weapon CX return; Draymond Green / Tokyo Olympic gold |
+
+Spellings and model names follow Converse History (e.g. **Lynette Woodward**, Pro Stars). Enrich replies from the History LP first; optional secondary press only when claim-relevant and allowlisted.
+
+### Music / collabs / humanitarian / global influence (go deeper)
+
+When the chat mentions music, scenes, collabs, humanitarian / (PRODUCT) RED, film/TV, or cultural reach, prefer a **spread**:
+
+| Year / day | Beat | Primary cite lane |
+|------------|------|-------------------|
+| 1970s / 1977 | Punk adoption (Sex Pistols, Ramones) | [Dazed — subcultural icon](https://www.dazeddigital.com/fashion/article/25679/1/converse-chuck-taylor-s) (30 Jul 2015) |
+| ~1991 | Grunge / Cobain-era All Star | Dazed (same feature) |
+| 2000 | First fashion collab — John Richmond | Converse History |
+| **2008** | One Hund(RED) artists × cause | Converse History (+ Nike Magazine colour) |
+| **2008-02-26** | John Varvatos + (PRODUCT) RED | [British Vogue — ALL STARS](https://www.vogue.co.uk/article/all-stars) |
+| **2008-05** | Converse × Kurt Cobain | [Footwear News via Yahoo — iconic collabs](https://www.yahoo.com/lifestyle/converse-most-iconic-collaborations-maison-223606495.html) (Amina Ayoud, 12 Dec 2023) |
+| 2009 | CDG PLAY | Converse History (+ FN / Tatler colour) |
+| **2014-05-23** | Maison Margiela painted Chucks / Jack Purcell | Footwear News via Yahoo (same FN feature) |
+| **2014-09** | The Simpsons pack | Footwear News via Yahoo |
+| **2021-03-24** | Film & TV screen moments | [L’Officiel USA](https://www.lofficielusa.com/film-tv/converse-movie-moments-marie-antoinette) (Orquídea Alburquerque) |
+| **2021-09-06** | Iconic closet staples list | [Tatler Asia](https://www.tatlerasia.com/style/fashion/sneaker-series-most-iconic-converse-shoes) |
+| **2022-09-05** | Narrative history overview | [Urban Industry](https://www.urbanindustry.co.uk/blogs/news/a-brief-history-of-the-converse-chuck-taylor-all-star) (Tier C; defer to History on contested dates) |
+| **2023-05-16** | Rick Owens DRKSHDW TURBODRK | Footwear News via Yahoo |
+| — | Chuck Modern / II modernisation colour | [Esquire Middle East](https://www.esquireme.com/style/19681-the-iconic-converse-all-star-gets-a-modern-make-over) |
+| — | Broader court → skate → music → fashion arc | [Nike Magazine — Journey of an Icon](https://about.nike.com/en/magazine/converse-chuck-taylor-all-star-iconic-sneaker-true-history) |
+| — | Overview + footnotes / backlinks | [Wikipedia — Chuck Taylor All-Stars](https://en.wikipedia.org/wiki/Chuck_Taylor_All-Stars) (bridge; upgrade to underlying cites) |
+
+**Citation display (non-negotiable for Chuck-E):** every footer cite and gloss popover must show **article/page title, date (or year), and publisher**, plus a hyperlink — even when the only UI surface is a gloss. Format via `formatHarvardCitation` / `chuck-e-glosses.ts`.
+
+**Secondary bookshelf** (allowlisted): Dazed, Vogue, Footwear News / Yahoo, Tatler Asia, Esquire ME, L’Officiel USA, Nike Magazine (`about.nike.com` Tier C), Urban Industry (Tier C). Wikipedia remains gloss-bridge. History LP remains the default brand anchor; never let retail blogs overwrite official signature / join years (1934 / 1922).
+
+### Extended prompt space (not in UI — rotate later or “read more”)
+
+| Lane | Example prompts |
+|------|-----------------|
+| People | When did Chuck Taylor join Converse? · How did Chuck Taylor become part of the All Star story? |
+| Silhouette / origin | What’s the Non-Skid story? · How did the Chuck 70 come about? |
+| Model vs model | What’s the difference between the Chuck 70 and the classic Chuck Taylor All Star? · How should I position Chuck Signature vs Chuck 70 Premium? *(ecosystem pack when wired)* |
+| Collabs / cause | What collaborations or humanitarian campaigns has Converse been part of? · Talk me through Margiela, Rick Owens or The Simpsons collabs |
+| Screen culture | Where have Chucks shown up in film and TV? |
+| Culture shift | How did Converse move from the court into everyday style? |
+| Other History dates | What’s the cultural significance of 15 February 2013 within Converse? · What about 14 August 1936? |
+| Desk workflow | Ask any of the above → **Extract cliff notes** |
+
+### What “interesting” answers lean on
+
+- **Anchor in Converse History** (`heritageKb`): years, silhouette names (Non-Skid, All Star, Chuck 70, One Star, Jack Purcell, Pro Leather, Pro Stars, Weapon), people, named campaigns/collabs already in the pack.
+- **Theme depth:** sports / music / collabs / cause → several beats across decades, not one paragraph of generalities.
+- **Date / zeitgeist + culture press** can pull Lookup discovery / cite upgrade — prefer claim-relevant cites from premium press, museums, and culture titles when grounded search surfaces them (Guardian, NYT, BBC, **Vogue / Teen Vogue / global Vogues**, **Dazed**, **i-D**, System, Highsnobiety, Hypebeast, BoF, WWD, Tate / Met / MoMA / V&A, music press, etc.). Gemini still **never** appears as the public citation host. Registry is canonical (`shared/source-registry.ts`); Reddit and similar UGC stay blocked.
+- Prefer answers that feel like **briefing colour** (scenes, turning points, named objects) over generic brand adjectives.
+
+### Synopsis (one paragraph)
+
+Chuck-E is the press-desk companion beside Time Machine Lookup: ask about Converse heritage themes (basketball and wider sport, music/scenes, silhouettes), named models and History dates, collabs and cause campaigns, or the cultural significance of a Chuck-tied day — then pull sourced cliff notes. Opening hints are short entry points; replies dig into History LP facts and allowlisted culture press (Vogue, Dazed, Nike Magazine) for scenes and global influence.
 
 ---
 
@@ -152,7 +241,9 @@ Runtime: wire stable framing into product packs before treating it as auto-shipp
 | 2026-08-07 | Chuck-E chat budget → 4096 tokens / ~2800-char soft aim | Enough headroom vs 1024 cuts; cheaper middle ground than 8192 |
 | 2026-08-07 | Gloss popovers z-index above Chuck-E panel; hyphenated gloss tokens | Hover cites were painting behind the chat; Non-Skid-style terms never matched |
 | 2026-08-07 | Optional voice dictation via browser Web Speech (Chrome/Edge); fill composer, do not auto-send | Fast mic path with no new API key; desks can edit before Send; Safari needs cloud STT later if required |
-| 2026-08-07 | Opening “Try asking” hints (heritage / date / nuggets) after disclosure | Capability cue for desks; knobs in `chuck-e-knobs.ts`; hide after first user turn |
+| 2026-08-07 | Opening hints: basketball / 4 Sep 2003 entry point / music–scenes; sports theme pulls multiple History beats (incl. 1984 Olympics Pro Stars) | Doors stay spoiler-light; answers dig into History LP + zeitgeist; KB 1984 enriched from landing page |
+| 2026-08-07 | Culture bookshelf: Dazed + British Vogue + Nike Magazine; register Vogue/Dazed Tier B; enrich RED / Varvatos / punk–grunge in heritage KB | Collabs, humanitarian, scenes questions need claim-relevant culture cites beyond History LP alone |
+| 2026-08-07 | Footwear News (Yahoo), Tatler Asia, L’Officiel USA, Urban Industry, Esquire ME on bookshelf; glosses carry title + date + publisher Harvard lines | High-fashion + pop collabs (Margiela, Rick Owens, Simpsons); film/TV; Wikipedia stays bridge |
 | 2026-08-07 | Voice: pause ends listen; auto-send when transcript looks like a full query | Hands-free desk flow; incomplete fragments stay in composer for edit |
 
 ---

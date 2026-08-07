@@ -7,12 +7,11 @@ const CLOSE_DELAY_MS = 180
 
 function certifiedFooter(gloss: Gloss): { href: string; label: string } | null {
   if (!gloss.url || gloss.source === 'ai') return null
-  if (gloss.source === 'wikipedia') {
-    return { href: gloss.url, label: 'open on Wikipedia →' }
-  }
+  const titleBit = gloss.originator?.trim() ? `'${gloss.originator.trim()}', ` : ''
+  const pubBit = gloss.sourceLabel?.trim() || (gloss.source === 'wikipedia' ? 'Wikipedia' : 'source')
   return {
     href: gloss.url,
-    label: gloss.sourceLabel ? `open ${gloss.sourceLabel} →` : 'open source →',
+    label: `${titleBit}${pubBit} →`,
   }
 }
 

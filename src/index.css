@@ -1286,6 +1286,7 @@ a {
   font-family: var(--font-editorial);
   font-size: 0.92rem;
   line-height: 1.45;
+  white-space: pre-wrap;
   user-select: none;
 }
 

@@ -10,7 +10,7 @@ import type { BrandMoment } from '../../shared/brand'
 import { heritageMoments } from '../../shared/brand'
 import type { Citation, CulturalEvent, Gloss, ResearchMode } from '../../shared/provenance'
 import { withHarvard } from '../../shared/provenance'
-import { parseQueryDate, toDisplayDate } from '../../shared/source-registry'
+import { citationTier, parseQueryDate, toDisplayDate } from '../../shared/source-registry'
 import { assembleDateQuery, type Env } from './assemble'
 import { chatWithChuckE } from '../providers/gemini'
 import {
@@ -88,7 +88,15 @@ const PRODUCT_INTENT_RE =
   /\b(shoe|sneaker|chuck|all[\s-]?star|feature|features|engineering|sole|canvas|rubber|vulcaniz|material|upper|toe\s*cap|eyelet|launch|silhouette|construction|spec|specs)\b/i
 
 const HERITAGE_INTENT_RE =
-  /\b(heritage|history|founded|founding|non[\s-]?skid|chuck\s+taylor|ankle\s+patch|signature|nike\s+acquir|malden|1917|1922|1934|1932|novel\s+nugget|nugget)\b/i
+  /\b(heritage|history|founded|founding|non[\s-]?skid|chuck\s+taylor|ankle\s+patch|signature|nike\s+acquir|malden|1917|1922|1934|1932|novel\s+nugget|nugget|basketball|olympic|olympics|ncaa|sport|sports|hoops|weapon|pro\s+leather|pro\s+stars?|cultural\s+significance|collab|collaboration|humanitarian|product\s*red|\(product\)\s*red|music|punk|grunge|subculture|varvatos)\b/i
+
+/** Theme queries that should surface several sports History beats, not only All Star origin. */
+const SPORTS_THEME_RE =
+  /\b(basketball|olympic|olympics|ncaa|sport|sports|hoops|weapon|pro\s+leather|pro\s+stars?|jordan|bird|magic)\b/i
+
+/** Music / scenes / collabs / cause — pull fashion-press + History collab beats together. */
+const CULTURE_THEME_RE =
+  /\b(music|punk|grunge|subculture|collab|collaboration|fashion|artist|humanitarian|product\s*red|\(product\)\s*red|varvatos|comme\s+des\s+gar[cç]ons|cdg|youth\s+culture|scenes?|margiela|rick\s+owens|simpsons|film|movie|television|tv|warhol)\b/i
 
 export function classifyIntent(text: string): ChuckEIntent {
   const t = text.trim()
@@ -177,6 +185,7 @@ function citationFromProductFact(fact: ProductFact): Citation | null {
 
 function citationFromBrandMoment(moment: BrandMoment): Citation {
   const accessedAt = new Date().toISOString().slice(0, 10)
+  const tier = citationTier(moment.citation.url)
   return withHarvard({
     title: moment.citation.title,
     url: moment.citation.url,
@@ -190,7 +199,7 @@ function citationFromBrandMoment(moment: BrandMoment): Citation {
     reference: moment.reference,
     provider: 'brand-timeline',
     isExactQuote: moment.isExactQuote,
-    tier: 'C',
+    tier: tier === 'unknown' ? 'C' : tier,
   })
 }
 
@@ -237,6 +246,9 @@ function matchHeritageMoments(
 ): BrandMoment[] {
   const brand = getBrand(brandId)
   const q = query.toLowerCase()
+  const sportsTheme = SPORTS_THEME_RE.test(q)
+  const cultureTheme = CULTURE_THEME_RE.test(q)
+  const effectiveLimit = sportsTheme || cultureTheme ? Math.max(limit, 5) : limit
   const scored = heritageMoments(brand).map((m) => {
     const hay = `${m.title} ${m.synopsis} ${m.date}`.toLowerCase()
     let score = 0
@@ -245,12 +257,28 @@ function matchHeritageMoments(
     }
     // Boost well-known years if mentioned
     if (q.includes(m.date.slice(0, 4))) score += 2
+    if (sportsTheme) {
+      if (/\bolympic/.test(hay)) score += 3
+      if (/\bweapon\b/.test(hay)) score += 2
+      if (/\bjordan\b|\bpro leather\b/.test(hay)) score += 2
+      if (/\bncaa\b/.test(hay)) score += 2
+      if (/\bedmonton|grads\b/.test(hay)) score += 1
+      if (/\bbasketball\b|\bnon-skid\b|\ball star\b/.test(hay)) score += 1
+    }
+    if (cultureTheme) {
+      if (/\bpunk|grunge|ramones|cobain|subcultur/.test(hay)) score += 3
+      if (/\bcollab|varvatos|comme des gar|cdg|richmond|golf le fleur|tyler|margiela|rick owens|simpsons|warhol/.test(hay))
+        score += 3
+      if (/\b\(product\)\s*red|product red|hund\(red\)|aids|humanitarian|malaria/.test(hay)) score += 3
+      if (/\bfilm|movie|television|mcfly|antoinette/.test(hay)) score += 2
+      if (/\bmusic|skate|youth|fashion|artist/.test(hay)) score += 1
+    }
     return { m, score }
   })
   const hits = scored.filter((x) => x.score > 0).sort((a, b) => b.score - a.score)
-  if (hits.length) return hits.slice(0, limit).map((x) => x.m)
+  if (hits.length) return hits.slice(0, effectiveLimit).map((x) => x.m)
   // Soft fallback: return a couple of core moments when user asks generally about heritage
-  if (opts.softFallback !== false) return brand.timeline.slice(0, limit)
+  if (opts.softFallback !== false) return brand.timeline.slice(0, effectiveLimit)
   return []
 }
 
@@ -352,7 +380,7 @@ function buildSystemContext(brandId: string): string {
   const brand = getBrand(brandId)
   const pack = getProductPack()
   const heritageLines = heritageMoments(brand)
-    .slice(0, 40)
+    .slice(0, 55)
     .map(
       (m) =>
         `- ${m.date}: ${m.title} — ${m.synopsis} [source: ${m.citation.url}]`,
@@ -430,23 +458,58 @@ export async function handleChuckEChat(
           researchMode,
           anyYear: false,
         })
-        const spotlight =
-          result.events.find((e) => e.precision === 'exact-day') ??
-          result.events[0] ??
-          result.brandMoments[0] ??
-          null
+        const q = lastUser.content.toLowerCase()
+        const preferBrand =
+          /\bwithin\s+converse\b|\bconverse\b.*\b(significance|history|heritage)\b|\b(significance|history|heritage)\b.*\bconverse\b/i.test(
+            q,
+          )
+        const worldSpotlight =
+          result.events.find((e) => e.precision === 'exact-day') ?? result.events[0] ?? null
+        const brandSpotlight = result.brandMoments[0] ?? null
+        const spotlight = preferBrand
+          ? brandSpotlight ?? worldSpotlight
+          : worldSpotlight ?? brandSpotlight
 
         if (spotlight) {
           const formatted = formatDateSpotlight(spotlight, result.displayDate || toDisplayDate(date))
+          let content = formatted.content
+          const citations = [...formatted.citations]
+          const glosses = [...formatted.glosses]
+
+          // Converse-framed date asks: lead with History beat, then cultural backdrop if different
+          if (
+            preferBrand &&
+            brandSpotlight &&
+            worldSpotlight &&
+            worldSpotlight.id !== brandSpotlight.id
+          ) {
+            const backdrop = formatDateSpotlight(
+              worldSpotlight,
+              result.displayDate || toDisplayDate(date),
+            )
+            content = [
+              formatted.content,
+              '',
+              'Cultural backdrop that day:',
+              `**${worldSpotlight.title}**`,
+              worldSpotlight.synopsis,
+              worldSpotlight.whyItMatters ? `Context: ${worldSpotlight.whyItMatters}` : '',
+            ]
+              .filter(Boolean)
+              .join('\n\n')
+            citations.push(...backdrop.citations)
+            glosses.push(...backdrop.glosses)
+          }
+
           return {
             sessionId,
             intent,
             spotlight,
             message: {
               role: 'assistant',
-              content: coerceChatAwayFromStory(formatted.content),
-              citations: formatted.citations,
-              glosses: formatted.glosses,
+              content: coerceChatAwayFromStory(content),
+              citations: dedupeCitationsByUrl(citations),
+              glosses,
               intent,
             },
           }
