@@ -132,7 +132,7 @@ export function DateDial({
                 if (e.key === 'Enter') trySubmit()
               }}
             >
-              <option value="">Any</option>
+              <option value="">All days</option>
               {DAYS.map((d) => (
                 <option key={d.value} value={d.value}>
                   {d.label}
@@ -156,7 +156,7 @@ export function DateDial({
                 if (e.key === 'Enter') trySubmit()
               }}
             >
-              <option value="">Any</option>
+              <option value="">All months</option>
               {MONTHS.map((m) => (
                 <option key={m.value} value={m.value}>
                   {m.label}
@@ -170,7 +170,7 @@ export function DateDial({
               id={`${baseId}-year`}
               inputMode="numeric"
               autoComplete="off"
-              placeholder="2003"
+              placeholder="YYYY"
               maxLength={4}
               value={year}
               autoFocus={autoFocus}

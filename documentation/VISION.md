@@ -2,7 +2,7 @@
 
 > Living document. Update this as the idea develops. Agents: read this before making product or architecture decisions.
 
-**Last updated:** 2026-08-07 (Present-day date UX)  
+**Last updated:** 2026-08-07 (Converse typography)  
 **Client (current):** Converse  
 **Working title:** Good News, Chuck  
 **Live:** https://time-machine.jasminefederer.workers.dev  
@@ -95,7 +95,7 @@ Build beyond “Chuck launch dates only” into a general **time machine for any
 
 - UX: intuitive, minimal, press-desk calm.
 - Visual: Swiss / Japanese / Scandinavian graphic design — sleek, not dashboard-y.
-- Typography currently: Schibsted Grotesk + Newsreader; newsprint paper field; single Converse red accent.
+- Typography: **Druk Wide** for display titles; **Proxima Nova** for UI + editorial body (Converse.com pairing; files in `shared/fonts/`). Newsprint paper field; single Converse red accent.
 - Citations should feel seamless (Bloom gloss / research-card pattern), not like a clunky bibliography dump.
 - First viewport: brand + one clear claim + date doorway — not a control panel of widgets.
 - Day card: title + synopsis + optional smaller/paler **Context / Provenance** (`whyItMatters`) + Harvard Source.
@@ -269,6 +269,7 @@ Record material product/architecture choices here as we go.
 
 | Date | Decision | Why |
 |------|----------|-----|
+| 2026-08-07 | Ship Converse faces: Druk Wide (titles) + Proxima Nova (body/UI); drop Schibsted + Newsreader | Match converse.com brand type; licensed files live in `shared/fonts/` |
 | 2026-08-07 | Empty dial default; block future; today allowed with “history still being made” when shipping another year | Today often has no settled same-year card (live wire skipped); always prefer a card over empty |
 | 2026-08-07 | Drop Lite/Full toggle — research always full stack | One path; cite upgrade always on; settings keep year + Chuck-E font only |
 | 2026-08-04 | Bloom-style research cards + glosses | Proven citation UX; reduces hallucination risk in press context |
