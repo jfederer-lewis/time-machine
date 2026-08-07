@@ -645,6 +645,49 @@ a {
   font-size: 0.72rem;
 }
 
+.chuck-e-hints {
+  align-self: stretch;
+  margin: 0.15rem 0 0;
+  padding: 0.15rem 0 0.25rem;
+}
+
+.chuck-e-hints__label {
+  margin: 0 0 0.45rem;
+  font-size: 0.65rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: color-mix(in srgb, var(--muted) 85%, #fff);
+}
+
+.chuck-e-hints__list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.chuck-e-hints__prompt {
+  display: block;
+  width: 100%;
+  text-align: left;
+  border: 1px solid var(--rule);
+  background: #fff;
+  color: var(--ink);
+  padding: 0.55rem 0.7rem;
+  font-family: var(--font-editorial);
+  font-size: 0.88rem;
+  line-height: 1.35;
+  cursor: pointer;
+  transition: border-color 140ms ease, background 140ms ease;
+}
+
+.chuck-e-hints__prompt:hover {
+  border-color: var(--ink);
+  background: #fffef9;
+}
+
 .chuck-e-pending,
 .chuck-e-error {
   margin: 0;

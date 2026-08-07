@@ -17,6 +17,18 @@ export const CHUCK_E_KNOBS = {
     "Hi — I'm Chuck-E, an AI assistant for Converse press desks. I help you pull sourced facts, heritage nuggets, and editorial cliff notes about Chuck and the cultural timeline around it.",
   /** Launcher label when the panel is closed. */
   launcherLabel: 'Ask Chuck-E',
+  /** Empty-composer placeholder (when not listening). */
+  composerPlaceholder: 'Ask about the new Chuck, heritage, or a date…',
+  /**
+   * Opening hint — shown after disclosure until the first user turn.
+   * Keep positive / capability-led; clickable prompts fill + send.
+   */
+  promptHintsLabel: 'Try asking',
+  promptHints: [
+    'When did Chuck Taylor join Converse?',
+    'What else happened on 14 February 1923?',
+    'Give me a few Converse heritage nuggets for a brief.',
+  ] as const,
   /**
    * Banner that travels with every Cliff Notes export
    * (synthetic-content marking for text that may leave the app).

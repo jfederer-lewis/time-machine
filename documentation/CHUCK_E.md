@@ -2,7 +2,7 @@
 
 > Living document. Agents: read this before changing Chuck-E persona, disclosure, cliff notes, or routing.  
 > Companion docs: `VISION.md`, `PIPELINE.md`, `COPY_CONTRACT.md`, `SOURCES_AND_LANDSCAPE.md`, **`CHUCK_ECOSYSTEM_KB.md`** (Chuck franchise product / strategy KB).  
-> **Last updated:** 2026-08-07 (voice dictation)
+> **Last updated:** 2026-08-07 (prompt hints)
 
 ---
 
@@ -52,7 +52,7 @@ ChuckEWidget (floating launcher)
     → GET  /api/chuck-e/chat          → disclosure opener
     → POST /api/chuck-e/chat          → intent route → reply
     → POST /api/chuck-e/cliff-notes   → marked bullet brief
-    → (optional) Web Speech mic       → fills composer draft; Send still typed confirm
+    → (optional) Web Speech mic       → fills draft; pause ends listen; complete queries auto-send
 ```
 
 ### Intent routing (`worker/lib/chuck-e.ts`)
@@ -152,6 +152,8 @@ Runtime: wire stable framing into product packs before treating it as auto-shipp
 | 2026-08-07 | Chuck-E chat budget → 4096 tokens / ~2800-char soft aim | Enough headroom vs 1024 cuts; cheaper middle ground than 8192 |
 | 2026-08-07 | Gloss popovers z-index above Chuck-E panel; hyphenated gloss tokens | Hover cites were painting behind the chat; Non-Skid-style terms never matched |
 | 2026-08-07 | Optional voice dictation via browser Web Speech (Chrome/Edge); fill composer, do not auto-send | Fast mic path with no new API key; desks can edit before Send; Safari needs cloud STT later if required |
+| 2026-08-07 | Opening “Try asking” hints (heritage / date / nuggets) after disclosure | Capability cue for desks; knobs in `chuck-e-knobs.ts`; hide after first user turn |
+| 2026-08-07 | Voice: pause ends listen; auto-send when transcript looks like a full query | Hands-free desk flow; incomplete fragments stay in composer for edit |
 
 ---
 

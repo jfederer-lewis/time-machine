@@ -1,6 +1,9 @@
 /**
  * Browser speech-to-text for Chuck-E composer dictation.
  * Chromium Web Speech API — no API key. Hidden when unsupported.
+ *
+ * One utterance per listen: when speech pauses, recognition ends.
+ * Callers may auto-send if `looksLikeCompleteQuery` passes.
  */
 
 import { useCallback, useEffect, useRef, useState } from 'react'
@@ -59,17 +62,46 @@ function joinDraft(base: string, spoken: string): string {
   return `${b} ${s}`
 }
 
+const QUESTION_STARTERS =
+  /^(who|what|when|where|why|how|which|whose|whom|is|are|was|were|do|does|did|can|could|would|will|should|tell|explain|describe|give|show|list|compare|summarise|summarize|ask)\b/i
+
+const TRAILING_FILLER = /\b(um|uh|erm|er|ah|like|and|or|the|a|an|to|of|for|with)$/i
+
+/**
+ * Heuristic: enough substance to treat as a finished desk query.
+ * Incomplete fragments stay in the composer for edit / Send.
+ */
+export function looksLikeCompleteQuery(text: string): boolean {
+  const t = text.trim()
+  if (t.length < 12) return false
+
+  const words = t.split(/\s+/).filter(Boolean)
+  if (words.length < 3) return false
+
+  if (/[?!.…]["')\]]*$/u.test(t)) return true
+  if (QUESTION_STARTERS.test(t) && words.length >= 3) return true
+  if (words.length >= 4 && !TRAILING_FILLER.test(t)) return true
+
+  return false
+}
+
 export interface UseSpeechDictationOpts {
   /** Called with the composer text while listening (interim + final). */
   onTranscript: (text: string) => void
   /** Snapshot of the composer when listening starts (typed text to keep). */
   getBaseDraft: () => string
+  /**
+   * Fired when a listen session ends normally (speech pause or mic stop).
+   * Not fired on abort (panel close / send / loading).
+   */
+  onUtteranceEnd?: (text: string) => void
   lang?: string
 }
 
 export function useSpeechDictation({
   onTranscript,
   getBaseDraft,
+  onUtteranceEnd,
   lang = 'en-GB',
 }: UseSpeechDictationOpts) {
   const [supported] = useState(speechDictationSupported)
@@ -78,8 +110,11 @@ export function useSpeechDictation({
 
   const recognitionRef = useRef<BrowserSpeechRecognition | null>(null)
   const baseDraftRef = useRef('')
+  const lastEmittedRef = useRef('')
+  const abortingRef = useRef(false)
   const onTranscriptRef = useRef(onTranscript)
   const getBaseDraftRef = useRef(getBaseDraft)
+  const onUtteranceEndRef = useRef(onUtteranceEnd)
 
   useEffect(() => {
     onTranscriptRef.current = onTranscript
@@ -89,9 +124,14 @@ export function useSpeechDictation({
     getBaseDraftRef.current = getBaseDraft
   }, [getBaseDraft])
 
+  useEffect(() => {
+    onUtteranceEndRef.current = onUtteranceEnd
+  }, [onUtteranceEnd])
+
   const stop = useCallback(() => {
     const rec = recognitionRef.current
     if (!rec) return
+    abortingRef.current = false
     try {
       rec.stop()
     } catch {
@@ -102,6 +142,7 @@ export function useSpeechDictation({
   const abort = useCallback(() => {
     const rec = recognitionRef.current
     if (!rec) return
+    abortingRef.current = true
     try {
       rec.abort()
     } catch {
@@ -120,12 +161,15 @@ export function useSpeechDictation({
 
     setError(null)
     abort()
+    abortingRef.current = false
 
     const rec = new Ctor()
-    rec.continuous = true
+    // Single utterance: Chrome ends after a short pause when the user stops talking.
+    rec.continuous = false
     rec.interimResults = true
     rec.lang = lang
     baseDraftRef.current = getBaseDraftRef.current()
+    lastEmittedRef.current = baseDraftRef.current
     recognitionRef.current = rec
 
     rec.onresult = (ev) => {
@@ -138,7 +182,9 @@ export function useSpeechDictation({
         else interimChunk += piece
       }
       const spoken = `${finalChunk}${interimChunk}`
-      onTranscriptRef.current(joinDraft(baseDraftRef.current, spoken))
+      const next = joinDraft(baseDraftRef.current, spoken)
+      lastEmittedRef.current = next
+      onTranscriptRef.current(next)
     }
 
     rec.onerror = (ev) => {
@@ -159,6 +205,9 @@ export function useSpeechDictation({
       if (recognitionRef.current === rec) {
         recognitionRef.current = null
       }
+      if (abortingRef.current) return
+      const text = lastEmittedRef.current.trim()
+      if (text) onUtteranceEndRef.current?.(text)
     }
 
     try {

@@ -1,9 +1,9 @@
-import { useEffect, useRef, useState, type FormEvent } from 'react'
+import { useCallback, useEffect, useRef, useState, type FormEvent } from 'react'
 import type { BrandConfig } from '../../shared/brand'
 import type { ResearchMode } from '../../shared/provenance'
 import { CHUCK_E_KNOBS } from '../../shared/chuck-e-knobs'
 import { useChuckEChat } from '../hooks/useChuckEChat'
-import { useSpeechDictation } from '../hooks/useSpeechDictation'
+import { looksLikeCompleteQuery, useSpeechDictation } from '../hooks/useSpeechDictation'
 import { ChuckEMessage } from './ChuckEMessage'
 import { CliffNotesPanel } from './CliffNotesPanel'
 
@@ -33,6 +33,22 @@ export function ChuckEWidget({ brand, researchMode = 'lite' }: ChuckEWidgetProps
     clearCliffNotes,
   } = useChuckEChat({ brandId: brand.id, researchMode })
 
+  const loadingRef = useRef(loading)
+  loadingRef.current = loading
+
+  const onUtteranceEnd = useCallback(
+    (text: string) => {
+      if (loadingRef.current) return
+      if (!looksLikeCompleteQuery(text)) {
+        setDraft(text)
+        return
+      }
+      setDraft('')
+      void send(text)
+    },
+    [send],
+  )
+
   const {
     supported: voiceSupported,
     listening,
@@ -43,6 +59,7 @@ export function ChuckEWidget({ brand, researchMode = 'lite' }: ChuckEWidgetProps
   } = useSpeechDictation({
     onTranscript: setDraft,
     getBaseDraft: () => draftRef.current,
+    onUtteranceEnd,
   })
 
   useEffect(() => {
@@ -73,6 +90,15 @@ export function ChuckEWidget({ brand, researchMode = 'lite' }: ChuckEWidgetProps
     e.preventDefault()
     const text = draft.trim()
     if (!text) return
+    abortVoice()
+    setDraft('')
+    void send(text)
+  }
+
+  const showPromptHints =
+    !loading && messages.length > 0 && messages.every((m) => m.isDisclosure)
+
+  const sendHint = (text: string) => {
     abortVoice()
     setDraft('')
     void send(text)
@@ -112,6 +138,24 @@ export function ChuckEWidget({ brand, researchMode = 'lite' }: ChuckEWidgetProps
             {messages.map((m, i) => (
               <ChuckEMessage key={`${m.role}-${i}-${m.content.slice(0, 24)}`} message={m} />
             ))}
+            {showPromptHints ? (
+              <div className="chuck-e-hints" aria-label={CHUCK_E_KNOBS.promptHintsLabel}>
+                <p className="chuck-e-hints__label">{CHUCK_E_KNOBS.promptHintsLabel}</p>
+                <ul className="chuck-e-hints__list">
+                  {CHUCK_E_KNOBS.promptHints.map((hint) => (
+                    <li key={hint}>
+                      <button
+                        type="button"
+                        className="chuck-e-hints__prompt"
+                        onClick={() => sendHint(hint)}
+                      >
+                        {hint}
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ) : null}
             {loading ? (
               <p className="chuck-e-pending" aria-live="polite">
                 Looking that up…
@@ -158,8 +202,8 @@ export function ChuckEWidget({ brand, researchMode = 'lite' }: ChuckEWidgetProps
                   rows={4}
                   placeholder={
                     listening
-                      ? 'Listening… tap the mic when done'
-                      : 'Ask about the new Chuck, heritage, or a date…'
+                      ? 'Listening… pause when finished'
+                      : CHUCK_E_KNOBS.composerPlaceholder
                   }
                   value={draft}
                   onChange={(e) => {
