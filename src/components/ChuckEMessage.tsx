@@ -27,32 +27,48 @@ function compactSourceLabel(c: Citation): string {
 }
 
 /** Render light markdown-ish bold + newlines without a full markdown parser. */
+function isBulletLine(line: string): boolean {
+  return /^\s*(?:[•●▪◦*-]|\d+[.)])\s+\S/.test(line)
+}
+
+function renderInline(text: string, glosses: ChuckEChatMessage['glosses']) {
+  const parts = text.split(/(\*\*[^*]+\*\*|_[^_]+_)/g).filter(Boolean)
+  return parts.map((part, j) => {
+    if (part.startsWith('**') && part.endsWith('**')) {
+      const inner = part.slice(2, -2)
+      return (
+        <strong key={j}>
+          <GlossableText text={inner} glosses={glosses ?? []} />
+        </strong>
+      )
+    }
+    if (part.startsWith('_') && part.endsWith('_')) {
+      return <em key={j}>{part.slice(1, -1)}</em>
+    }
+    return (
+      <span key={j}>
+        <GlossableText text={part} glosses={glosses ?? []} />
+      </span>
+    )
+  })
+}
+
 function renderContent(text: string, glosses: ChuckEChatMessage['glosses']) {
   const lines = text.split('\n')
   return lines.map((line, i) => {
-    const parts = line.split(/(\*\*[^*]+\*\*|_[^_]+_)/g).filter(Boolean)
+    if (!line.trim()) {
+      return <div key={i} className="chuck-e-msg__gap" aria-hidden="true" />
+    }
+    const bullet = isBulletLine(line)
     return (
-      <span key={i}>
-        {parts.map((part, j) => {
-          if (part.startsWith('**') && part.endsWith('**')) {
-            const inner = part.slice(2, -2)
-            return (
-              <strong key={j}>
-                <GlossableText text={inner} glosses={glosses ?? []} />
-              </strong>
-            )
-          }
-          if (part.startsWith('_') && part.endsWith('_')) {
-            return <em key={j}>{part.slice(1, -1)}</em>
-          }
-          return (
-            <span key={j}>
-              <GlossableText text={part} glosses={glosses ?? []} />
-            </span>
-          )
-        })}
-        {i < lines.length - 1 ? <br /> : null}
-      </span>
+      <p
+        key={i}
+        className={['chuck-e-msg__line', bullet ? 'chuck-e-msg__line--bullet' : '']
+          .filter(Boolean)
+          .join(' ')}
+      >
+        {renderInline(line, glosses)}
+      </p>
     )
   })
 }

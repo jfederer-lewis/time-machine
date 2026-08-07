@@ -29,7 +29,7 @@ Chuck-E helps media **pull data** and, when asked, **extract editorial cliff not
 
 | Surface | Shape |
 |---------|--------|
-| **Chuck-E chat** | Conversational: 1–2 short paragraphs and optional plain bullets — like a sharp ChatGPT reply. No `###` headings, no “Beat Summary / Pointers to Cite”, no jargon padding. Cites live in glosses / Sources, not in the body. |
+| **Chuck-E chat** | Conversational: 1–2 short paragraphs and optional plain bullets — like a sharp ChatGPT reply. Theme answers open with a short grounding line, then examples — not a bare list dump. No `###` headings, no “Beat Summary / Pointers to Cite”, no jargon padding. Cites live in glosses / Sources, not in the body. |
 | **Cliff notes export** | Separate action — bullets + Harvard + AI banner. |
 | **Lookup day cards** | Curated title / synopsis / Context / Source — different product surface. |
 
@@ -109,7 +109,7 @@ When the chat mentions sports, basketball, Olympics, NCAA, etc., prefer a **spre
 | 1986 | Weapon + Bird–Magic “Choose Your Weapon” |
 | 2021 | Weapon CX return; Draymond Green / Tokyo Olympic gold |
 
-Spellings and model names follow Converse History (e.g. **Lynette Woodward**, Pro Stars). Enrich replies from the History LP first; optional secondary press only when claim-relevant and allowlisted.
+Enrich replies from the History LP first; **web search** may add claim-relevant colour or fill gaps when the pack is thin / off-topic. Prefer allowlisted premium press when those URLs surface; Gemini is never the public citation host. Never let blogs overwrite official signature / join years (1934 / 1922).
 
 ### Music / collabs / humanitarian / global influence (go deeper)
 
@@ -144,7 +144,7 @@ When the chat mentions music, scenes, collabs, humanitarian / (PRODUCT) RED, fil
 | Entity (Wikipedia) | People, venues, iconic events, obscure brands/houses | Short Wikipedia summary — quiet help, not noise | **Chuck Taylor** · **Maison Margiela** (not Nike / Converse) |
 | Publisher establishment | Less-familiar outlet names when they appear in prose | Who they are + homepage | **Footwear News** → US footwear trade title |
 
-Skip household brands (Nike, Converse, …), countries, bare product words, and years — prefer silence over underlines people already understand. Obscure fashion / streetwear houses named in the reply may gloss. Cap entity glosses per reply so the text stays calm.
+Skip household brands (Nike, Converse, …), countries, bare product words, and years — prefer silence over underlines people already understand. Obscure fashion / streetwear houses named in the reply may gloss. Person names resolve via Wikipedia summary + OpenSearch when the exact title misses. Cap entity glosses per reply so the text stays calm.
 
 **Dated answers:** open in prose with the beat title and what happened — not “On 4 September 2003…”, a list of years, or a titled research memo.
 
@@ -196,8 +196,8 @@ ChuckEWidget (floating launcher)
 |--------|-----------|
 | `date` | Parse date → `assembleDateQuery` → Converse-framed + History beat → Gemini **grounded enrich** on that day only (no world backdrop). World-only days → optional light Converse bridge if sourced |
 | `product` | Match `shared/products/new-chuck.ts` facts; if placeholder/empty, refuse to invent |
-| `heritage` | Match full History KB (`brand.heritageKb` via `heritageMoments`) + Converse History cites + citation glosses. Soft general fallback uses curated `timeline` beats. |
-| `general` | `chatWithChuckE()` with persona guardrails; when reply/query hits timeline beats, attach History cites + glosses |
+| `heritage` | Match History KB beats as anchors → Gemini **web search** for more colour / when pack is thin → cites + glosses. Pack-only fallback if offline. |
+| `general` | `chatWithChuckE()` with persona guardrails + web search (not for inventing product specs); attach History cites when reply touches pack beats |
 | cliff notes action | Separate endpoint; extracts bullets from the conversation + cites |
 
 Gemini is **never** the public citation host. Historical world claims go through the Time Machine pipeline. Shoe facts come from the product pack only. Heritage beats cite **Converse History** (`landing-converse-history`). Chat and cliff-notes footers list each source URL **once** (same History LP across several beats is not repeated).
@@ -302,6 +302,9 @@ Runtime: wire stable framing into product packs before treating it as auto-shipp
 | 2026-08-07 | Gloss popovers: term + short body + quiet source; always selectable | Drop year/subtitle stack and loud “Read more”; desks need digestible copyable notes |
 | 2026-08-07 | Date replies lead with beat title; years never gloss; Wikipedia entity glosses via API | Don’t open with the queried date or underline 2003; wiki-style entity links + source on the fact title |
 | 2026-08-07 | Wikipedia glosses = people / venues / iconic events only; keep underlines sparse | Help understanding without visual noise for desks who already know |
+| 2026-08-07 | Heritage theme replies dedupe story clusters (e.g. One Hund(RED) vs Vogue RED) | Same (PRODUCT) RED idea was shipping as two bullets |
+| 2026-08-07 | Theme heritage replies: short grounding line before example bullets | Bare list dumps felt abrupt; one calm frame sentence, then examples |
+| 2026-08-07 | Chuck-E heritage / general may web-search beyond the pack | Pack first when on-topic; search fills gaps — Gemini never the public cite host |
 | 2026-08-07 | Chuck-E chat = concise prose (+ optional bullets), not report briefs; soft ~900 chars; strip ### / Pointers to Cite | Chat ≠ Lookup day cards / cliff-notes export; desks want sharp digests without jargon or cite blocks in the body |
 | 2026-08-07 | No world backdrop on Converse-tied date answers; light Converse bridge only for world-only days | Backdrop was forced noise; re-anchor only when the day has no Converse hook |
 

@@ -492,6 +492,7 @@ export const CONVERSE_HERITAGE_KB: BrandMoment[] = withHeritageImages([
         publisher: 'Converse',
       },
       isExactQuote: false,
+      storyCluster: 'product-red-2008',
     },
     {
       id: 'cv-2008-vogue-century',
@@ -510,6 +511,7 @@ export const CONVERSE_HERITAGE_KB: BrandMoment[] = withHeritageImages([
         publishedAt: '2008-02-26',
       },
       isExactQuote: false,
+      storyCluster: 'product-red-2008',
     },
     {
       id: 'cv-2008-cobain-fn',

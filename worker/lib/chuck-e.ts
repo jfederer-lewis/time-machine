@@ -16,7 +16,7 @@ import type { Citation, CulturalEvent, Gloss, ResearchMode } from '../../shared/
 import { withHarvard } from '../../shared/provenance'
 import { citationTier, parseQueryDate, toDisplayDate, isCitationAllowed, isCitationBlocked, findRegistryEntry } from '../../shared/source-registry'
 import { assembleDateQuery, type Env } from './assemble'
-import { chatWithChuckE, enrichChuckEDateSignificance, type ClaimCandidate } from '../providers/gemini'
+import { chatWithChuckE, enrichChuckEDateSignificance, researchChuckETopic, type ClaimCandidate } from '../providers/gemini'
 import { isLandmarkDefiningEvent } from './interest'
 import {
   buildDisclosureMessage,
@@ -264,6 +264,45 @@ function matchProductFacts(query: string, limit = 4): ProductFact[] {
     .map((x) => x.f)
 }
 
+function heritageStoryCluster(m: BrandMoment): string | null {
+  if (m.storyCluster) return m.storyCluster
+  const hay = `${m.title} ${m.synopsis}`.toLowerCase()
+  // Fallback heuristic for RED / (PRODUCT) RED family if cluster unset
+  if (/\(product\)\s*red|product red|hund\(red\)|one hund/.test(hay)) return 'product-red'
+  return null
+}
+
+function preferHistoryPublisher(m: BrandMoment): number {
+  return /^(converse|converse history)$/i.test(m.citation.publisher.trim()) ||
+    /converse history/i.test(m.citation.title)
+    ? 1
+    : 0
+}
+
+/** Keep one beat per story cluster — prefer Converse History over secondary press colour. */
+function pickHeritageHits(
+  scored: Array<{ m: BrandMoment; score: number }>,
+  limit: number,
+): BrandMoment[] {
+  const sorted = scored
+    .filter((x) => x.score > 0)
+    .sort((a, b) => {
+      if (b.score !== a.score) return b.score - a.score
+      return preferHistoryPublisher(b.m) - preferHistoryPublisher(a.m)
+    })
+
+  const out: BrandMoment[] = []
+  const seenClusters = new Set<string>()
+  for (const { m } of sorted) {
+    const cluster = heritageStoryCluster(m)
+    if (cluster && seenClusters.has(cluster)) continue
+    if (cluster) seenClusters.add(cluster)
+    out.push(m)
+    if (out.length >= limit) break
+  }
+  return out
+}
+
 function matchHeritageMoments(
   query: string,
   brandId: string,
@@ -311,12 +350,12 @@ function matchHeritageMoments(
     }
     return { m, score }
   })
-  const hits = scored.filter((x) => x.score > 0).sort((a, b) => b.score - a.score)
+  const hits = scored.filter((x) => x.score > 0)
   if (datedFocus && hits.length && queryDate) {
     const exact = hits.filter((x) => x.m.date === queryDate)
-    if (exact.length) return exact.slice(0, effectiveLimit).map((x) => x.m)
+    if (exact.length) return pickHeritageHits(exact, effectiveLimit)
   }
-  if (hits.length) return hits.slice(0, effectiveLimit).map((x) => x.m)
+  if (hits.length) return pickHeritageHits(hits, effectiveLimit)
   // Soft fallback: return a couple of core moments when user asks generally about heritage
   if (opts.softFallback !== false && !datedFocus) return brand.timeline.slice(0, effectiveLimit)
   return []
@@ -362,7 +401,30 @@ function formatProductReply(facts: ProductFact[], packIsPlaceholder: boolean): {
   }
 }
 
-function formatHeritageReply(moments: BrandMoment[]): {
+function themeHeritageLeadIn(query: string): string {
+  const q = query.toLowerCase()
+  if (SPORTS_THEME_RE.test(q)) {
+    return 'The All Star began as a basketball shoe and kept returning on court at hinge moments — Olympics, college finals, signature players.'
+  }
+  if (
+    CULTURE_THEME_RE.test(q) ||
+    /\b(music|youth|scene|fashion|culture|collab|collaboration)\b/.test(q)
+  ) {
+    return 'The Chuck left the court through music scenes and later fashion and cause collaborations — these are some of the clearest sourced turns.'
+  }
+  if (/\b(humanitarian|product\s*red|\(product\)\s*red|cause|charity)\b/.test(q)) {
+    return 'Converse’s cause partnerships show up most clearly in a handful of History-backed campaigns.'
+  }
+  if (/\b(silhouette|non[\s-]?skid|chuck\s*70|origin|founded|founding)\b/.test(q)) {
+    return 'A few History-backed moments that mark how the silhouette took shape:'
+  }
+  return 'Here’s what Converse History backs on that theme:'
+}
+
+function formatHeritageReply(
+  moments: BrandMoment[],
+  opts: { query?: string } = {},
+): {
   content: string
   citations: Citation[]
   glosses: Gloss[]
@@ -376,6 +438,13 @@ function formatHeritageReply(moments: BrandMoment[]): {
   }
   const lines: string[] = []
   const citations: Citation[] = []
+
+  // Theme spreads: short grounding line, then examples — not a raw bullet dump.
+  if (moments.length > 1) {
+    lines.push(themeHeritageLeadIn(opts.query || ''))
+    lines.push('')
+  }
+
   for (const m of moments) {
     const flag = m.precision === 'period-estimate' ? ' _(period estimate — contested)_' : ''
     // Lead with the beat title — not a date list. Year stays light context when spreading themes.
@@ -491,7 +560,7 @@ async function finalizeChuckEGlosses(
   // Wikipedia entity glosses: people / venues / iconic events — quiet, helpful, not brand noise
   const wiki = await attachWikipediaGlossesForProse(content, {
     excludeTerms: sources.map((g) => g.term),
-    max: 2,
+    max: 4,
   })
   const seen = new Set(sources.map((g) => g.term.toLowerCase()))
   const merged = [...sources]
@@ -750,7 +819,7 @@ export async function handleChuckEChat(
       // When placeholder and no facts, still offer heritage if query also smells heritage
       if (!facts.length && HERITAGE_INTENT_RE.test(lastUser.content)) {
         const moments = matchHeritageMoments(lastUser.content, brandId)
-        const heritage = formatHeritageReply(moments)
+        const heritage = formatHeritageReply(moments, { query: lastUser.content })
         const content = coerceChatAwayFromStory(
           `${formatted.content}\n\nMeanwhile, from the heritage timeline:\n${heritage.content}`,
         )
@@ -781,8 +850,53 @@ export async function handleChuckEChat(
   }
 
   if (intent === 'heritage') {
-    const moments = matchHeritageMoments(lastUser.content, brandId)
-    const formatted = formatHeritageReply(moments)
+    // Prefer scored pack beats (no soft timeline dump). Web search fills gaps / adds colour.
+    const moments = matchHeritageMoments(lastUser.content, brandId, 5, { softFallback: false })
+    const systemContext = buildSystemContext(brandId)
+
+    if (env.GEMINI_API_KEY) {
+      const researched = await researchChuckETopic({
+        apiKey: env.GEMINI_API_KEY,
+        userQuestion: lastUser.content,
+        systemContext,
+        packBeats: moments.map((m) => ({
+          date: m.date,
+          title: m.title,
+          synopsis: m.synopsis,
+        })),
+      })
+      if (researched?.content) {
+        const content = ensureCompleteChatReply(
+          coerceChatAwayFromStory(researched.content),
+        )
+        const citations = dedupeCitationsByUrl([
+          ...moments.map((m) => citationFromBrandMoment(m)),
+          ...citationsFromGroundedSources(researched.groundedSources),
+        ])
+        return {
+          sessionId,
+          intent,
+          message: {
+            role: 'assistant',
+            content,
+            citations,
+            glosses: await finalizeChuckEGlosses(content, [
+              ...glossesFromBrandMoments(moments),
+              ...glossesFromCitations(citations, content),
+            ]),
+            intent,
+          },
+        }
+      }
+    }
+
+    // Offline / research miss — pack-only fallback (may soft-fill)
+    const formatted = formatHeritageReply(
+      moments.length
+        ? moments
+        : matchHeritageMoments(lastUser.content, brandId, 5, { softFallback: true }),
+      { query: lastUser.content },
+    )
     const content = coerceChatAwayFromStory(formatted.content)
     return {
       sessionId,
@@ -800,15 +914,22 @@ export async function handleChuckEChat(
   // General (and cliff_notes-as-chat, date-without-parseable-date, product miss): Gemini when keyed
   const systemContext = buildSystemContext(brandId)
   let reply: string | null = null
+  let chatGrounded: ClaimCandidate[] = []
 
   if (env.GEMINI_API_KEY) {
-    reply = await chatWithChuckE({
+    const chat = await chatWithChuckE({
       apiKey: env.GEMINI_API_KEY,
       systemContext,
       messages: messages
         .filter((m) => !m.isDisclosure)
         .map((m) => ({ role: m.role, content: m.content })),
+      // Web search OK for general / date-nudge turns — not for inventing product specs
+      useSearch: intent !== 'product',
     })
+    if (chat) {
+      reply = chat.content
+      chatGrounded = chat.groundedSources
+    }
   }
 
   if (!reply) {
@@ -827,13 +948,19 @@ export async function handleChuckEChat(
   const groundedMoments = matchHeritageMoments(`${lastUser.content}\n${content}`, brandId, 4, {
     softFallback: false,
   })
-  const grounded = formatHeritageReply(groundedMoments)
+  const grounded = formatHeritageReply(groundedMoments, { query: lastUser.content })
   const replyLooksHeritage = groundedMoments.length > 0
 
-  const citations = replyLooksHeritage ? grounded.citations : []
+  const citations = dedupeCitationsByUrl([
+    ...(replyLooksHeritage ? grounded.citations : []),
+    ...citationsFromGroundedSources(chatGrounded),
+  ])
   const glosses = await finalizeChuckEGlosses(
     content,
-    replyLooksHeritage ? grounded.glosses : [],
+    [
+      ...(replyLooksHeritage ? grounded.glosses : []),
+      ...glossesFromCitations(citations, content),
+    ],
   )
 
   return {

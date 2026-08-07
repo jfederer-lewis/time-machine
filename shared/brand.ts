@@ -35,6 +35,11 @@ export interface BrandMoment {
   isExactQuote: boolean
   /** Optional visual from the brand History page (or other credited source). */
   image?: BrandMomentImage
+  /**
+   * When set, theme replies keep only one beat per cluster (prefer Converse History).
+   * e.g. One Hund(RED) + Vogue (PRODUCT) RED colour share `product-red-2008`.
+   */
+  storyCluster?: string
 }
 
 export interface BrandConfig {

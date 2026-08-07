@@ -222,6 +222,15 @@ function isTooObvious(term: string, wikiDescription?: string): boolean {
  * people, venues, iconic events, and obscure brands someone may have heard of but not place —
  * not household brands, countries, or everyday concepts.
  */
+export function looksLikePersonName(term: string): boolean {
+  const words = term.trim().split(/\s+/).filter(Boolean)
+  if (words.length < 2 || words.length > 4) return false
+  // Reject clear non-person phrases
+  if (/^(the|a|an)\b/i.test(term)) return false
+  if (/\b(war|battle|stadium|arena|company|inc|corp|ltd)\b/i.test(term)) return false
+  return words.every((w) => /^[A-Z]/.test(w) || /^(de|van|von|da|di|la|le|of|y)$/i.test(w))
+}
+
 export function isGlossWorthyEntity(term: string, wikiDescription?: string): boolean {
   if (isYearLikeTerm(term) || isTooObvious(term, wikiDescription)) return false
 
@@ -231,33 +240,34 @@ export function isGlossWorthyEntity(term: string, wikiDescription?: string): boo
     .replace(/\s+/g, ' ')
     .trim()
 
-  // People — Wikipedia short description or Firstname Lastname shape
-  if (
-    /\b(basketball player|athlete|coach|salesperson|musician|singer|rapper|designer|fashion designer|artist|painter|photographer|entrepreneur|businessman|businesswoman|executive|founder|politician|statesman|activist|author|writer|actor|actress|filmmaker|director|olympian|hall of fame)\b/.test(
-      desc,
-    ) ||
-    /^(american|british|canadian|australian|french|german|italian|japanese|chinese|brazilian|mexican|irish|scottish|welsh|dutch|swedish|norwegian|danish|russian|indian|south african|new zealand)\b/.test(
-      desc,
-    )
-  ) {
-    // Nationality-only descriptions can also be brands (“Japanese fashion brand”) — fall through to brand check
+  // Person-shaped names: accept when Wikipedia resolved (even thin descriptions).
+  // Obscure people often lack rich short-descriptions — still worth a gloss.
+  if (looksLikePersonName(term)) {
+    if (!desc) return true
     if (
-      /\b(player|coach|athlete|musician|singer|rapper|designer|artist|salesperson|entrepreneur|executive|founder|politician|activist|author|writer|actor|actress|filmmaker|director|olympian)\b/.test(
+      /\b(player|coach|athlete|musician|singer|rapper|designer|artist|salesperson|salesman|saleswoman|entrepreneur|executive|founder|politician|activist|author|writer|actor|actress|filmmaker|director|olympian|businessman|businesswoman|inventor|engineer|photographer|model|rapper|producer|choreographer|dancer|hall of fame)\b/.test(
         desc,
-      ) ||
-      (words.length >= 2 &&
-        words.every((w) => /^[A-Z]/.test(w) || /^(de|van|von|da|di|la|le|of)$/i.test(w)) &&
-        !/\b(company|corporation|brand|label|house)\b/.test(desc))
+      )
     ) {
       return true
     }
+    // Nationality + any role-ish, or bare nationality on a person page
+    if (/^(american|british|canadian|australian|french|german|italian|japanese|chinese|brazilian|mexican|irish|scottish|welsh|dutch|swedish|norwegian|danish|russian|indian|south african|new zealand)\b/.test(desc)) {
+      if (!/\b(company|corporation|brand|multinational|album|film|song|novel|magazine)\b/.test(desc)) return true
+    }
+    // Any human-ish description without being clearly a company page
+    if (!/\b(company|corporation|brand|multinational|album|film|song|novel|website|social network)\b/.test(desc)) {
+      return true
+    }
   }
+
+  // People — Wikipedia short description without requiring First Last shape on the term
   if (
-    words.length >= 2 &&
-    words.length <= 4 &&
-    words.every((w) => /^[A-Z]/.test(w) || /^(de|van|von|da|di|la|le|of)$/i.test(w))
+    /\b(basketball player|athlete|coach|salesperson|salesman|musician|singer|rapper|designer|fashion designer|artist|painter|photographer|entrepreneur|businessman|businesswoman|executive|founder|politician|statesman|activist|author|writer|actor|actress|filmmaker|director|olympian|hall of fame|inventor)\b/.test(
+      desc,
+    )
   ) {
-    if (!desc || !/\b(company|corporation|brand|album|film|song|novel)\b/.test(desc)) return true
+    return true
   }
 
   // Obscure brands / houses / labels — helpful; household names are already in TOO_OBVIOUS
@@ -379,7 +389,7 @@ function collectCandidates(claim: string, event: CulturalEvent): GlossCandidate[
     if (titleBits) push(titleBits, titleBits)
   }
 
-  return out.slice(0, 6)
+  return out.slice(0, 12)
 }
 
 /**
@@ -435,8 +445,7 @@ export function isYearLikeTerm(term: string): boolean {
 
 /**
  * Wikipedia entity glosses for free prose (Chuck-E replies).
- * People, venues, iconic events someone may have heard of but not place —
- * quiet underlines; skip household brands and years.
+ * People, venues, iconic events, obscure brands — resolve via summary + OpenSearch.
  */
 export async function attachWikipediaGlossesForProse(
   prose: string,
@@ -445,13 +454,18 @@ export async function attachWikipediaGlossesForProse(
   const text = String(prose || '').trim()
   if (!text) return []
 
-  const max = opts.max ?? MAX_GLOSSES
+  const max = opts.max ?? Math.max(MAX_GLOSSES, 3)
   const excluded = new Set(
     (opts.excludeTerms || []).map((t) => normalizeGlossKey(t)).filter(Boolean),
   )
 
-  // Scan more than the first sentence so people named later still qualify
-  const scanWindow = text.length > 900 ? `${text.slice(0, 900)}…` : text
+  // Strip light markdown so **Phil Knight** still yields a candidate
+  const plain = text
+    .replace(/\*\*([^*]+)\*\*/g, '$1')
+    .replace(/_([^_]+)_/g, '$1')
+    .replace(/`([^`]+)`/g, '$1')
+
+  const scanWindow = plain.length > 1200 ? `${plain.slice(0, 1200)}…` : plain
 
   const stub: CulturalEvent = {
     id: 'chuck-e-prose',
@@ -463,9 +477,11 @@ export async function attachWikipediaGlossesForProse(
     citations: [],
   }
 
+  // Prefer person-shaped candidates first so familiar desk names aren't crowded out by phrases
   const candidates = collectCandidates(scanWindow, stub)
     .filter((c) => !isYearLikeTerm(c.term))
     .filter((c) => !excluded.has(normalizeGlossKey(c.term)))
+    .sort((a, b) => Number(looksLikePersonName(b.term)) - Number(looksLikePersonName(a.term)))
 
   const resolved: Gloss[] = []
   for (const candidate of candidates) {
@@ -479,9 +495,14 @@ export async function attachWikipediaGlossesForProse(
     if (!isGlossWorthyEntity(candidate.term, hit.originator) && !isGlossWorthyEntity(hit.title, hit.originator)) {
       continue
     }
-    if (!termAppearsIn(text, candidate.term) && !termAppearsIn(text, hit.title)) continue
+    if (!termAppearsIn(plain, candidate.term) && !termAppearsIn(plain, hit.title)) continue
+
+    // Prefer underlining the name as it appears in the reply
+    const term =
+      termAppearsIn(plain, candidate.term) ? candidate.term : hit.title
+
     resolved.push({
-      term: candidate.term,
+      term,
       gloss: cleanWikiGlossBody(hit.extract),
       url: hit.url,
       source: 'wikipedia',

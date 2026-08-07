@@ -315,6 +315,7 @@ Record material product/architecture choices here as we go.
 | 2026-08-07 | `needsHumanReview` optional on `CulturalEvent` — soft flag, not ship gate | Prototype: don’t block builds/ship on missing review labels; UI badge still later |
 | 2026-08-07 | Chuck-E: UK dates parse; citation vs entity vs publisher gloss roles | Date hint was heritage-noisy; “Simpsons” cite gloss was wrong kind |
 | 2026-08-07 | Exact-day brand moments; Chuck-E Gemini enrich on Converse date significance | Don’t mix announce/close; researched colour on the queried day |
+| 2026-08-07 | Chuck-E heritage / general may web-search beyond the pack | Pack first when on-topic; search fills gaps — Gemini never public cite |
 
 ---
 

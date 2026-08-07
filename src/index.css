@@ -671,6 +671,22 @@ a {
   line-height: 1.5;
 }
 
+.chuck-e-msg__line {
+  margin: 0;
+}
+
+.chuck-e-msg__line + .chuck-e-msg__line {
+  margin-top: 0.35em;
+}
+
+.chuck-e-msg__line--bullet + .chuck-e-msg__line--bullet {
+  margin-top: 0.85em;
+}
+
+.chuck-e-msg__gap {
+  height: 0.55em;
+}
+
 .chuck-e-msg__sources {
   margin-top: 0.55rem;
   padding-top: 0.4rem;

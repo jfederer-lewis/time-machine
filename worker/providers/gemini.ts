@@ -635,16 +635,18 @@ export async function verifyClaimWithGemini(opts: {
 
 /**
  * Chuck-E chat turn — non-streaming, persona-guarded.
- * Never a public citation host. No Google Search grounding for product Q&A
- * (shoe facts must come from the supplied knowledge pack / heritage timeline).
- * Historical world claims should already be injected via context from assembleDateQuery.
+ * Never a public citation host.
+ * Product Q&A must stay pack-only (no search). Heritage / general / theme may use
+ * Google Search when the supplied pack is thin or off-topic.
  */
 export async function chatWithChuckE(opts: {
   apiKey: string
   systemContext: string
   messages: Array<{ role: 'user' | 'assistant'; content: string }>
-}): Promise<string | null> {
-  const { apiKey, systemContext, messages } = opts
+  /** Web search for heritage / culture colour — off for product specs. */
+  useSearch?: boolean
+}): Promise<{ content: string; groundedSources: ClaimCandidate[] } | null> {
+  const { apiKey, systemContext, messages, useSearch = false } = opts
   if (!messages.length) return null
 
   const history = messages
@@ -663,20 +665,82 @@ export async function chatWithChuckE(opts: {
     'Do not write a finished press story, dateline, or byline-ready narrative.',
     'Finish every sentence. Never trail off mid-clause or end on a dangling word (of / the / our / from…).',
     `Keep it concise (soft ~${CHUCK_E_KNOBS.chatReplySoftMaxChars} chars): sharp, no jargon, no padding or repetition. Finish cleanly — never truncate mid-thought.`,
-    'If the knowledge context does not contain a product detail, say you do not have that detail yet.',
+    useSearch
+      ? 'You may use Google Search for claim-relevant colour beyond the supplied pack — prefer pack / History facts when they answer the question; search when the pack is thin, off-topic, or needs corroboration. Never invent shoe launch specs. Prefer premium press and Converse History over blogs.'
+      : 'If the knowledge context does not contain a product detail, say you do not have that detail yet. Do not invent from the web.',
+    'Never cite yourself, Gemini, or AI as a bibliographic source.',
   ].join('\n')
 
   try {
-    const text = await generateGeminiText({
+    const { text, groundedSources } = await generateGeminiGrounded({
       apiKey,
       prompt,
       temperature: 0.35,
-      // Flash models spend a large share of maxOutputTokens on hidden "thoughts".
       maxOutputTokens: CHUCK_E_KNOBS.chatMaxOutputTokens,
+      json: false,
+      useSearch,
     })
-    return text?.trim() || null
+    const content = text?.trim()
+    if (!content) return null
+    return { content, groundedSources: useSearch ? groundedSources : [] }
   } catch (err) {
     console.error('[chuck-e] Gemini chat failed', err)
+    return null
+  }
+}
+
+/**
+ * Theme / heritage research: prefer supplied History beats, then web search for more.
+ * Gemini may search; it is never the public citation host — callers attach allowlisted URLs.
+ */
+export async function researchChuckETopic(opts: {
+  apiKey: string
+  userQuestion: string
+  systemContext: string
+  packBeats?: Array<{ date: string; title: string; synopsis: string }>
+}): Promise<{ content: string; groundedSources: ClaimCandidate[] } | null> {
+  const { apiKey, userQuestion, systemContext, packBeats = [] } = opts
+
+  const beatBlock =
+    packBeats.length > 0
+      ? [
+          'Supplied Converse History / pack beats (prefer these when they answer the question):',
+          ...packBeats.slice(0, 8).map((b) => `- ${b.date}: ${b.title} — ${b.synopsis}`),
+        ].join('\n')
+      : 'No strong pack beats matched this question — use Google Search for claim-relevant Converse / Chuck facts.'
+
+  const prompt = [
+    ...CHUCK_E_KNOBS.personaGuardrails,
+    '',
+    systemContext,
+    '',
+    beatBlock,
+    '',
+    'Task: answer the journalist’s theme / heritage question in chat.',
+    'Prefer the supplied pack beats when they are on-topic. Use Google Search to find additional claim-relevant colour, corroboration, or answers when the pack is thin or off-topic.',
+    'Do not invent partnerships, launch specs, or quotations. If search does not support a detail, omit it.',
+    'Shape: one short grounding sentence, then optional plain bullets for distinct sourced moments — not a bare dump and not a research memo.',
+    'No ### headings, no Pointers to Cite / sources block in the body.',
+    'Past tense. Never cite yourself, Gemini, or AI as a source.',
+    `Soft length ~${Math.min(CHUCK_E_KNOBS.chatReplySoftMaxChars, 1100)} chars.`,
+    '',
+    `User question: ${userQuestion}`,
+  ].join('\n')
+
+  try {
+    const { text, groundedSources } = await generateGeminiGrounded({
+      apiKey,
+      prompt,
+      temperature: 0.4,
+      maxOutputTokens: CHUCK_E_KNOBS.chatMaxOutputTokens,
+      json: false,
+      useSearch: true,
+    })
+    const content = text?.trim()
+    if (!content) return null
+    return { content, groundedSources }
+  } catch (err) {
+    console.error('[chuck-e] topic research failed', err)
     return null
   }
 }
