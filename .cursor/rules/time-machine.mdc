@@ -9,6 +9,7 @@ Before changing discovery, ranking, polish, cites, day-card UI, or Chuck-E, read
 
 - `AGENTS.md`
 - `documentation/PIPELINE.md`
+- `documentation/EDITORIAL_SCHEMA.md` (significance / tone / universe / landmarks)
 - `documentation/COPY_CONTRACT.md`
 - `documentation/SOURCES_AND_LANDSCAPE.md`
 - `documentation/VISION.md`
@@ -20,8 +21,8 @@ Before changing discovery, ranking, polish, cites, day-card UI, or Chuck-E, read
 1. Frame is **Chuck was there** (past tense settled history), not breaking news.
 2. Gemini may discover + phrase; it is **never** the public citation host. Prefer Tier A/B cites; Lite may ship Wikipedia bridge without cite upgrade.
 3. Never ingest or ship aggregator “#1 song on this date” / charts label stubs.
-4. Prefer culturally resonant UK/global news; prefer premium-press hosts when those cites are already logged. Rank significance first, light positive/neutral tone lean second — never soft-pedal landmark defining days (9/11-class).
+4. Prefer culturally resonant UK/global news; prefer premium-press hosts when those cites are already logged. Rank **significance first**, light positive/neutral tone lean second — never soft-pedal landmark defining days (9/11-class). Hard history still ships; do not force Chuck over clearer significance; **never** Converse-bridge beside landmarks.
 5. Assemble order: polish → validate → (full) cite upgrade → validate again. Never ship a failing copy contract — skip candidate or use curated fallback. `needsHumanReview` does not block ship.
 6. Cite must be claim-relevant on upgrade (reject generic research-guide pages).
-7. Keep knobs (`shared/copy-knobs.ts`, `shared/chuck-e-knobs.ts`), Gemini prompts, registry, and docs in sync when you change rules. Registry hosts beat markdown tables.
+7. Keep knobs (`shared/copy-knobs.ts`, `shared/chuck-e-knobs.ts`, `shared/converse-universe.ts`), Gemini prompts, registry, and docs in sync when you change rules. Registry hosts beat markdown tables. Editorial ranking schema: `documentation/EDITORIAL_SCHEMA.md`.
 8. Chuck-E: cliff notes for desks, not finished stories; hardcoded Art. 50 disclosure on first message; AI banner on cliff-notes export. Product facts only from `shared/products/` — never invent launch specs. Ecosystem KB (`CHUCK_ECOSYSTEM_KB.md`): UI cite = SPSU27 Chuck Reset Internal Comms; do not announce launches, talent, prices, rollouts or licensing from that deck alone.

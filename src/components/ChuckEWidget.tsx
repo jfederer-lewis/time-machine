@@ -95,8 +95,7 @@ export function ChuckEWidget({ brand, researchMode = 'lite' }: ChuckEWidgetProps
     void send(text)
   }
 
-  const showPromptHints =
-    !loading && messages.length > 0 && messages.every((m) => m.isDisclosure)
+  const showPromptHints = !loading && !messages.some((m) => m.role === 'user')
 
   const sendHint = (text: string) => {
     abortVoice()

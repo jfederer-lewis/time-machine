@@ -3,9 +3,10 @@
 > Single source of truth for what the lookup result must look like.  
 > Edit knobs in `shared/copy-knobs.ts`. Runtime validation: `worker/lib/copy-contract.ts`.  
 > Pipeline / ship gates: `documentation/PIPELINE.md`.  
+> Ranking / landmarks / universe: `documentation/EDITORIAL_SCHEMA.md`.  
 > Agents: keep Gemini prompts and validators aligned with the knobs.
 
-**Last updated:** 2026-08-06
+**Last updated:** 2026-08-07
 
 ---
 
@@ -92,7 +93,7 @@ export const COPY_KNOBS = {
 } as const
 ```
 
-Interest ranking (`worker/lib/interest.ts`) uses a weighted formula: **significance first** (culture / UK-global / landmark / Converse-affinity), then a **light positive/neutral tone lean**, plus credibility and quality. Landmark defining days (9/11-class) skip the tone term. Tone is a nudge, not a veto over clearly more significant hard news. Brand affinity lifts Converse / Chuck / All Star story beats, and Nike only when the claim is about Converse — standalone iconic Nike sports days do not get the boost.
+Interest ranking (`worker/lib/interest.ts`) — full schema in `documentation/EDITORIAL_SCHEMA.md` — uses a weighted formula: **significance first** (culture / UK-global / landmark / Converse-affinity), then a **light positive/neutral tone lean**, plus credibility and quality. Landmark defining days (9/11-class) skip the tone term **and** exclude brand / Converse-universe bridges. Tone is a nudge, not a veto over clearly more significant hard news — including difficult history. Brand affinity lifts Converse / Chuck / All Star story beats, and Nike only when the claim is about Converse — standalone iconic Nike sports days do not get the boost. Soft universe themes lift lightly; never force Chuck over a more significant world story.
 
 ### Operational polish notes (not knobs)
 

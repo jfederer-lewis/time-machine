@@ -1,6 +1,6 @@
 # Landscape, naming & source policy
 
-> Companion to `VISION.md` and `PIPELINE.md`. Agents must follow the citation rules here.  
+> Companion to `VISION.md`, `PIPELINE.md`, and `EDITORIAL_SCHEMA.md`. Agents must follow the citation rules here.  
 > **Canonical host lists:** `shared/source-registry.ts` (`CITATION_ALLOWLIST` / `CITATION_BLOCKLIST`).  
 > Tables below summarise intent; if a host is missing from the registry, it is **not** allowlisted yet.  
 > **Last updated:** 2026-08-07 (fashion journalism + archives)  
@@ -114,7 +114,7 @@ Hosts marked *aspirational* below are **not** registered yet — do not assume t
 | National Diet Library | ndl.go.jp | |
 | NLA / Trove | nla.gov.au, trove.nla.gov.au | |
 | Official Charts / Billboard | officialcharts.com, billboard.com | Music — full cards only |
-| Museums / cultural institutions | si.edu, smithsonianmag.com, vam.ac.uk, moma.org, metmuseum.org, tate.org.uk, britishmuseum.org, guggenheim.org, whitney.org, nga.gov, nationalgallery.org.uk, artic.edu, sfmoma.org, lacma.org, rijksmuseum.nl, designmuseum.org | Prefer collection / exhibition / article URLs about the claim |
+| Museums / cultural institutions | si.edu, smithsonianmag.com, vam.ac.uk, moma.org, metmuseum.org, tate.org.uk, britishmuseum.org, guggenheim.org, whitney.org, nga.gov, nationalgallery.org.uk, artic.edu, sfmoma.org, lacma.org, rijksmuseum.nl, designmuseum.org, hoophall.com | Prefer collection / exhibition / article URLs about the claim |
 | Fashion museums / archives / councils | fashionmuseum.co.uk, fitnyc.edu, museumatfit.com, palaisgalliera.paris.fr, madparis.fr, kci.or.jp, europeana.eu, fashionheritage.eu, cfda.com, britishfashioncouncil.co.uk, londonfashionweek.co.uk | Costume / fashion heritage records; claim-relevant council notices |
 
 *Aspirational (not in registry):* EUR-Lex host, LAC-BAC / canada.ca, Deutsche Nationalbibliothek, RIAA.

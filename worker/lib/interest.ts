@@ -1,14 +1,23 @@
 import type { CulturalEvent } from '../../shared/provenance'
 import { COPY_KNOBS } from '../../shared/copy-knobs'
+import {
+  COMPETITOR_FOOTWEAR_RE,
+  CONVERSE_BRAND_AFFINITY_RE,
+  CONVERSE_UNIVERSE_AFFINITY_RE,
+  CONVERSE_UNIVERSE_KNOBS,
+} from '../../shared/converse-universe'
 import { looksLikeHeadlineDump, titleTooCloseToBody } from './clean-text'
 
 /**
  * Press-desk interest formula.
  *
+ * Canonical editorial schema: documentation/EDITORIAL_SCHEMA.md
+ *
  * Balance (in priority order):
  * 1. Cultural / historical significance — the main weight
  * 2. Light positive / neutral tone lean — a secondary nudge, not a veto
- * 3. Landmark defining days — may be tragic, but still outrank ordinary stories
+ * 3. Landmark defining days — may be tragic, but still outrank ordinary stories;
+ *    never Converse-bridge beside them
  *
  * Heuristic only; Gemini may re-rank a shortlist when a key is present.
  *
@@ -54,9 +63,11 @@ const LOCAL_US_CANADA =
 /**
  * Direct Converse / Chuck story beats — lift these when they appear in cultural news.
  * Makes “what happened on this day” feel brand-adjacent without inventing claims.
+ * Patterns live in shared/converse-universe.ts
  */
-const BRAND_AFFINITY =
-  /\b(converse|chuck\s+taylor|chuck\s*70|all[\s-]?stars?|non[\s-]?skid|jack\s+purcell|one\s+star|pro\s+leather|golf\s+le\s+fleur|comme\s+des\s+gar[cç]ons\s+play|cons\s+skate)\b/i
+const BRAND_AFFINITY = CONVERSE_BRAND_AFFINITY_RE
+const UNIVERSE_AFFINITY = CONVERSE_UNIVERSE_AFFINITY_RE
+const COMPETITOR_FOOTWEAR = COMPETITOR_FOOTWEAR_RE
 
 /**
  * Nike only when the claim is about Converse (acquisition / portfolio) —
@@ -81,6 +92,8 @@ const W = {
   categoryBrand: 14,
   brandAffinity: 12,
   nikeConverseTie: 10,
+  universeAffinity: CONVERSE_UNIVERSE_KNOBS.universeAffinityWeight,
+  competitorDemote: CONVERSE_UNIVERSE_KNOBS.competitorDemoteWeight,
   ukCultureCombo: 2,
   /** Secondary lean — deliberately smaller than a single culture signal. */
   tonePositive: 3,
@@ -210,6 +223,12 @@ function scoreSignificance(event: CulturalEvent, text: string, landmark: boolean
   if (COPY_KNOBS.preferBrandAffinity) {
     if (BRAND_AFFINITY.test(text)) s += W.brandAffinity
     if (NIKE_CONVERSE_TIE.test(text)) s += W.nikeConverseTie
+    // Soft Converse-universe lift (basketball, skate, punk…) — never invents a brand claim.
+    if (!BRAND_AFFINITY.test(text) && UNIVERSE_AFFINITY.test(text)) s += W.universeAffinity
+    // Soft demote competing footwear brand days unless Converse is also in the claim.
+    if (COMPETITOR_FOOTWEAR.test(text) && !BRAND_AFFINITY.test(text) && !NIKE_CONVERSE_TIE.test(text)) {
+      s += W.competitorDemote
+    }
   }
 
   if (COPY_KNOBS.preferUkGlobalInterest && BOOST.test(text) && CULTURE.test(text)) {

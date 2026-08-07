@@ -1,8 +1,8 @@
 # Chuck-E — press research chatbot
 
 > Living document. Agents: read this before changing Chuck-E persona, disclosure, cliff notes, or routing.  
-> Companion docs: `VISION.md`, `PIPELINE.md`, `COPY_CONTRACT.md`, `SOURCES_AND_LANDSCAPE.md`, **`CHUCK_ECOSYSTEM_KB.md`** (Chuck franchise product / strategy KB).  
-> **Last updated:** 2026-08-07 (collab press + gloss Harvard cites)
+> Companion docs: `VISION.md`, `PIPELINE.md`, **`EDITORIAL_SCHEMA.md`** (ranking / landmarks / universe), `COPY_CONTRACT.md`, `SOURCES_AND_LANDSCAPE.md`, **`CHUCK_ECOSYSTEM_KB.md`** (Chuck franchise product / strategy KB).  
+> **Last updated:** 2026-08-07 (editorial schema pointer)
 
 ---
 
@@ -60,6 +60,26 @@ Shown after disclosure until the first user turn (`CHUCK_E_KNOBS.promptHints`):
 | Theme / sport | How did basketball shape the Converse story? | Court lineage **plus** iconic sports beats (see below) — not Non-Skid alone |
 | Date entry point | What’s the cultural significance of 4 September 2003 within Converse? | Door stays light (no “Nike acquired…” spoiler). Reply: Chuck-tied beat (acquisition close), zeitgeist that day, and how the hinge mattered for the brand afterward — without inventing post-History strategy |
 | Music / scenes | Where do music, youth culture, and collaborations show up in Converse’s history? | Punk/grunge wear, fashion collabs, One Hund(RED) / (PRODUCT) RED, CDG PLAY — not fashion fluff alone |
+
+### Broad dates + Converse universe
+
+**Canonical:** `documentation/EDITORIAL_SCHEMA.md`.
+
+Chuck-E date turns use the **same assemble pipeline** as Lookup (Wikipedia / day-indexes; Full adds Gemini + Perplexity). Answers may be broad cultural “on this day” facts — then, when a **sourced** tie exists **and it is not forced**, briefly relate them to the Converse universe:
+
+| Tie type | Example |
+|----------|---------|
+| Exact History / KB day | Nike close 4 Sep 2003 |
+| Same calendar day (MM–DD), any year | Chuck Taylor born **24 June 1901** → who he became for Converse (Hall of Fame + History join / signature years) |
+| Soft affinity in ranking | Basketball, skate, punk/grunge, canvas / youth culture, self-expression — light lift only; **soft-demote** competing footwear brands (Nike only when the claim is about Converse) |
+
+**Do not force.** Interesting / significant world news still wins when it outweighs a weak Chuck angle.
+
+**Landmark defining days (non-negotiable):** 9/11-class dates, Pearl Harbor, Hiroshima, etc. must be acknowledged clearly. Never soft-pedal them for brand tone. **Never** attach a Converse campaign, heritage nugget, or “universe” bridge beside them — that reads as tasteless next to casualties / world memory. Brand moments do not compete for the spotlight on those days.
+
+**Tone:** light positive/neutral lean among *similarly significant* events only. Do not erase difficult history. Brand activation voice = calm, desk-ready, respectful — not sugar-coating.
+
+Patterns + anchors: `shared/converse-universe.ts`. Never invent a shoe claim from a theme word alone.
 
 Composer placeholder stays short: new Chuck / heritage / a date.
 
@@ -244,6 +264,9 @@ Runtime: wire stable framing into product packs before treating it as auto-shipp
 | 2026-08-07 | Opening hints: basketball / 4 Sep 2003 entry point / music–scenes; sports theme pulls multiple History beats (incl. 1984 Olympics Pro Stars) | Doors stay spoiler-light; answers dig into History LP + zeitgeist; KB 1984 enriched from landing page |
 | 2026-08-07 | Culture bookshelf: Dazed + British Vogue + Nike Magazine; register Vogue/Dazed Tier B; enrich RED / Varvatos / punk–grunge in heritage KB | Collabs, humanitarian, scenes questions need claim-relevant culture cites beyond History LP alone |
 | 2026-08-07 | Footwear News (Yahoo), Tatler Asia, L’Officiel USA, Urban Industry, Esquire ME on bookshelf; glosses carry title + date + publisher Harvard lines | High-fashion + pop collabs (Margiela, Rick Owens, Simpsons); film/TV; Wikipedia stays bridge |
+| 2026-08-07 | Broad date asks → Time Machine assemble + Converse-universe tie when sourced (birthday / heritage / affinity) | Press can explore on-this-day colour and still land a Chuck-relevant bridge without inventing claims |
+| 2026-08-07 | No Converse tie on landmark defining days; don’t force Chuck; significance > positive lean | Tasteless to pair brand with 9/11-class casualties; hard history still ships |
+| 2026-08-07 | Documented in `EDITORIAL_SCHEMA.md` (canonical) | Agents + knobs stay aligned on brand activation vs hard history |
 | 2026-08-07 | Voice: pause ends listen; auto-send when transcript looks like a full query | Hands-free desk flow; incomplete fragments stay in composer for edit |
 
 ---

@@ -8,11 +8,16 @@ import { getBrand } from '../../shared/brands'
 import { allProductFacts, getProductPack, type ProductFact } from '../../shared/products'
 import type { BrandMoment } from '../../shared/brand'
 import { heritageMoments } from '../../shared/brand'
+import {
+  universeAnchorsForQueryDate,
+  type ConverseUniverseAnchor,
+} from '../../shared/converse-universe'
 import type { Citation, CulturalEvent, Gloss, ResearchMode } from '../../shared/provenance'
 import { withHarvard } from '../../shared/provenance'
 import { citationTier, parseQueryDate, toDisplayDate } from '../../shared/source-registry'
 import { assembleDateQuery, type Env } from './assemble'
 import { chatWithChuckE } from '../providers/gemini'
+import { isLandmarkDefiningEvent } from './interest'
 import {
   buildDisclosureMessage,
   coerceChatAwayFromStory,
@@ -348,6 +353,37 @@ function formatHeritageReply(moments: BrandMoment[]): {
   }
 }
 
+function formatUniverseAnchor(anchor: ConverseUniverseAnchor): {
+  content: string
+  citations: Citation[]
+  glosses: Gloss[]
+} {
+  const cite = withHarvard({
+    title: anchor.citation.title,
+    url: anchor.citation.url,
+    publisher: anchor.citation.publisher,
+    author: anchor.citation.author,
+    publishedAt: anchor.citation.publishedAt ?? anchor.date,
+    accessedAt: new Date().toISOString().slice(0, 10),
+    sourceQuality: 'trusted-source-snippet',
+    evidenceKind: 'paraphrase',
+    reference: anchor.reference,
+    provider: 'brand-timeline',
+    isExactQuote: false,
+    tier: citationTier(anchor.citation.url) === 'unknown' ? 'C' : citationTier(anchor.citation.url),
+  })
+  const content = [
+    `**In the Converse universe — ${anchor.title} (${toDisplayDate(anchor.date)}):**`,
+    anchor.synopsis,
+    anchor.converseTie,
+  ].join('\n\n')
+  return {
+    content,
+    citations: [cite],
+    glosses: glossesFromCitations([cite], content),
+  }
+}
+
 function formatDateSpotlight(event: CulturalEvent, displayDate: string): {
   content: string
   citations: Citation[]
@@ -456,7 +492,8 @@ export async function handleChuckEChat(
         const result = await assembleDateQuery(date, env, {
           brandId,
           researchMode,
-          anyYear: false,
+          // Calendar-day fan-out so universe anchors (e.g. Chuck’s birthday) + cultural news can compete
+          anyYear: true,
         })
         const q = lastUser.content.toLowerCase()
         const preferBrand =
@@ -466,27 +503,31 @@ export async function handleChuckEChat(
         const worldSpotlight =
           result.events.find((e) => e.precision === 'exact-day') ?? result.events[0] ?? null
         const brandSpotlight = result.brandMoments[0] ?? null
-        const spotlight = preferBrand
-          ? brandSpotlight ?? worldSpotlight
-          : worldSpotlight ?? brandSpotlight
+        const universeAnchors = universeAnchorsForQueryDate(date)
+        const worldIsLandmark = Boolean(worldSpotlight && isLandmarkDefiningEvent(worldSpotlight))
+        // Landmark defining days (9/11-class) always lead — never let a brand beat or sit beside them.
+        const spotlight = worldIsLandmark
+          ? worldSpotlight
+          : preferBrand
+            ? brandSpotlight ?? worldSpotlight
+            : worldSpotlight ?? brandSpotlight
 
         if (spotlight) {
           const formatted = formatDateSpotlight(spotlight, result.displayDate || toDisplayDate(date))
           let content = formatted.content
           const citations = [...formatted.citations]
           const glosses = [...formatted.glosses]
+          const allowConverseTie = !worldIsLandmark && !isLandmarkDefiningEvent(spotlight)
 
           // Converse-framed date asks: lead with History beat, then cultural backdrop if different
+          // — but never on landmark casualty / world-memory days.
           if (
+            allowConverseTie &&
             preferBrand &&
             brandSpotlight &&
             worldSpotlight &&
             worldSpotlight.id !== brandSpotlight.id
           ) {
-            const backdrop = formatDateSpotlight(
-              worldSpotlight,
-              result.displayDate || toDisplayDate(date),
-            )
             content = [
               formatted.content,
               '',
@@ -497,8 +538,49 @@ export async function handleChuckEChat(
             ]
               .filter(Boolean)
               .join('\n\n')
+            const backdrop = formatDateSpotlight(
+              worldSpotlight,
+              result.displayDate || toDisplayDate(date),
+            )
             citations.push(...backdrop.citations)
             glosses.push(...backdrop.glosses)
+          } else if (
+            // Broad on-this-day: optional Converse-universe bridge only when it does not feel forced
+            allowConverseTie &&
+            !preferBrand &&
+            spotlight.category !== 'brand' &&
+            (brandSpotlight || universeAnchors.length)
+          ) {
+            const tieParts: string[] = []
+            if (brandSpotlight && brandSpotlight.id !== spotlight.id) {
+              tieParts.push(
+                `**In the Converse universe — ${brandSpotlight.title}:**`,
+                brandSpotlight.synopsis,
+              )
+              citations.push(...(brandSpotlight.citations ?? []))
+              glosses.push(...(brandSpotlight.glosses ?? []))
+            }
+            for (const anchor of universeAnchors.slice(0, 1)) {
+              if (brandSpotlight?.id === anchor.id) continue
+              const formattedAnchor = formatUniverseAnchor(anchor)
+              tieParts.push(formattedAnchor.content)
+              citations.push(...formattedAnchor.citations)
+              glosses.push(...formattedAnchor.glosses)
+            }
+            if (tieParts.length) {
+              content = [content, '', ...tieParts].join('\n\n')
+            }
+          } else if (
+            allowConverseTie &&
+            preferBrand &&
+            !brandSpotlight &&
+            universeAnchors.length &&
+            spotlight.category !== 'brand'
+          ) {
+            const formattedAnchor = formatUniverseAnchor(universeAnchors[0])
+            content = [formattedAnchor.content, '', content].join('\n\n')
+            citations.unshift(...formattedAnchor.citations)
+            glosses.push(...formattedAnchor.glosses)
           }
 
           return {

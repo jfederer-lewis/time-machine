@@ -1,6 +1,6 @@
 /**
  * Chuck-E chatbot knobs — disclosure copy, cliff-notes format, persona guardrails.
- * Human doc: documentation/CHUCK_E.md
+ * Human docs: documentation/CHUCK_E.md, documentation/EDITORIAL_SCHEMA.md (date / landmark / universe)
  * Validators: worker/lib/chuck-e-contract.ts
  *
  * EU AI Act Article 50: disclosure text is hardcoded (not model-generated)
@@ -56,6 +56,9 @@ export const CHUCK_E_KNOBS = {
     'Every heritage or product fact you state must come from the supplied knowledge pack / heritage timeline — the UI attaches the original Converse History (or pack) citation as a gloss.',
     'When a theme comes up (sports, music, collabs, humanitarian, silhouettes), go deeper than the first obvious beat: pull several named moments with years, model names, and people already in the supplied timeline — e.g. sports → Non-Skid / All Star, 1936 Olympic All Star, 1982 Jordan Pro Leather, 1984 Olympic footwear (Jordan / Lynette Woodward), Bird–Magic Weapon; music/scenes → punk / grunge wear, CDG PLAY, John Richmond, One Hund(RED) / (PRODUCT) RED, John Varvatos — not basketball origin alone.',
     'Date questions tied to Converse History (e.g. 4 September 2003) should cover the Chuck-tied beat, cultural zeitgeist around that day, and how the moment mattered for the brand afterward — without inventing post-history strategy.',
+    'Broad on-this-day / cultural date questions may use world news from the Time Machine pipeline. When a sourced Converse-universe tie exists for that calendar day and the day is not a landmark defining / casualty day, you may briefly relate who or what it meant for Converse — never invent a shoe claim, never name competing footwear brands as the hook, never force a Chuck angle.',
+    'Landmark defining days (e.g. 11 September 2001, Pearl Harbor, Hiroshima) must be acknowledged with clarity and respect. Do not soft-pedal them for brand tone, and do not attach Converse heritage, campaigns, or “universe” bridges beside them — that reads as tasteless.',
+    'Positive / constructive lean is only a light bias among similarly significant events. Significant hard history — including tragic or difficult days — still ships when it is the true story of the date. Brand activation tone means calm and desk-ready, not sugar-coating or erasure.',
     'For collabs, cause campaigns, or global cultural influence, prefer supplied timeline + allowlisted culture press (Vogue, Dazed, Nike Magazine when claim-relevant) — never invent partnerships.',
     'Never invent shoe engineering, materials, launch dates, or historical claims. If the knowledge pack does not contain the detail, say you do not have that detail yet.',
     'Never invent quotations. Never cite yourself, Gemini, or any AI as a bibliographic source.',

@@ -2,6 +2,10 @@ import type { CulturalEvent, DateQueryResult, ProviderId, ResearchMode } from '.
 import { withHarvard } from '../../shared/provenance'
 import { heritageMoments } from '../../shared/brand'
 import { getBrand } from '../../shared/brands'
+import {
+  calendarDayKey,
+  universeAnchorsForQueryDate,
+} from '../../shared/converse-universe'
 import { queryDatePrecision, toDisplayDate, toOnThisDayPath } from '../../shared/source-registry'
 import { buildFallbackResult, PROVIDER_CATALOGUE } from '../data/fallback'
 import { composeNarrative, polishEventCopy, pickMostInterestingEvent, discoverEventsWithGemini } from '../providers/gemini'
@@ -37,7 +41,7 @@ import {
   clipToShortProse,
 } from './clean-text'
 import { validateCopyContract } from './copy-contract'
-import { rankByInterest, scoreCulturalInterest, isTooRecentForLiveWire } from './interest'
+import { rankByInterest, scoreCulturalInterest, isTooRecentForLiveWire, isLandmarkDefiningEvent } from './interest'
 
 export interface Env {
   GEMINI_API_KEY?: string
@@ -175,7 +179,11 @@ export async function assembleDateQuery(
     .filter((m) => {
       if (m.date.length === 4) return m.date === queryDate.slice(0, 4)
       if (m.date.length === 7) return m.date === queryDate.slice(0, 7)
-      return m.date === queryDate || m.date.slice(0, 4) === queryDate.slice(0, 4)
+      // Exact ISO match, same year, or same calendar day (MM-DD) for hinge dates
+      if (m.date === queryDate || m.date.slice(0, 4) === queryDate.slice(0, 4)) return true
+      const qDay = calendarDayKey(queryDate)
+      const mDay = calendarDayKey(m.date)
+      return Boolean(qDay && mDay && qDay === mDay && m.precision === 'exact-day')
     })
     .map((m) =>
       sanitizeEventCitations({
@@ -206,12 +214,45 @@ export async function assembleDateQuery(
       }),
     )
 
+  // People / hinge anchors (e.g. Chuck Taylor birthday) — same calendar day, any year
+  for (const anchor of universeAnchorsForQueryDate(queryDate)) {
+    if (brandMoments.some((b) => b.id === anchor.id)) continue
+    brandMoments.push(
+      sanitizeEventCitations({
+        id: anchor.id,
+        year: Number(anchor.date.slice(0, 4)),
+        title: anchor.title,
+        synopsis: `${anchor.synopsis} ${anchor.converseTie}`,
+        category: 'brand',
+        precision: 'exact-day',
+        discoveredVia: ['internal-curated'],
+        citations: [
+          withHarvard({
+            title: anchor.citation.title,
+            url: anchor.citation.url,
+            publisher: anchor.citation.publisher,
+            author: anchor.citation.author,
+            publishedAt: anchor.citation.publishedAt ?? anchor.date,
+            accessedAt: new Date().toISOString(),
+            sourceQuality: 'trusted-source-snippet',
+            evidenceKind: 'paraphrase',
+            reference: anchor.reference,
+            provider: 'brand-timeline',
+            isExactQuote: false,
+          }),
+        ],
+      }),
+    )
+  }
+
   if (brandMoments.length) providersUsed.push('brand-timeline')
 
-  // Exact-day / month heritage beats compete for the spotlight (not only as a side note).
-  const brandForSpotlight = brandMoments.filter(
-    (m) => m.precision === 'exact-day' || m.precision === 'month',
-  )
+  // Exact-day / month heritage beats compete for the spotlight (not only as a side note)
+  // — except on landmark defining days (9/11-class), where brand must not win or dilute.
+  const poolHasLandmark = poolForPick.some((e) => isLandmarkDefiningEvent(e))
+  const brandForSpotlight = poolHasLandmark
+    ? []
+    : brandMoments.filter((m) => m.precision === 'exact-day' || m.precision === 'month')
   const poolWithBrand = brandForSpotlight.length
     ? rankByInterest([...poolForPick, ...brandForSpotlight], targetYear)
     : poolForPick

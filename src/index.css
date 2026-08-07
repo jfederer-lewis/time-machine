@@ -580,17 +580,28 @@ a {
   max-width: 95%;
   padding: 0.7rem 0.85rem;
   border: 1px solid var(--rule);
-  background: #fff;
 }
 
 .chuck-e-msg--user {
   align-self: flex-end;
-  background: color-mix(in srgb, var(--accent-soft) 70%, #fff);
-  border-color: color-mix(in srgb, var(--accent) 25%, var(--rule));
+  background: var(--ink);
+  border-color: var(--ink);
+  color: #fff;
+}
+
+.chuck-e-msg--user .chuck-e-msg__body {
+  color: #fff;
 }
 
 .chuck-e-msg--assistant {
   align-self: flex-start;
+  background: #fff;
+  border-color: var(--rule);
+  color: var(--ink);
+}
+
+.chuck-e-msg--assistant .chuck-e-msg__body {
+  color: var(--ink);
 }
 
 .chuck-e-msg--disclosure {
@@ -643,6 +654,18 @@ a {
 
 .chuck-e-msg__cites .citation-harvard {
   font-size: 0.72rem;
+}
+
+/* Keep citation glosses B&W inside chat — accent red reads as an error here */
+.chuck-e-msg .gloss-term {
+  border-bottom-color: color-mix(in srgb, var(--ink) 40%, var(--rule));
+}
+
+.chuck-e-msg .gloss-term:hover,
+.chuck-e-msg .gloss-term:focus-visible,
+.chuck-e-msg .gloss-term.is-open {
+  background: color-mix(in srgb, var(--ink) 8%, transparent);
+  color: var(--ink);
 }
 
 .chuck-e-hints {

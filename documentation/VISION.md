@@ -2,7 +2,7 @@
 
 > Living document. Update this as the idea develops. Agents: read this before making product or architecture decisions.
 
-**Last updated:** 2026-08-07 (culture allowlist expansion)  
+**Last updated:** 2026-08-07 (editorial schema)  
 **Client (current):** Converse  
 **Working title:** Good News, Chuck  
 **Live:** https://time-machine.jasminefederer.workers.dev  
@@ -13,6 +13,7 @@
 | Doc | Role |
 |-----|------|
 | `documentation/PIPELINE.md` | Retrieval → rank → polish → cite → ship |
+| `documentation/EDITORIAL_SCHEMA.md` | Significance / tone / Converse universe / landmarks (canonical) |
 | `documentation/COPY_CONTRACT.md` | Day-card title / synopsis / Context / Source |
 | `documentation/SOURCES_AND_LANDSCAPE.md` | Citation allow/block + Harvard + landscape |
 | `documentation/CHUCK_E.md` | Chuck-E chatbot, cliff notes, Art. 50 disclosure |
@@ -52,6 +53,7 @@ Every Chuck launch date (and, more broadly, any date) becomes a doorway into wha
 7. **Never ship aggregator “#1 song on this date” labels** — not research cards. Real music moments need prose + a proper cite (e.g. Official Charts / Billboard week or article URLs).
 8. Prefer **culturally resonant** UK/global news; when NYT / BBC / Guardian (etc.) cites are already logged, prefer those candidates.
 9. Day cards must pass the **copy contract** (past tense, Context when required, no title≈synopsis, no mid-sentence cuts). Failing cards never ship — try another candidate or curated fallback.
+10. **Editorial schema** (`EDITORIAL_SCHEMA.md`): significance first; positive lean only among near-ties; soft Converse-universe affinity when sourced — **never force** Chuck; **never** soft-pedal or brand-bridge **landmark defining days** (9/11-class). Hard history still ships.
 
 ---
 
@@ -307,6 +309,9 @@ Record material product/architecture choices here as we go.
 | 2026-08-07 | Gloss/footer cites always show title + date + publisher; FN/Tatler/L’Officiel/Urban Industry collab & screen beats | Desk needs full bibliographic handle even when only a gloss is visible |
 | 2026-08-07 | Broad culture-press + museum allowlist; Reddit blocked | Ship claim-relevant Vogue/i-D/System/museum cites; keep forums out of Harvard |
 | 2026-08-07 | Fashion journalism + costume-archive hosts registered | Trade desks, indie glossies, FIT/Galliera/KCI, CFDA/BFC for collab/heritage colour |
+| 2026-08-07 | Converse-universe affinity + calendar-day people anchors (e.g. Chuck Taylor birthday) | Broad on-this-day can still feel Chuck-adjacent without inventing brand claims; demote competitor footwear days |
+| 2026-08-07 | Never Converse-bridge landmark defining days; soft universe lift only; hard news still ships | 9/11-class respect; brand activation ≠ sugar-coat or force Chuck |
+| 2026-08-07 | Canonical `EDITORIAL_SCHEMA.md` for ranking / tone / universe / landmarks | One place for agents; keep knobs + prompts aligned |
 
 ---
 

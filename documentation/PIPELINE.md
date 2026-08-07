@@ -2,7 +2,7 @@
 
 > How a date lookup becomes a day card. Agents: follow this when changing discovery, ranking, polish, or cites.  
 > Companion docs: `VISION.md` (product), `SOURCES_AND_LANDSCAPE.md` (citation law), `COPY_CONTRACT.md` (card format).  
-> **Last updated:** 2026-08-06
+> **Last updated:** 2026-08-07 (editorial schema pointer)
 
 ---
 
@@ -67,6 +67,10 @@ RANK  (worker/lib/interest.ts)
   Cultural / UK-global / landmark significance outweighs tone
   Tone is a nudge only (~±3); landmark defining days skip the tone term
   Prefer candidates already cited from premium-press hosts (see interest.ts PREMIUM_PRESS)
+  Soft Converse-universe affinity (basketball / skate / punk / youth / canvas…) — light only; see `shared/converse-universe.ts`
+  Soft-demote competing footwear brand days (Nike only when the claim is about Converse)
+  Same-calendar-day heritage + people anchors (e.g. Chuck Taylor birthday) can enter the brand pool
+  **Landmark defining days:** brand / universe moments do **not** compete for spotlight; no Chuck bridge beside 9/11-class events
   Soft-penalise admin trivia; wire dumps −40; year proximity (unless anyYear)
   Same-year pool if best same-year interest ≥ 2; else all years by proximity
        │
@@ -107,13 +111,15 @@ Code: `worker/lib/assemble.ts`, `worker/providers/gemini.ts`, `worker/lib/upgrad
 
 ## Interest / headline priorities
 
+**Canonical rules:** `documentation/EDITORIAL_SCHEMA.md` (significance → tone → credibility → quality; landmark no Chuck bridge; soft Converse-universe affinity).
+
 Ranking is a **weighted formula** (`scoreInterestBreakdown` in `interest.ts`), not a blunt “positive wins” rule:
 
 | Term | Role |
 |------|------|
-| **Significance** (primary) | Culture / UK-global / poignant stakes / category / landmark defining day |
+| **Significance** (primary) | Culture / UK-global / poignant stakes / category / landmark defining day; direct Converse text; soft universe themes |
 | **Tone** (secondary lean) | Small positive / neutral nudge, mild routine-tragedy drag — smaller than one culture signal |
-| **Credibility** | Premium-press cites + discovery lifts |
+| **Credibility** | Premium-press / culture-press / museum cites + discovery lifts |
 | **Quality** | Penalties for dumps, thin stubs, admin trivia |
 
 **Prefer**
@@ -122,22 +128,24 @@ Ranking is a **weighted formula** (`scoreInterestBreakdown` in `interest.ts`), n
 - UK / Europe / global stakes (“Chuck was there” for a British/international desk)
 - Events already carrying **paper-of-record** cites when logged (see `PREMIUM_PRESS` in `interest.ts`)
 - Among **similarly significant** candidates: constructive / positive or neutral culture over routine tragedy
+- Soft Converse-universe colour when already in the claim — **never invent** or force Chuck over clearer significance
 
 **Still ship (do not soft-pedal)**
 
-- **Landmark defining days** — events that define that calendar date in world memory (e.g. 11 September 2001, Pearl Harbor, Hiroshima, moon landing, Armistice). These score on significance alone (no tone drag). Ignoring them would be editorially wrong.
-- A **clearly more significant** hard-news day still beats a mildly positive culture stub — tone is a lean, not a veto.
+- **Landmark defining days** — events that define that calendar date in world memory (e.g. 11 September 2001, Pearl Harbor, Hiroshima, moon landing, Armistice). These score on significance alone (no tone drag). Ignoring them would be editorially wrong. Brand / universe moments **do not compete** for spotlight; Chuck-E must **not** append a Converse bridge.
+- A **clearly more significant** hard-news day still beats a mildly positive culture stub — tone is a lean, not a veto. Difficult history still ships.
 
 **Deprioritise / exclude**
 
 - Aggregator “UK #1: Song” / “#1 song on this date” labels — drop at day-index ingest
 - Remote administrative trivia (new territories, postal renames, municipal amalgamation)
 - Live wire dumps / video index scrapes
+- Competing footwear brand days (soft demote; Nike only when about Converse)
 - Recent/future lookup dates: skip **Perplexity** date-search only (`recentLiveWireSkipDays`); Gemini discovery still runs in full
 
-Knobs: `preferUkGlobalInterest`, `preferPremiumPress`, `preferPositiveWhenTied` (enables the tone term), `preferBrandAffinity` in `shared/copy-knobs.ts`. Weights live as `W` in `interest.ts`.
+Knobs: `preferUkGlobalInterest`, `preferPremiumPress`, `preferPositiveWhenTied` (enables the tone term), `preferBrandAffinity` in `shared/copy-knobs.ts`. Universe: `shared/converse-universe.ts`. Weights live as `W` in `interest.ts`.
 
-Brand heritage: curated `brand.timeline` is Timeline UI only. Full History beats live in `brand.heritageKb` (`shared/brands/converse-heritage-kb.ts`). Assemble / Chuck-E use `heritageMoments(brand)`. Exact-day and month KB hits are merged into the Lookup shortlist so Converse doorways can win the spotlight.
+Brand heritage: curated `brand.timeline` is Timeline UI only. Full History beats live in `brand.heritageKb` (`shared/brands/converse-heritage-kb.ts`). Assemble / Chuck-E use `heritageMoments(brand)`. Exact-day and month KB hits are merged into the Lookup shortlist so Converse doorways can win the spotlight — except when a landmark is already in the world pool.
 
 ---
 
@@ -188,7 +196,8 @@ Brand heritage: curated `brand.timeline` is Timeline UI only. Full History beats
 |------|------|
 | `worker/index.ts` | `/api/query` params: date, mode, anyYear, fallback, brand |
 | `worker/lib/assemble.ts` | Orchestration: discover → filter → rank → pick → polish → cite → ship |
-| `worker/lib/interest.ts` | Cultural + premium-press ranking |
+| `worker/lib/interest.ts` | Cultural + premium-press + universe ranking (`EDITORIAL_SCHEMA.md`) |
+| `shared/converse-universe.ts` | Soft affinity / competitor demote / calendar people anchors |
 | `worker/lib/copy-contract.ts` | Hard/soft validation |
 | `shared/copy-knobs.ts` | Adjustable length / Context / ranking knobs |
 | `worker/providers/gemini.ts` | Discover, pick, polish, verify |

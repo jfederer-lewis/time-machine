@@ -77,6 +77,7 @@ export const CITATION_ALLOWLIST: SourceRegistryEntry[] = [
   { host: 'officialcharts.com', label: 'Official Charts Company', tier: 'A', regions: ['UK'], role: 'citation' },
   { host: 'billboard.com', label: 'Billboard', tier: 'A', regions: ['US'], role: 'citation' },
   { host: 'si.edu', label: 'Smithsonian', tier: 'A', regions: ['US'], role: 'citation' },
+  { host: 'hoophall.com', label: 'Naismith Basketball Hall of Fame', tier: 'A', regions: ['US'], role: 'citation' },
   { host: 'smithsonianmag.com', label: 'Smithsonian Magazine', tier: 'A', regions: ['US'], role: 'citation' },
   { host: 'vam.ac.uk', label: 'V&A', tier: 'A', regions: ['UK'], role: 'citation' },
   { host: 'moma.org', label: 'MoMA', tier: 'A', regions: ['US'], role: 'citation' },

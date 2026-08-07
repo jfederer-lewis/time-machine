@@ -1,6 +1,6 @@
 /**
  * Adjustable day-card copy knobs.
- * Human doc: documentation/COPY_CONTRACT.md
+ * Human docs: documentation/COPY_CONTRACT.md, documentation/EDITORIAL_SCHEMA.md
  * Validators: worker/lib/copy-contract.ts
  *
  * Length figures are aims / recommendations unless noted as HARD.
@@ -35,6 +35,8 @@ export const COPY_KNOBS = {
   /**
    * Prefer Converse / Chuck story-tied cultural news (and Nike only when the
    * claim is about Converse) when ranking on-this-day candidates.
+   * Soft “universe” themes (basketball, skate, punk…) also lift; competing
+   * footwear brands are soft-demoted — see shared/converse-universe.ts.
    */
   preferBrandAffinity: true,
   /** Skip live wire date-search for dates newer than this many days (and future). */
