@@ -75,7 +75,7 @@ Shown after disclosure until the first user turn (`CHUCK_E_KNOBS.promptHints`):
 
 **Canonical:** `documentation/EDITORIAL_SCHEMA.md`.
 
-Chuck-E date turns use the **same assemble pipeline** as Lookup (Wikipedia / day-indexes; Full adds Gemini + Perplexity).
+Chuck-E date turns use the **same assemble pipeline** as Lookup (Wiki + day-indexes + Gemini + Perplexity + cite upgrade).
 
 | Situation | Behaviour |
 |-----------|-----------|

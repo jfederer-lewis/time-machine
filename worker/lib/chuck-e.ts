@@ -12,7 +12,7 @@ import {
   universeAnchorsForQueryDate,
   type ConverseUniverseAnchor,
 } from '../../shared/converse-universe'
-import type { Citation, CulturalEvent, Gloss, ResearchMode } from '../../shared/provenance'
+import type { Citation, CulturalEvent, Gloss } from '../../shared/provenance'
 import { withHarvard } from '../../shared/provenance'
 import { citationTier, parseQueryDate, toDisplayDate, isCitationAllowed, isCitationBlocked, findRegistryEntry } from '../../shared/source-registry'
 import { assembleDateQuery, type Env } from './assemble'
@@ -51,7 +51,6 @@ export interface ChuckEChatRequest {
   messages: ChuckEChatMessage[]
   sessionId?: string
   brandId?: string
-  researchMode?: ResearchMode
 }
 
 export interface ChuckEChatResponse {
@@ -662,7 +661,6 @@ export async function handleChuckEChat(
 ): Promise<ChuckEChatResponse> {
   const brandId = body.brandId || env.BRAND_ID || 'converse'
   const sessionId = body.sessionId || newSessionId()
-  const researchMode: ResearchMode = body.researchMode === 'full' ? 'full' : 'lite'
   const messages = ensureDisclosure(body.messages || [])
 
   const lastUser = [...messages].reverse().find((m) => m.role === 'user')
@@ -682,7 +680,6 @@ export async function handleChuckEChat(
       try {
         const result = await assembleDateQuery(date, env, {
           brandId,
-          researchMode,
           // Calendar-day fan-out so universe anchors (e.g. Chuck’s birthday) + cultural news can compete
           anyYear: true,
         })

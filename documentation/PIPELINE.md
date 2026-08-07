@@ -2,7 +2,7 @@
 
 > How a date lookup becomes a day card. Agents: follow this when changing discovery, ranking, polish, or cites.  
 > Companion docs: `VISION.md` (product), `SOURCES_AND_LANDSCAPE.md` (citation law), `COPY_CONTRACT.md` (card format).  
-> **Last updated:** 2026-08-07 (editorial schema pointer)
+> **Last updated:** 2026-08-07 (full stack only — Lite mode removed)
 
 ---
 
@@ -18,18 +18,15 @@ Gemini **may discover and phrase**. It **must never** invent quotations, ship wi
 
 ---
 
-## Modes
+## Research stack
 
-| Mode | Stack |
-|------|--------|
-| **Lite** (UI default) | Wikipedia On This Day + onthisday.com + History.com discovery; Gemini pick/polish when keyed. **No** archives fan-out, **no** Gemini grounded discovery, **no** cite upgrade. |
-| **Full** (API default if `mode` omitted) | Lite discovery + Gemini grounded retrieval + Perplexity date-search (when keyed) + cite upgrade. |
+Always the **full** path: Wikipedia On This Day + onthisday.com + History.com discovery; Gemini pick/polish when keyed; Gemini grounded retrieval + Perplexity date-search (when keyed) + cite upgrade.
 
-Same **copy contract** in both modes (`COPY_CONTRACT.md`). Full adds discovery breadth and cite upgrade — not looser prose rules.
+Same **copy contract** (`COPY_CONTRACT.md`). Archives (NYT / Guardian / Chronicling / GDELT) remain stubs.
 
 **Stubbed (not live even when keyed):** NYT Archive, Guardian Open Platform, Chronicling America / LoC, GDELT.
 
-API: `/api/query?date=YYYY-MM-DD&mode=lite|full&anyYear=true|false&fallback=0|1&brand=converse`
+API: `/api/query?date=YYYY-MM-DD&anyYear=true|false&fallback=0|1&brand=converse`
 
 ---
 
@@ -37,7 +34,7 @@ API: `/api/query?date=YYYY-MM-DD&mode=lite|full&anyYear=true|false&fallback=0|1&
 
 | Input | Behaviour |
 |-------|-----------|
-| `YYYY-MM-DD` (`exact-day`) | Full discovery fan-out (per mode) |
+| `YYYY-MM-DD` (`exact-day`) | Full discovery fan-out |
 | `YYYY` or `YYYY-MM` | **No** day-index / archive / Gemini discovery → curated fallback (and optional brand moments) |
 | `USE_FALLBACK=true` or `?fallback=1` | Skip live pipeline entirely → curated fallback |
 
@@ -47,11 +44,11 @@ API: `/api/query?date=YYYY-MM-DD&mode=lite|full&anyYear=true|false&fallback=0|1&
 
 ```
 DISCOVER  (exact-day only)
-  Wikipedia On This Day                 ← both modes
-  onthisday.com / History.com           ← both modes; discovery metadata only, never public cite
+  Wikipedia On This Day
+  onthisday.com / History.com           ← discovery metadata only, never public cite
   + anyYear → OTD cross-year scrape
-  Gemini + Google Search                ← full only; cite-gated (Tier A/B URL required)
-  Perplexity date-search                ← full only, when keyed; skipped if recent/future
+  Gemini + Google Search                ← cite-gated (Tier A/B URL required)
+  Perplexity date-search                ← when keyed; skipped if recent/future
   NYT / Guardian / Chronicling / GDELT  ← stubs (always empty)
        │
        ▼
@@ -80,12 +77,12 @@ PICK  (Gemini shortlist, optional; top 8)
        │
        ▼
 POLISH → VALIDATE  (up to 3 candidates)
-  Gemini → { title, synopsis, whyItMatters }  (mode unused — same prompt)
+  Gemini → { title, synopsis, whyItMatters }
   maxOutputTokens ≥ ~3072 (Flash “thoughts” eat smaller budgets → truncated JSON)
   validateCopyContract — hard fails → try deterministic fallbackDistinctCopy, then next candidate
        │
        ▼
-CITE UPGRADE  (full only, if needsCiteUpgrade)
+CITE UPGRADE  (if needsCiteUpgrade)
   Triggers: Wiki bridge, discovery-channel / empty cites, trusted-discovery-only, review+unknown/C
   Skip if lead cite is already Tier A/B and publisher ≠ Wikipedia
   Else Perplexity allowlisted search + Gemini verify/grounding
@@ -164,11 +161,10 @@ Brand heritage: curated `brand.timeline` is Timeline UI only. Full History beats
 ## Cite upgrade rules
 
 - Discovery hosts (`onthisday.com`, History.com, hobby birthday sites) → **never** the Harvard line.
-- Wikipedia → bridge / gloss; upgrade in **full** when a primary or paper-of-record URL is findable.
+- Wikipedia → bridge / gloss; upgrade when a primary or paper-of-record URL is findable.
 - Candidate URLs must share **claim relevance** (title/snippet tokens). Reject generic research guides.
 - If already Tier A/B (non-Wikipedia) → skip upgrade pass.
 - If no relevant Tier A/B found → keep bridge cite, flag `needs-human-review`. Prefer silence over a **fake** cite — but the bridge cite may still render on the Source line.
-- Lite never runs upgrade → Wikipedia / empty-cite discovery cards routinely ship as Source with `needsHumanReview: true` (not shown in UI today).
 
 ---
 
@@ -194,7 +190,7 @@ Brand heritage: curated `brand.timeline` is Timeline UI only. Full History beats
 
 | File | Role |
 |------|------|
-| `worker/index.ts` | `/api/query` params: date, mode, anyYear, fallback, brand |
+| `worker/index.ts` | `/api/query` params: date, anyYear, fallback, brand |
 | `worker/lib/assemble.ts` | Orchestration: discover → filter → rank → pick → polish → cite → ship |
 | `worker/lib/interest.ts` | Cultural + premium-press + universe ranking (`EDITORIAL_SCHEMA.md`) |
 | `shared/converse-universe.ts` | Soft affinity / competitor demote / calendar people anchors |

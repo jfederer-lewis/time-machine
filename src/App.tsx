@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type { BrandConfig } from '../shared/brand'
-import type { CulturalEvent, DateQueryResult, ResearchMode } from '../shared/provenance'
+import type { CulturalEvent, DateQueryResult } from '../shared/provenance'
 import { converseBrand } from '../shared/brands/converse'
 import { CitationLine } from './components/CitationLine'
 import { ChuckEWidget } from './components/ChuckEWidget'
@@ -13,37 +13,13 @@ import converseLogo from './assets/converse-logo.png'
 type View = 'date' | 'timeline'
 type ChuckFontSize = 'md' | 'lg' | 'xl'
 
-const MODE_STORAGE_KEY = 'tm-research-mode'
 const CHUCK_FONT_STORAGE_KEY = 'tm-chuck-e-font'
 
-const MODE_OPTIONS: { id: ResearchMode; label: string; description: string }[] = [
-  {
-    id: 'lite',
-    label: 'Lite',
-    description: 'On This Day + History.com + Wikipedia discovery; Gemini phrasing — no Perplexity cite upgrades.',
-  },
-  {
-    id: 'full',
-    label: 'Full',
-    description: 'Verify claims, write prose, upgrade cites via Gemini + Perplexity.',
-  },
+const CHUCK_FONT_OPTIONS: { id: ChuckFontSize; label: string }[] = [
+  { id: 'md', label: 'Medium' },
+  { id: 'lg', label: 'Large' },
+  { id: 'xl', label: 'Extra large' },
 ]
-
-const CHUCK_FONT_OPTIONS: { id: ChuckFontSize; label: string; desc: string }[] = [
-  { id: 'md', label: 'Medium', desc: 'Compact chat text.' },
-  { id: 'lg', label: 'Large', desc: 'Easier desk reading (default).' },
-  { id: 'xl', label: 'Extra large', desc: 'Biggest chat text.' },
-]
-
-function readStoredMode(): ResearchMode {
-  try {
-    const stored = localStorage.getItem(MODE_STORAGE_KEY)
-    if (stored === 'lite' || stored === 'full') return stored
-  } catch {
-    // ignore — private mode / SSR
-  }
-  return 'lite'
-}
 
 function readStoredChuckFont(): ChuckFontSize {
   try {
@@ -136,14 +112,9 @@ export default function App() {
   const [error, setError] = useState<string | null>(null)
   const [result, setResult] = useState<DateQueryResult | null>(null)
   const [hasQueried, setHasQueried] = useState(false)
-  const [researchMode, setResearchMode] = useState<ResearchMode>('lite')
   const [chuckFont, setChuckFont] = useState<ChuckFontSize>(readStoredChuckFont)
   const [settingsOpen, setSettingsOpen] = useState(false)
   const settingsRef = useRef<HTMLDivElement>(null)
-
-  useEffect(() => {
-    setResearchMode(readStoredMode())
-  }, [])
 
   useEffect(() => {
     document.documentElement.dataset.chuckFont = chuckFont
@@ -192,15 +163,6 @@ export default function App() {
       .catch(() => setBrand(converseBrand))
   }, [])
 
-  const selectMode = useCallback((mode: ResearchMode) => {
-    setResearchMode(mode)
-    try {
-      localStorage.setItem(MODE_STORAGE_KEY, mode)
-    } catch {
-      // ignore
-    }
-  }, [])
-
   const [anyYear, setAnyYear] = useState(false)
 
   const query = useCallback(
@@ -216,7 +178,6 @@ export default function App() {
         const params = new URLSearchParams({
           date: q,
           brand: brand.id,
-          mode: researchMode,
           anyYear: String(targetAnyYear),
         })
         const res = await fetch(`/api/query?${params}`)
@@ -230,7 +191,7 @@ export default function App() {
         setLoading(false)
       }
     },
-    [date, brand.id, researchMode, anyYear],
+    [date, brand.id, anyYear],
   )
 
   const spotlight = useMemo(() => (result ? pickSpotlight(result) : null), [result])
@@ -238,7 +199,6 @@ export default function App() {
     () =>
       spotlight
         ? distinctSynopsis(spotlight.title, spotlight.synopsis, {
-            // Multi-sentence prose in both modes — don’t collapse to a title-echo one-liner.
             fullProse: true,
           })
         : null,
@@ -314,29 +274,7 @@ export default function App() {
             </button>
             {settingsOpen ? (
               <div className="settings-dropdown" id="research-settings" role="menu">
-                <p className="settings-dropdown__label">Research mode</p>
-                <div className="settings-modes" role="radiogroup" aria-label="Research mode">
-                  {MODE_OPTIONS.map((opt) => (
-                    <button
-                      key={opt.id}
-                      type="button"
-                      role="radio"
-                      aria-checked={researchMode === opt.id}
-                      className={[
-                        'settings-mode',
-                        researchMode === opt.id ? 'is-active' : '',
-                      ]
-                        .filter(Boolean)
-                        .join(' ')}
-                      onClick={() => selectMode(opt.id)}
-                    >
-                      <span className="settings-mode__name">{opt.label}</span>
-                      <span className="settings-mode__desc">{opt.description}</span>
-                    </button>
-                  ))}
-                </div>
-
-                <p className="settings-dropdown__label" style={{ marginTop: '0.85rem' }}>Year preference</p>
+                <p className="settings-dropdown__label">Year preference</p>
                 <div className="settings-modes" role="radiogroup" aria-label="Year preference">
                   {[
                     { id: false, label: 'Specific Year', desc: 'Prioritize events from the selected year.' },
@@ -366,27 +304,38 @@ export default function App() {
                   ))}
                 </div>
 
-                <p className="settings-dropdown__label" style={{ marginTop: '0.85rem' }}>Chuck-E text size</p>
-                <div className="settings-modes" role="radiogroup" aria-label="Chuck-E text size">
-                  {CHUCK_FONT_OPTIONS.map((opt) => (
-                    <button
-                      key={opt.id}
-                      type="button"
-                      role="radio"
-                      aria-checked={chuckFont === opt.id}
-                      className={[
-                        'settings-mode',
-                        chuckFont === opt.id ? 'is-active' : '',
-                      ]
-                        .filter(Boolean)
-                        .join(' ')}
-                      onClick={() => selectChuckFont(opt.id)}
-                    >
-                      <span className="settings-mode__name">{opt.label}</span>
-                      <span className="settings-mode__desc">{opt.desc}</span>
-                    </button>
-                  ))}
+                <p className="settings-dropdown__label" style={{ marginTop: '0.85rem' }}>
+                  Chuck-E text size
+                </p>
+                <div className="settings-size" role="radiogroup" aria-label="Chuck-E text size">
+                  <span className="settings-size__end settings-size__end--sm" aria-hidden="true">
+                    A
+                  </span>
+                  <div className="settings-size__line">
+                    <span className="settings-size__rail" aria-hidden="true" />
+                    {CHUCK_FONT_OPTIONS.map((opt) => (
+                      <button
+                        key={opt.id}
+                        type="button"
+                        role="radio"
+                        aria-checked={chuckFont === opt.id}
+                        aria-label={opt.label}
+                        title={opt.label}
+                        className={[
+                          'settings-size__stop',
+                          chuckFont === opt.id ? 'is-active' : '',
+                        ]
+                          .filter(Boolean)
+                          .join(' ')}
+                        onClick={() => selectChuckFont(opt.id)}
+                      />
+                    ))}
+                  </div>
+                  <span className="settings-size__end settings-size__end--lg" aria-hidden="true">
+                    A
+                  </span>
                 </div>
+                <p className="settings-size__value">{CHUCK_FONT_OPTIONS.find((o) => o.id === chuckFont)?.label}</p>
               </div>
             ) : null}
           </div>
@@ -410,10 +359,7 @@ export default function App() {
           {error ? <p className="error-banner">{error}</p> : null}
 
           {loading ? (
-            <LoadingIndicator
-              className="results-pending"
-              label={researchMode === 'full' ? 'Researching this day' : 'Looking up this day'}
-            />
+            <LoadingIndicator className="results-pending" label="Researching this day" />
           ) : null}
 
           {result && !loading ? (
@@ -423,11 +369,6 @@ export default function App() {
                   <span className="result-frame__claim">{brand.claimFrame}</span>
                   <span className="result-frame__date">{result.displayDate}</span>
                 </h2>
-                {result.researchMode === 'lite' ? (
-                  <p className="mode-chip" data-mode="lite">
-                    Lite · day indexes
-                  </p>
-                ) : null}
               </header>
 
               {spotlight ? (
@@ -468,7 +409,7 @@ export default function App() {
         </main>
       ) : null}
 
-      <ChuckEWidget brand={brand} researchMode={researchMode} />
+      <ChuckEWidget brand={brand} />
     </div>
   )
 }

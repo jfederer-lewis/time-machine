@@ -16,7 +16,7 @@ Allowlisted cites are required so that:
 2. Users can **open the original** and read more.
 3. Press export stays honest — **Gemini / Perplexity / aggregators are never the public citation host**.
 
-Gemini **may discover** events via grounded search. Candidates only enter the Gemini discovery pool when an allowlisted Tier A/B URL backs the date. Day-index / Wikipedia discovery may still ship with a Wikipedia bridge cite (especially in Lite). See `PIPELINE.md`.
+Gemini **may discover** events via grounded search. Candidates only enter the Gemini discovery pool when an allowlisted Tier A/B URL backs the date. Day-index / Wikipedia discovery may still ship with a Wikipedia bridge cite when upgrade finds no better host. See `PIPELINE.md`.
 
 ---
 
@@ -240,7 +240,7 @@ UI shows the full Harvard string + URL link — not a compact `open hostname →
 | 2026-08-05 | Gemini may retrieve when grounded + Tier A/B cite verifies the date |
 | 2026-08-05 | Sources exist to verify date + let users read more — not to ban LLM discovery |
 | 2026-08-05 | Registry is canonical; doc tables mark aspirational hosts explicitly |
-| 2026-08-05 | Harvard display omits Accessed; Wikipedia bridge may render as Source in Lite |
+| 2026-08-05 | Harvard display omits Accessed; Wikipedia bridge may render as Source when upgrade fails |
 | 2026-08-07 | Register vogue.co.uk / vogue.com / dazeddigital.com as Tier B culture press | Chuck-E collabs / scenes / cause answers; Nike Magazine stays Tier C brand narrative |
 | 2026-08-07 | Register Footwear News / Yahoo, Tatler Asia, Esquire ME, L’Officiel USA (Tier B); Urban Industry Tier C | Collab + film/TV + secondary history colour; Wikipedia remains gloss-bridge |
 | 2026-08-07 | Expand culture allowlist: global Vogues / Teen Vogue, museums (Met, Tate, …), i-D, System, Highsnobiety, Hypebeast, BoF, WWD, glossies, music press; block Reddit | Credible cultural publishers ship as cites; forums stay out |

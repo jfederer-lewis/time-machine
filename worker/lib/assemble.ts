@@ -55,13 +55,12 @@ export interface Env {
 export async function assembleDateQuery(
   queryDate: string,
   env: Env,
-  opts?: { forceFallback?: boolean; brandId?: string; researchMode?: ResearchMode; anyYear?: boolean },
+  opts?: { forceFallback?: boolean; brandId?: string; anyYear?: boolean },
 ): Promise<DateQueryResult> {
   const brandId = opts?.brandId || env.BRAND_ID || 'converse'
   const brand = getBrand(brandId)
   const forceFallback = opts?.forceFallback ?? env.USE_FALLBACK === 'true'
-  const researchMode: ResearchMode = opts?.researchMode === 'lite' ? 'lite' : 'full'
-  const isLite = researchMode === 'lite'
+  const researchMode: ResearchMode = 'full'
   const anyYear = opts?.anyYear ?? false
 
   if (forceFallback) {
@@ -106,31 +105,29 @@ export async function assembleDateQuery(
     if (onThisDayCom.length) providersUsed.push('onthisday-com')
     if (historyCom.length) providersUsed.push('history-com')
 
-    // Full mode: paid archives + Gemini grounded retrieval (cite-gated).
+    // Paid archives + Gemini grounded retrieval (cite-gated).
     // Skip live wire date-search for recent/future dates — this product reads as past.
-    if (!isLite) {
-      const skipLiveWire = isTooRecentForLiveWire(queryDate)
-      const [nytR, guardianR, perplexityR, chroniclingR, geminiR] = await Promise.all([
-        fetchNytForDate(queryDate, env.NYT_API_KEY),
-        fetchGuardianForDate(queryDate, env.GUARDIAN_API_KEY),
-        skipLiveWire ? Promise.resolve([]) : fetchPerplexityForDate(queryDate, env.PERPLEXITY_API_KEY),
-        fetchChroniclingAmerica(queryDate),
-        env.GEMINI_API_KEY
-          ? discoverEventsWithGemini({ apiKey: env.GEMINI_API_KEY, queryDate })
-          : Promise.resolve([] as CulturalEvent[]),
-      ])
-      nyt = nytR
-      guardian = guardianR
-      perplexity = perplexityR
-      chronicling = chroniclingR
-      geminiDiscovery = geminiR
+    const skipLiveWire = isTooRecentForLiveWire(queryDate)
+    const [nytR, guardianR, perplexityR, chroniclingR, geminiR] = await Promise.all([
+      fetchNytForDate(queryDate, env.NYT_API_KEY),
+      fetchGuardianForDate(queryDate, env.GUARDIAN_API_KEY),
+      skipLiveWire ? Promise.resolve([]) : fetchPerplexityForDate(queryDate, env.PERPLEXITY_API_KEY),
+      fetchChroniclingAmerica(queryDate),
+      env.GEMINI_API_KEY
+        ? discoverEventsWithGemini({ apiKey: env.GEMINI_API_KEY, queryDate })
+        : Promise.resolve([] as CulturalEvent[]),
+    ])
+    nyt = nytR
+    guardian = guardianR
+    perplexity = perplexityR
+    chronicling = chroniclingR
+    geminiDiscovery = geminiR
 
-      if (nyt.length) providersUsed.push('nyt-archive')
-      if (guardian.length) providersUsed.push('guardian')
-      if (perplexity.length) providersUsed.push('perplexity-search')
-      if (chronicling.length) providersUsed.push('chronicling-america')
-      if (geminiDiscovery.length && !providersUsed.includes('gemini')) providersUsed.push('gemini')
-    }
+    if (nyt.length) providersUsed.push('nyt-archive')
+    if (guardian.length) providersUsed.push('guardian')
+    if (perplexity.length) providersUsed.push('perplexity-search')
+    if (chronicling.length) providersUsed.push('chronicling-america')
+    if (geminiDiscovery.length && !providersUsed.includes('gemini')) providersUsed.push('gemini')
   }
 
   const merged = dedupeDiscoveryEvents([
@@ -288,7 +285,6 @@ export async function assembleDateQuery(
         title: candidate.title,
         synopsis: candidate.synopsis,
         pageTitle: candidate.citations[0]?.title,
-        mode: isLite ? 'lite' : 'full',
       })
       if (polished) {
         next = {
@@ -324,7 +320,7 @@ export async function assembleDateQuery(
       if (!gate.ok) continue
     }
 
-    if (!isLite && needsCiteUpgrade(next)) {
+    if (needsCiteUpgrade(next)) {
       const upgraded = await upgradeWikipediaClaim(next, env)
       next = sanitizeEventCitations(upgraded.event)
       for (const id of upgraded.providersUsed) {

@@ -106,7 +106,6 @@ export async function polishEventCopy(opts: {
   title: string
   synopsis: string
   pageTitle?: string
-  mode?: 'full' | 'lite'
 }): Promise<{ title: string; synopsis: string; whyItMatters?: string } | null> {
   const { apiKey, year, title, synopsis, pageTitle } = opts
   const cleanTitle = toSentenceCaseHeadline(title)

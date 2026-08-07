@@ -2,7 +2,7 @@
 
 > Living document. Update this as the idea develops. Agents: read this before making product or architecture decisions.
 
-**Last updated:** 2026-08-07 (Chuck-E date focus / gloss roles)  
+**Last updated:** 2026-08-07 (full stack only — Lite mode removed)  
 **Client (current):** Converse  
 **Working title:** Good News, Chuck  
 **Live:** https://time-machine.jasminefederer.workers.dev  
@@ -60,16 +60,16 @@ Every Chuck launch date (and, more broadly, any date) becomes a doorway into wha
 ## Provenance pipeline
 
 ```
-DISCOVER (Wiki + day-indexes; Gemini + Perplexity in Full; NYT/Guardian/LoC/GDELT stubs)
+DISCOVER (Wiki + day-indexes + Gemini + Perplexity; NYT/Guardian/LoC/GDELT stubs)
     → FILTER / RANK (culture + premium press; drop chart labels & dumps)
     → POLISH + VALIDATE (copy contract)
-    → CITE UPGRADE (Full only, when needed)
+    → CITE UPGRADE (when needed)
     → SHIP one spotlight  (+ human review before export — not built yet)
 ```
 
 Full detail: `documentation/PIPELINE.md`.
 
-Public Source = `citations[0]` after sanitize (blocklisted hosts dropped). Wikipedia bridge may still render, especially in Lite. `discoveredVia` is internal metadata.
+Public Source = `citations[0]` after sanitize (blocklisted hosts dropped). Wikipedia bridge may still render when cite upgrade finds no better host. `discoveredVia` is internal metadata.
 
 Cultural breadth: politics **and** culture, sport, science, music, design/fashion — each as a full research card with a credible cite. Do **not** surface aggregator “#1 song on this date” labels; real music moments (releases, tours, cultural breakthroughs) yes — Official Charts / Billboard only when they support a proper card.
 
@@ -81,10 +81,9 @@ Build beyond “Chuck launch dates only” into a general **time machine for any
 
 | Mode | Behaviour |
 |------|-----------|
-| **Exact day** | Same calendar day events (Wiki + day-indexes; Full adds Gemini / Perplexity) |
+| **Exact day** | Same calendar day events (Wiki + day-indexes + Gemini / Perplexity + cite upgrade) |
 | **Period estimate** | When exact day isn’t attested (e.g. “1917 Non-Skid era”), return year/period context clearly labelled as estimate |
 | **Brand timeline** | Curated vertical heritage archive (Timeline UI). Full Converse History text lives in `heritageKb` for Chuck-E + date attach — not a website clone. |
-| **Lite vs Full** | Lite = Wiki + day-indexes + polish. Full = + Gemini discovery + Perplexity + cite upgrade. Same copy rules. Archives still stubs. |
 
 **Reusability:** Prototype for Converse, but **plug-and-play brand packs** so the same tool can be pitched to other heritage brands later (`shared/brands/`).
 
@@ -99,7 +98,7 @@ Build beyond “Chuck launch dates only” into a general **time machine for any
 - Typography currently: Schibsted Grotesk + Newsreader; newsprint paper field; single Converse red accent.
 - Citations should feel seamless (Bloom gloss / research-card pattern), not like a clunky bibliography dump.
 - First viewport: brand + one clear claim + date doorway — not a control panel of widgets.
-- Day card: title + synopsis + optional smaller/paler **Context / Provenance** (`whyItMatters`) + Harvard Source. Mode chip shows Lite only when relevant.
+- Day card: title + synopsis + optional smaller/paler **Context / Provenance** (`whyItMatters`) + Harvard Source.
 
 ---
 
@@ -170,7 +169,7 @@ Keys go in `.dev.vars` locally and `wrangler secret` in prod. Never commit secre
 - [x] Plug-and-play brand config (`shared/brands/converse.ts`)
 - [x] Curated fallback pack (seeded dates only; else empty-day UI)
 - [x] Live discovery path (`USE_FALLBACK=false`; `?fallback=0`)
-- [x] Lite / Full research modes + Specific year / Any year (settings)
+- [x] Specific year / Any year + Chuck-E text size (settings); research always full stack
 - [x] Deployed Worker
 - [x] Source registry allowlist / blocklist + Harvard formatter
 - [x] Citation sanitize guard (`worker/lib/verify.ts`)
@@ -178,7 +177,7 @@ Keys go in `.dev.vars` locally and `wrangler secret` in prod. Never commit secre
 - [x] Copy contract + knobs + runtime validation
 - [x] Interest ranking (culture + premium press)
 - [x] Gemini grounded discovery (cite-gated) + polish + pick
-- [x] Cite upgrade with claim relevance (Full)
+- [x] Cite upgrade with claim relevance
 - [x] Aggregator chart labels removed from day-index discovery
 - [x] Assemble never ships failing copy-contract cards
 - [x] Chuck-E floating chat widget (request/response) with Art. 50 first-message disclosure
@@ -227,9 +226,9 @@ npm run deploy                   # Cloudflare Workers
 
 Toggle live vs curated via env / query (no UI toggle yet):
 
-`/api/query?date=YYYY-MM-DD&fallback=0&mode=lite|full&anyYear=true`
+`/api/query?date=YYYY-MM-DD&fallback=0&anyYear=true`
 
-UI defaults: research mode **lite**, specific year. API defaults: mode **full** if `mode` omitted.
+UI defaults: specific year. Research always runs the full stack (Wiki + day-indexes + Gemini discovery + Perplexity + cite upgrade).
 ---
 
 ## Repo map (for agents)
@@ -270,7 +269,7 @@ Record material product/architecture choices here as we go.
 
 | Date | Decision | Why |
 |------|----------|-----|
-| 2026-08-04 | Cloudflare Workers + Vite React | Matches Bloom/JasRag stack instincts; easy deploy via Wrangler |
+| 2026-08-07 | Drop Lite/Full toggle — research always full stack | One path; cite upgrade always on; settings keep year + Chuck-E font only |
 | 2026-08-04 | Bloom-style research cards + glosses | Proven citation UX; reduces hallucination risk in press context |
 | 2026-08-04 | Brand packs in `shared/brands/` | Pitch Converse now; other heritage brands later |
 | 2026-08-04 | Fallback default ON | Superseded 2026-08-05 — wrangler `USE_FALLBACK=false` |

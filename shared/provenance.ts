@@ -116,11 +116,10 @@ export interface NarrativeBlock {
 }
 
 /**
- * Lite = Wiki + day-indexes (+ Gemini polish); no archives / grounded discovery / cite upgrade.
- * Full = lite discovery + Gemini grounded retrieval + Perplexity (when keyed) + cite upgrade.
- * NYT / Guardian / Chronicling / GDELT remain stubs.
+ * Always the full research stack: Wiki + day-indexes + Gemini grounded discovery
+ * + Perplexity (when keyed) + cite upgrade. NYT / Guardian / Chronicling / GDELT remain stubs.
  */
-export type ResearchMode = 'lite' | 'full'
+export type ResearchMode = 'full'
 
 export interface DateQueryResult {
   queryDate: string

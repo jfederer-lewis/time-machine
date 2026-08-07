@@ -16,7 +16,7 @@ Knobs live in `shared/copy-knobs.ts` (day cards), `shared/chuck-e-knobs.ts` (Chu
 ## Non-negotiables (summary)
 
 - **Chuck was there** — settled past tense, not breaking news (prompt / product voice; not yet a copy-contract hard fail).
-- Every shipped claim needs a **corroborating URL** outside Gemini. Prefer Tier A/B; Lite often ships a **Wikipedia bridge** cite (upgrade is Full-only).
+- Every shipped claim needs a **corroborating URL** outside Gemini. Prefer Tier A/B; Wikipedia bridge may ship when cite upgrade finds no better host.
 - Gemini may **discover and phrase**; Gemini is **never** the public citation host.
 - Do **not** surface aggregator “#1 song on this date” labels.
 - Prefer culturally resonant news; prefer premium-press hosts when those cites are logged.

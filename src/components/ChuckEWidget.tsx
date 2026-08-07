@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useRef, useState, type FormEvent } from 'react'
 import type { BrandConfig } from '../../shared/brand'
-import type { ResearchMode } from '../../shared/provenance'
 import { CHUCK_E_KNOBS } from '../../shared/chuck-e-knobs'
 import { useChuckEChat } from '../hooks/useChuckEChat'
 import { looksLikeCompleteQuery, useSpeechDictation } from '../hooks/useSpeechDictation'
@@ -20,10 +19,9 @@ function readTallPref(): boolean {
 
 interface ChuckEWidgetProps {
   brand: BrandConfig
-  researchMode?: ResearchMode
 }
 
-export function ChuckEWidget({ brand, researchMode = 'lite' }: ChuckEWidgetProps) {
+export function ChuckEWidget({ brand }: ChuckEWidgetProps) {
   const [open, setOpen] = useState(false)
   const [tall, setTall] = useState(readTallPref)
   const [draft, setDraft] = useState('')
@@ -55,7 +53,7 @@ export function ChuckEWidget({ brand, researchMode = 'lite' }: ChuckEWidgetProps
     extractCliffNotes,
     reset,
     clearCliffNotes,
-  } = useChuckEChat({ brandId: brand.id, researchMode })
+  } = useChuckEChat({ brandId: brand.id })
 
   const loadingRef = useRef(loading)
   loadingRef.current = loading

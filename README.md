@@ -27,8 +27,8 @@ npm run dev
 Open the Vite URL (Cloudflare plugin serves `/api/*` from the Worker).
 
 - **Live lookup (default in wrangler):** `USE_FALLBACK=false`. Force curated seeds with `USE_FALLBACK=true` or `?fallback=1`.
-- **Lite** (UI default) = Wiki + On This Day + History.com + Gemini polish. **Full** (API default if `mode` omitted) = + Gemini grounded discovery + Perplexity + cite upgrade. NYT / Guardian / LoC remain stubs. Same copy rules.
-- Settings: Specific year / Any year (`?anyYear=true`).
+- **Research stack:** Wiki + On This Day + History.com + Gemini grounded discovery + Perplexity + cite upgrade (when keyed). NYT / Guardian / LoC remain stubs.
+- Settings: Specific year / Any year (`?anyYear=true`); Chuck-E text size.
 
 ```bash
 npm run build
@@ -52,7 +52,7 @@ Every cultural claim aims to be a **research card**:
 2. Citation line (Harvard string + URL; allowlisted / claim-relevant when upgraded)
 3. Optional dotted **glosses** (Wikipedia / curated — never AI-as-proof)
 
-Quality labels exist on the schema (`trusted-source-quote` · … · `needs-human-review`) but are **not rendered** on the Lookup card today. Lite often ships a Wikipedia bridge cite.
+Quality labels exist on the schema (`trusted-source-quote` · … · `needs-human-review`) but are **not rendered** on the Lookup card today. Wikipedia bridge may still ship when cite upgrade finds no better host.
 
 **Sources exist** to verify the date and give users somewhere to read more — Gemini may discover/phrase, but is never the public citation host.
 

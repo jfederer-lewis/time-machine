@@ -6,7 +6,7 @@
 > Ranking / landmarks / universe: `documentation/EDITORIAL_SCHEMA.md`.  
 > Agents: keep Gemini prompts and validators aligned with the knobs.
 
-**Last updated:** 2026-08-07
+**Last updated:** 2026-08-07 (full stack only)
 
 ---
 
@@ -16,7 +16,7 @@
 |------|-------------|
 | Must read well (complete prose) | `validateCopyContract` — empty / dumps / abrupt cuts / broken titles |
 | Never cut mid-word or mid-sentence | `looksAbruptlyCut`: trailing `…` or `..+`, dangling “of / the / a”, mid-word `X-`. **A normal period is OK.** |
-| Same copy rules Lite + Full | Shared validator; Full adds cite upgrade only |
+| Same copy rules for every lookup | Shared validator; cite upgrade always attempted when needed |
 | Ship gate | `validateCopyContract` must pass; failing candidates skipped (then curated fallback) |
 | Context when required | `contextRequired: true` → hard fail `context.required` |
 
@@ -71,7 +71,7 @@ Rules:
 - Prefer papers of record when logged: **NYT / TimesMachine, BBC, Guardian, Reuters, FT, Telegraph, AP** (+ hosts in `interest.ts` `PREMIUM_PRESS`).
 - Music moments (when real cards, not labels): prefer Official Charts / Billboard week or article URLs.
 - Gemini / Perplexity / aggregators are **never** the public Source **host**.
-- Lite (and failed full upgrade) may still show **Wikipedia bridge** or `needs-human-review` cites on the Source line — quality labels are not rendered in the UI yet.
+- Failed cite upgrade may still show **Wikipedia bridge** or `needs-human-review` cites on the Source line — quality labels are not rendered in the UI yet.
 
 ---
 

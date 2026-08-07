@@ -1,5 +1,4 @@
 import { useCallback, useState } from 'react'
-import type { ResearchMode } from '../../shared/provenance'
 import type {
   ChuckEChatMessage,
   ChuckEChatResponse,
@@ -8,10 +7,9 @@ import type {
 
 interface UseChuckEChatOpts {
   brandId: string
-  researchMode?: ResearchMode
 }
 
-export function useChuckEChat({ brandId, researchMode = 'lite' }: UseChuckEChatOpts) {
+export function useChuckEChat({ brandId }: UseChuckEChatOpts) {
   const [sessionId, setSessionId] = useState<string | null>(null)
   const [messages, setMessages] = useState<ChuckEChatMessage[]>([])
   const [loading, setLoading] = useState(false)
@@ -51,7 +49,6 @@ export function useChuckEChat({ brandId, researchMode = 'lite' }: UseChuckEChatO
           body: JSON.stringify({
             sessionId,
             brandId,
-            researchMode,
             messages: nextMessages,
           }),
         })
@@ -65,7 +62,7 @@ export function useChuckEChat({ brandId, researchMode = 'lite' }: UseChuckEChatO
         setLoading(false)
       }
     },
-    [messages, loading, sessionId, brandId, researchMode],
+    [messages, loading, sessionId, brandId],
   )
 
   const extractCliffNotes = useCallback(async () => {

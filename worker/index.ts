@@ -72,8 +72,6 @@ export default {
       }
       const brandId = url.searchParams.get('brand') || env.BRAND_ID || 'converse'
       const fallbackParam = url.searchParams.get('fallback')
-      const modeParam = url.searchParams.get('mode')
-      const researchMode = modeParam === 'lite' ? ('lite' as const) : ('full' as const)
       const anyYear = url.searchParams.get('anyYear') === 'true'
 
       // Explicit query param wins; otherwise env USE_FALLBACK (default live when false)
@@ -84,7 +82,6 @@ export default {
       const result = await assembleDateQuery(date, env, {
         brandId,
         forceFallback,
-        researchMode,
         anyYear,
       })
       return json(result)
