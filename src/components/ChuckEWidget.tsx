@@ -3,6 +3,7 @@ import type { BrandConfig } from '../../shared/brand'
 import type { ResearchMode } from '../../shared/provenance'
 import { CHUCK_E_KNOBS } from '../../shared/chuck-e-knobs'
 import { useChuckEChat } from '../hooks/useChuckEChat'
+import { useSpeechDictation } from '../hooks/useSpeechDictation'
 import { ChuckEMessage } from './ChuckEMessage'
 import { CliffNotesPanel } from './CliffNotesPanel'
 
@@ -16,6 +17,8 @@ export function ChuckEWidget({ brand, researchMode = 'lite' }: ChuckEWidgetProps
   const [draft, setDraft] = useState('')
   const listRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLTextAreaElement>(null)
+  const draftRef = useRef(draft)
+  draftRef.current = draft
 
   const {
     messages,
@@ -29,6 +32,18 @@ export function ChuckEWidget({ brand, researchMode = 'lite' }: ChuckEWidgetProps
     reset,
     clearCliffNotes,
   } = useChuckEChat({ brandId: brand.id, researchMode })
+
+  const {
+    supported: voiceSupported,
+    listening,
+    error: voiceError,
+    clearError: clearVoiceError,
+    toggle: toggleVoice,
+    abort: abortVoice,
+  } = useSpeechDictation({
+    onTranscript: setDraft,
+    getBaseDraft: () => draftRef.current,
+  })
 
   useEffect(() => {
     if (open && messages.length === 0) {
@@ -45,13 +60,20 @@ export function ChuckEWidget({ brand, researchMode = 'lite' }: ChuckEWidgetProps
   useEffect(() => {
     if (open) {
       window.setTimeout(() => inputRef.current?.focus(), 120)
+    } else {
+      abortVoice()
     }
-  }, [open])
+  }, [open, abortVoice])
+
+  useEffect(() => {
+    if (loading) abortVoice()
+  }, [loading, abortVoice])
 
   const onSubmit = (e: FormEvent) => {
     e.preventDefault()
     const text = draft.trim()
     if (!text) return
+    abortVoice()
     setDraft('')
     void send(text)
   }
@@ -96,6 +118,14 @@ export function ChuckEWidget({ brand, researchMode = 'lite' }: ChuckEWidgetProps
               </p>
             ) : null}
             {error ? <p className="chuck-e-error">{error}</p> : null}
+            {voiceError ? (
+              <p className="chuck-e-error" role="status">
+                {voiceError}{' '}
+                <button type="button" className="chuck-e-inline-dismiss" onClick={clearVoiceError}>
+                  Dismiss
+                </button>
+              </p>
+            ) : null}
 
             {cliffNotes ? (
               <CliffNotesPanel notes={cliffNotes} onClose={clearCliffNotes} />
@@ -118,9 +148,17 @@ export function ChuckEWidget({ brand, researchMode = 'lite' }: ChuckEWidgetProps
                 ref={inputRef}
                 className="chuck-e-composer__input"
                 rows={2}
-                placeholder="Ask about the new Chuck, heritage, or a date…"
+                placeholder={
+                  listening
+                    ? 'Listening… tap the mic when done'
+                    : 'Ask about the new Chuck, heritage, or a date…'
+                }
                 value={draft}
-                onChange={(e) => setDraft(e.target.value)}
+                onChange={(e) => {
+                  if (listening) abortVoice()
+                  setDraft(e.target.value)
+                  clearVoiceError()
+                }}
                 onKeyDown={(e) => {
                   if (e.key === 'Enter' && !e.shiftKey) {
                     e.preventDefault()
@@ -130,6 +168,26 @@ export function ChuckEWidget({ brand, researchMode = 'lite' }: ChuckEWidgetProps
                 disabled={loading}
                 aria-label="Message Chuck-E"
               />
+              {voiceSupported ? (
+                <button
+                  type="button"
+                  className={[
+                    'chuck-e-composer__mic',
+                    listening ? 'chuck-e-composer__mic--listening' : '',
+                  ]
+                    .filter(Boolean)
+                    .join(' ')}
+                  onClick={() => toggleVoice()}
+                  disabled={loading}
+                  aria-pressed={listening}
+                  aria-label={listening ? 'Stop dictation' : 'Dictate with microphone'}
+                  title={listening ? 'Stop dictation' : 'Dictate (Chrome / Edge)'}
+                >
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                    <path d="M12 14a3 3 0 0 0 3-3V6a3 3 0 1 0-6 0v5a3 3 0 0 0 3 3zm5-3a5 5 0 0 1-10 0H5a7 7 0 0 0 6 6.92V21h2v-3.08A7 7 0 0 0 19 11h-2z" />
+                  </svg>
+                </button>
+              ) : null}
               <button type="submit" className="btn-primary chuck-e-composer__send" disabled={loading || !draft.trim()}>
                 Send
               </button>

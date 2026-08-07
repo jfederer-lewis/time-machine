@@ -697,9 +697,57 @@ a {
   border-color: var(--ink);
 }
 
+.chuck-e-composer__mic {
+  flex-shrink: 0;
+  display: grid;
+  place-items: center;
+  width: 2.55rem;
+  height: 2.55rem;
+  border: 1px solid var(--rule);
+  background: #fff;
+  color: var(--ink);
+  cursor: pointer;
+}
+
+.chuck-e-composer__mic:hover:not(:disabled) {
+  border-color: var(--ink);
+}
+
+.chuck-e-composer__mic:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.chuck-e-composer__mic--listening {
+  border-color: var(--ink);
+  background: var(--ink);
+  color: #fff;
+  animation: chuck-e-mic-pulse 1.1s ease-in-out infinite;
+}
+
+@keyframes chuck-e-mic-pulse {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 color-mix(in srgb, var(--ink) 35%, transparent);
+  }
+  50% {
+    box-shadow: 0 0 0 6px transparent;
+  }
+}
+
 .chuck-e-composer__send {
   padding: 0.65rem 0.95rem;
   font-size: 0.82rem;
+}
+
+.chuck-e-inline-dismiss {
+  border: 0;
+  background: transparent;
+  color: inherit;
+  text-decoration: underline;
+  cursor: pointer;
+  font: inherit;
+  padding: 0;
 }
 
 .cliff-notes {
