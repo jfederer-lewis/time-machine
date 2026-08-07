@@ -1,6 +1,20 @@
 import type { ChuckEChatMessage } from '../hooks/chuck-e-types'
+import type { Citation } from '../../shared/provenance'
 import { CitationLine } from './CitationLine'
 import { GlossableText } from './GlossableText'
+
+/** Same source URL only once in the chat footer. */
+function dedupeCitationsForDisplay(citations: Citation[]): Citation[] {
+  const seen = new Set<string>()
+  const out: Citation[] = []
+  for (const c of citations) {
+    const key = (c.url || '').trim().toLowerCase()
+    if (!key || seen.has(key)) continue
+    seen.add(key)
+    out.push(c)
+  }
+  return out
+}
 
 /** Render light markdown-ish bold + newlines without a full markdown parser. */
 function renderContent(text: string, glosses: ChuckEChatMessage['glosses']) {
@@ -61,9 +75,11 @@ export function ChuckEMessage({ message }: { message: ChuckEChatMessage }) {
       </div>
       {message.citations && message.citations.length > 0 ? (
         <div className="chuck-e-msg__cites">
-          {message.citations.slice(0, 4).map((c) => (
-            <CitationLine key={c.url + c.title} citation={c} />
-          ))}
+          {dedupeCitationsForDisplay(message.citations)
+            .slice(0, 4)
+            .map((c) => (
+              <CitationLine key={c.url} citation={c} />
+            ))}
         </div>
       ) : null}
     </article>

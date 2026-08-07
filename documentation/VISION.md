@@ -2,7 +2,7 @@
 
 > Living document. Update this as the idea develops. Agents: read this before making product or architecture decisions.
 
-**Last updated:** 2026-08-06 (Converse-feel ideas scratchpad)  
+**Last updated:** 2026-08-07 (Timeline UI text-only revert)  
 **Client (current):** Converse  
 **Working title:** Good News, Chuck  
 **Live:** https://time-machine.jasminefederer.workers.dev  
@@ -288,9 +288,10 @@ Record material product/architecture choices here as we go.
 | 2026-08-06 | Timeline UI = curated beats; History LP text = `heritageKb` for chat / date attach | Don’t clone converse.com History as the product surface; still feed the full text to Chuck-E |
 | 2026-08-06 | Prefer Converse-affinity cultural news (Nike only when tied to Converse) on Lookup | Make “what happened on this day” feel more Chuck without inventing brand claims |
 | 2026-08-06 | Converse-feel ideas live in `CONVERSE_FEEL_IDEAS.md` (not VISION requirements) | Capture “era Chuck / what were they wearing” explorations without polluting the ship brief |
+| 2026-08-07 | Timeline UI = curated text-only beats (no History LP images) | Prefer earlier curated feel; full History + images stay in `heritageKb` for Chuck-E only |
 | 2026-08-06 | Signature year = 1934 (official history), not 1932 secondary lore | Align with Converse.com + archive narrative; flag older 1932 claims |
 | 2026-08-06 | Nike close = 2003-09-04 (announce 2003-07-09) | SEC 8-K; prior pack wrongly treated announce day as close |
-| 2026-08-06 | Timeline images from Converse History LP CDN + credit link | Visual parity with client page; deep-link only |
+| 2026-08-06 | Timeline images from Converse History LP CDN + credit link | Superseded 2026-08-07 — Timeline UI text-only; images remain on heritageKb assets only |
 | 2026-08-06 | Chuck-E facts ship with citation gloss → original source | Press desks need hoverable provenance, not bare chat prose |
 | 2026-08-06 | Chuck Ecosystem KB from SPSU27 Chuck Reset; UI cite Internal Comms | Desk needs franchise architecture; PDF filename must stay out of UI |
 | 2026-08-06 | Prefer positive when interest is tied; never soft-pedal landmark defining days | “Good News, Chuck” lean without ignoring 9/11-class dates |

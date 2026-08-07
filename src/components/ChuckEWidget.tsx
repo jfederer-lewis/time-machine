@@ -63,7 +63,6 @@ export function ChuckEWidget({ brand, researchMode = 'lite' }: ChuckEWidgetProps
           <header className="chuck-e-panel__head">
             <div>
               <p className="chuck-e-panel__name">{CHUCK_E_KNOBS.agentName}</p>
-              <p className="chuck-e-panel__sub">Press research notes · not finished copy</p>
             </div>
             <div className="chuck-e-panel__head-actions">
               <button

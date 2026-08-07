@@ -83,9 +83,9 @@ export function looksLikeDateOnlyTitle(title: string): boolean {
   return false
 }
 
-/** Mid-clause cuts like “…carved out of the”. */
+/** Mid-clause cuts like “…carved out of the” / “…details from our”. */
 export function endsDangling(text: string): boolean {
-  return /\b(the|a|an|of|in|on|at|to|for|from|by|with|and|or|as|into|onto|upon)$/i.test(
+  return /\b(the|a|an|of|in|on|at|to|for|from|by|with|and|or|as|into|onto|upon|our|their|its|my|your|his|her|we|they|this|that|these|those|which|who|whom|whose|than|then|but|if|when|while|because|about|over|under|through|during|before|after|between|among|such|each|every|both|all|some|any|no|not|is|are|was|were|be|been|being|have|has|had|will|would|could|should|may|might|must|can|do|does|did)$/i.test(
     text.trim(),
   )
 }

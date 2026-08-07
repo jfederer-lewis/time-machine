@@ -9,6 +9,7 @@ import {
 } from '../../shared/source-registry'
 import { cleanPressText, looksLikeDateOnlyTitle, titleEchoesBody, titleIsCutFromBody, titleTooCloseToBody, looksLikeBareName, isIncompleteHeadline, toSentenceCaseHeadline, clipToShortProse, looksLikeHeadlineDump, descriptiveFallbackTitle, firstSentence, splitSentences } from '../lib/clean-text'
 import { COPY_KNOBS, polishedCopyJsonSchemaHint, validateCopyContract, keepWholeSentences } from '../lib/copy-contract'
+import { CHUCK_E_KNOBS } from '../../shared/chuck-e-knobs'
 
 const GEMINI_MODELS = ['gemini-flash-latest', 'gemini-3.5-flash', 'gemini-3.6-flash']
 
@@ -659,6 +660,8 @@ export async function chatWithChuckE(opts: {
     '',
     'Reply as Chuck-E only. Keep it desk-ready research notes — short paragraphs or bullets.',
     'Do not write a finished press story, dateline, or byline-ready narrative.',
+    'Finish every sentence. Never trail off mid-clause or end on a dangling word (of / the / our / from…).',
+    `Aim for complete desk notes (soft ~${CHUCK_E_KNOBS.chatReplySoftMaxChars} chars) — cover what’s needed; tighten, do not truncate.`,
     'If the knowledge context does not contain a product detail, say you do not have that detail yet.',
   ].join('\n')
 
@@ -667,7 +670,8 @@ export async function chatWithChuckE(opts: {
       apiKey,
       prompt,
       temperature: 0.35,
-      maxOutputTokens: 1024,
+      // Flash models spend a large share of maxOutputTokens on hidden "thoughts".
+      maxOutputTokens: CHUCK_E_KNOBS.chatMaxOutputTokens,
     })
     return text?.trim() || null
   } catch (err) {

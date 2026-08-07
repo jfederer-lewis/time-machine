@@ -55,21 +55,22 @@ export const converseBrand: BrandConfig = {
     { date: '1917', label: '1917' },
     { date: '1922', label: '1922' },
     { date: '1934', label: '1934' },
-    { date: '1982-03-29', label: '1982' },
     { date: '2003-09-04', label: '2003' },
-    { date: '2013-02-15', label: '2013' },
   ],
-  /** Curated Timeline UI — keep short; full History lives in heritageKb. */
+  /**
+   * Curated Timeline UI — short text-only story beats (no History LP images).
+   * Full History text + media live in heritageKb for Chuck-E / date attach only.
+   */
   timeline: [
     {
       id: 'cv-1908',
-      date: '1908-02',
-      precision: 'month',
+      date: '1908',
+      precision: 'year',
       title: 'Converse Rubber Shoe Company founded',
       synopsis:
-        'Marquis Mills Converse opened the Converse Rubber Shoe Company in Malden, Massachusetts — a rubber footwear maker before basketball became the summer line.',
+        'Marquis Mills Converse establishes the company in Malden, Massachusetts, beginning as a rubber footwear maker before basketball becomes the summer line.',
       reference:
-        'Converse History frames the Malden opening under Marquis Mills; secondary company histories place the founding in February 1908.',
+        'Converse History frames the Malden opening under Marquis Mills; secondary company histories place founding in 1908.',
       citation: {
         title: 'Converse History',
         url: HISTORY_URL,
@@ -83,7 +84,7 @@ export const converseBrand: BrandConfig = {
       precision: 'year',
       title: 'Non-Skid basketball shoe introduced',
       synopsis:
-        'Converse introduced a basketball-specific canvas-and-rubber shoe marketed as the Non-Skid — the design lineage that becomes the All Star.',
+        'Converse introduces a basketball-specific canvas-and-rubber shoe marketed as the Non-Skid — the design lineage that becomes the All Star.',
       reference:
         'Converse History: “The All Star gets its start under the name Non-Skid. It was one of the first shoes specifically designed for the new game of basketball.”',
       citation: {
@@ -99,7 +100,7 @@ export const converseBrand: BrandConfig = {
       precision: 'year',
       title: 'Rebranded as All Star',
       synopsis:
-        'Responding to coaches who wanted darker canvas to hide wear, Converse released a brown Non-Skid and branded it the All Star.',
+        'Responding to coaches who wanted darker canvas to hide wear, Converse releases a brown Non-Skid and brands it the All Star.',
       reference:
         'Converse History entry for 1919 (“Meet the All Star”).',
       citation: {
@@ -115,7 +116,7 @@ export const converseBrand: BrandConfig = {
       precision: 'year',
       title: 'Chuck Taylor joins Converse',
       synopsis:
-        'Charles H. “Chuck” Taylor joined as a salesman and brand ambassador, touring the U.S. as player and coach for the Converse All Stars.',
+        'Charles H. “Chuck” Taylor joins as a salesman and brand ambassador, touring the U.S. as player and coach for the Converse All Stars.',
       reference:
         'Converse History: “Charles H. ‘Chuck’ Taylor joins the Converse family as a salesman” in 1922.',
       citation: {
@@ -131,7 +132,7 @@ export const converseBrand: BrandConfig = {
       precision: 'year',
       title: 'Signature added to the ankle patch',
       synopsis:
-        'Chuck Taylor’s signature was added to the All Star ankle patch, creating the original signature basketball shoe.',
+        'Chuck Taylor’s signature is added to the All Star ankle patch, creating the original signature basketball shoe.',
       reference:
         'Converse History (1934): “Chuck Taylor’s signature is added to the All Star, creating the original signature basketball shoe.” Older secondary sources that say 1932 are treated as superseded for this pack.',
       citation: {
@@ -142,46 +143,14 @@ export const converseBrand: BrandConfig = {
       isExactQuote: true,
     },
     {
-      id: 'cv-1982-jordan',
-      date: '1982-03-29',
-      precision: 'exact-day',
-      title: 'Jordan in Pro Leather',
-      synopsis:
-        'Michael Jordan led UNC past Georgetown 63–62 in the NCAA championship wearing the Pro Leather — the jump shot that launched his national fame.',
-      reference:
-        'Converse History notes Jordan’s Pro Leather title run; contemporary coverage dated the final to 29 March 1982.',
-      citation: {
-        title: 'Converse History',
-        url: HISTORY_URL,
-        publisher: 'Converse',
-      },
-      isExactQuote: false,
-    },
-    {
       id: 'cv-2003',
       date: '2003-09-04',
       precision: 'exact-day',
       title: 'Nike acquires Converse',
       synopsis:
-        'Nike completed the acquisition of Converse on 4 September 2003, folding the heritage silhouette into a global portfolio while keeping Converse as a distinct label.',
+        'Nike completes the acquisition of Converse, folding the heritage silhouette into a global brand portfolio while keeping Converse as a distinct label.',
       reference:
         'Converse History (“Swooshed”, 2003). Exact close day 4 September 2003 corroborated by Nike SEC 8-K.',
-      citation: {
-        title: 'Converse History',
-        url: HISTORY_URL,
-        publisher: 'Converse',
-      },
-      isExactQuote: false,
-    },
-    {
-      id: 'cv-2013',
-      date: '2013-02-15',
-      precision: 'exact-day',
-      title: 'Chuck 70 launches',
-      synopsis:
-        'Converse launched the Chuck 70 — built from the 1970s All Star with heavier canvas, higher foxing, and modern cushioning — globally on 15 February 2013.',
-      reference:
-        'Converse History lists the Chuck 70 under 2013; Hypebeast / Nice Kicks reported the black/white global drop for 15 February 2013.',
       citation: {
         title: 'Converse History',
         url: HISTORY_URL,

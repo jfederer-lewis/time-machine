@@ -93,44 +93,9 @@ function useScrollReveal<T extends HTMLElement>(active: boolean) {
   return { ref, visible }
 }
 
-function MomentMedia({ moment }: { moment: BrandMoment }) {
-  const image = moment.image
-  if (!image) return null
-  return (
-    <figure className="tl-media">
-      <a
-        className="tl-media__link"
-        href={image.sourcePageUrl}
-        target="_blank"
-        rel="noreferrer"
-        aria-label={`Open source: ${image.credit || 'Converse History'}`}
-      >
-        <img
-          className="tl-media__img"
-          src={image.url}
-          alt={image.alt}
-          loading="lazy"
-          decoding="async"
-          referrerPolicy="no-referrer"
-        />
-      </a>
-      <figcaption className="tl-media__credit">
-        <a href={image.sourcePageUrl} target="_blank" rel="noreferrer">
-          {image.credit || 'Converse History'}
-        </a>
-        <span aria-hidden="true"> · </span>
-        <a href={moment.citation.url} target="_blank" rel="noreferrer">
-          Source
-        </a>
-      </figcaption>
-    </figure>
-  )
-}
-
 function MomentCopy({ moment }: { moment: BrandMoment }) {
   return (
     <>
-      <MomentMedia moment={moment} />
       <h2 className="tl-copy__headline">{moment.title}</h2>
       <p className="tl-copy__summary">{firstSentence(moment.synopsis)}</p>
       {moment.precision === 'period-estimate' ? (

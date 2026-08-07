@@ -17,6 +17,7 @@ import {
   buildDisclosureMessage,
   coerceChatAwayFromStory,
   coerceToCliffNotesBullets,
+  ensureCompleteChatReply,
   validateChatReply,
   withCliffNotesMarking,
 } from './chuck-e-contract'
@@ -193,6 +194,19 @@ function citationFromBrandMoment(moment: BrandMoment): Citation {
   })
 }
 
+/** One Harvard line per URL — same History LP / pack page must not repeat in chat. */
+function dedupeCitationsByUrl(citations: Citation[]): Citation[] {
+  const seen = new Set<string>()
+  const out: Citation[] = []
+  for (const c of citations) {
+    const key = (c.url || '').trim().toLowerCase()
+    if (!key || seen.has(key)) continue
+    seen.add(key)
+    out.push(c)
+  }
+  return out
+}
+
 function scoreFact(fact: ProductFact, query: string): number {
   const q = query.toLowerCase()
   let score = 0
@@ -275,7 +289,7 @@ function formatProductReply(facts: ProductFact[], packIsPlaceholder: boolean): {
   }
   return {
     content: lines.join('\n'),
-    citations,
+    citations: dedupeCitationsByUrl(citations),
     glosses: glossesFromProductFacts(facts),
   }
 }
@@ -301,7 +315,7 @@ function formatHeritageReply(moments: BrandMoment[]): {
   }
   return {
     content: lines.join('\n'),
-    citations,
+    citations: dedupeCitationsByUrl(citations),
     glosses: glossesFromBrandMoments(moments),
   }
 }
@@ -323,7 +337,7 @@ function formatDateSpotlight(event: CulturalEvent, displayDate: string): {
     parts.push('_Flagged for human review / period estimate — verify before press use._')
   }
   const content = parts.join('\n\n')
-  const citations = event.citations ?? []
+  const citations = dedupeCitationsByUrl(event.citations ?? [])
   return {
     content,
     citations,
@@ -531,7 +545,9 @@ export async function handleChuckEChat(
   }
 
   const checked = validateChatReply(reply)
-  const content = checked.ok ? reply : coerceChatAwayFromStory(reply)
+  const content = ensureCompleteChatReply(
+    checked.ok ? reply : coerceChatAwayFromStory(reply),
+  )
 
   // Attach Converse History cites for any heritage beats the reply (or query) touches
   const groundedMoments = matchHeritageMoments(`${lastUser.content}\n${content}`, brandId, 4, {
@@ -596,7 +612,7 @@ export function handleChuckECliffNotes(body: ChuckECliffNotesRequest): ChuckECli
   const draft = withCliffNotesMarking({
     title,
     bullets: bulletCandidates.slice(0, CHUCK_E_KNOBS.cliffNotesMaxBullets),
-    citations,
+    citations: dedupeCitationsByUrl(citations),
   })
 
   const plainText = [
