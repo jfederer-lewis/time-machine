@@ -70,7 +70,8 @@ body {
 
 button,
 input,
-select {
+select,
+textarea {
   font: inherit;
 }
 
@@ -545,6 +546,7 @@ a {
   align-items: flex-end;
   gap: 0.75rem;
   pointer-events: none;
+  font-family: var(--font-ui);
 }
 
 .chuck-e > * {
@@ -748,7 +750,7 @@ a {
 
 .chuck-e-msg__body {
   margin: 0;
-  font-family: var(--font-editorial);
+  font-family: var(--font-ui);
   font-size: var(--chuck-e-font-size);
   line-height: 1.5;
 }
@@ -883,7 +885,7 @@ a {
   background: #fff;
   color: var(--ink);
   padding: 0.55rem 0.7rem;
-  font-family: var(--font-editorial);
+  font-family: var(--font-ui);
   font-size: 0.88rem;
   line-height: 1.35;
   cursor: pointer;
@@ -961,6 +963,7 @@ a {
   border: 0;
   background: transparent;
   padding: 0.55rem 0.75rem;
+  font-family: var(--font-ui);
   font-size: calc(var(--chuck-e-font-size) * 0.92);
   line-height: 1.4;
   min-height: 2.5rem;
