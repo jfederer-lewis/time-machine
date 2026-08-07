@@ -45,7 +45,7 @@ Knob `preferPositiveWhenTied` enables the tone term. Knob `preferBrandAffinity` 
 | Rule | Runtime |
 |------|---------|
 | Always acknowledge; never soft-pedal for brand tone | Landmark skips the tone term; large significance boost |
-| Landmark wins the spotlight over brand / campaign / universe anchors | Assemble: landmark world pool → `brandMoments` cleared (no Lookup Converse segment); brand does not enter the world shortlist |
+| Landmark wins the spotlight over brand / campaign / universe anchors | Assemble: if the **shipped world spotlight** is landmark-defining → clear `brandMoments` (no Converse segment). Do **not** clear when some other same-calendar-day pool row matches (e.g. an Oct 17 assassination in another year). Brand does not enter the world shortlist. |
 | **No Converse bridge** beside landmarks | Chuck-E: do not append heritage, campaign, birthday, or “In the Converse universe…” next to a landmark — that reads as tasteless next to casualties / world memory |
 | Hypothetical same-day brand activation (e.g. a Times Square campaign on 9/11) must **not** lead or share the spotlight | Significance + landmark gates above |
 
@@ -115,4 +115,5 @@ Culture / fashion / museum hosts for claim-relevant cites: `shared/source-regist
 | 2026-08-07 | Soft universe affinity + people anchors | Chuck-adjacent on-this-day without inventing claims |
 | 2026-08-07 | No world backdrop on Converse-tied Chuck-E answers; light bridge only when world-only | Backdrop was noise on Swooshed-class asks; April-1-style dates may lightly re-anchor |
 | 2026-08-07 | Lookup Converse addon segment (exact / curated anniversary / month); world shortlist world-only; landmark clears segment | Desks see classic on-this-day news plus Converse when dates align — not collab anniversary spam |
+| 2026-08-07 | Landmark clears Converse segment only when shipped spotlight is landmark — not any pool row | Oct 17 2024 Billie was wiped by unrelated assassination rows in the cross-year pool |
 | 2026-08-06 | Prefer positive when tied; never soft-pedal landmarks | Good News, Chuck lean without ignoring 9/11-class dates |

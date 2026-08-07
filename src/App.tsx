@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type { BrandConfig } from '../shared/brand'
+import { calendarDateLocal, isTodayQueryDate } from '../shared/date-bounds'
 import type { CulturalEvent, DateQueryResult } from '../shared/provenance'
 import { converseBrand } from '../shared/brands/converse'
 import { CitationLine } from './components/CitationLine'
@@ -121,20 +122,12 @@ function pickConverseSegment(
   return moments.filter((m) => m.id !== spotlight?.id)
 }
 
-/** Local calendar date as YYYY-MM-DD (not UTC — avoids off-by-one near midnight). */
-function todayQueryDate() {
-  const now = new Date()
-  const y = now.getFullYear()
-  const m = String(now.getMonth() + 1).padStart(2, '0')
-  const d = String(now.getDate()).padStart(2, '0')
-  return `${y}-${m}-${d}`
-}
-
 export default function App() {
   const [brand, setBrand] = useState<BrandConfig>(converseBrand)
   const [view, setView] = useState<View>('date')
   const [timelineAxis, setTimelineAxis] = useState<TimelineAxis>('vertical')
-  const [date, setDate] = useState(todayQueryDate)
+  /** Empty on first open — user picks a date (today often has no settled same-year card). */
+  const [date, setDate] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [result, setResult] = useState<DateQueryResult | null>(null)
@@ -243,6 +236,10 @@ export default function App() {
     queryYear != null &&
     Number.isFinite(queryYear) &&
     spotlight.year !== queryYear
+  const historyStillBeingMade =
+    worldYearMismatch &&
+    result != null &&
+    isTodayQueryDate(result.queryDate, calendarDateLocal())
   const brandSpotlightLabel =
     spotlight &&
     result &&
@@ -419,7 +416,14 @@ export default function App() {
                   {brandSpotlightLabel ? (
                     <p className="spotlight-label">{brandSpotlightLabel}</p>
                   ) : worldYearMismatch ? (
-                    <p className="spotlight-label">Also on this day · {spotlight.year}</p>
+                    <>
+                      {historyStillBeingMade ? (
+                        <p className="spotlight-still-making">
+                          History is still being made on this date.
+                        </p>
+                      ) : null}
+                      <p className="spotlight-label">Also on this day · {spotlight.year}</p>
+                    </>
                   ) : null}
                   <h3 className="spotlight-title">{spotlight.title}</h3>
                   {spotlightLine ? (

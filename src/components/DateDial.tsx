@@ -1,6 +1,6 @@
 import { useEffect, useId, useState } from 'react'
+import { calendarDateLocal, isFutureQueryDate } from '../../shared/date-bounds'
 import { parseQueryDate } from '../../shared/source-registry'
-import { LoadingIndicator } from './LoadingIndicator'
 
 interface DateDialProps {
   value: string
@@ -85,29 +85,34 @@ export function DateDial({
   const [year, setYear] = useState(parsed.year)
   const [month, setMonth] = useState(parsed.month)
   const [day, setDay] = useState(parsed.day)
-  const [invalid, setInvalid] = useState(false)
+  const [invalidReason, setInvalidReason] = useState<'invalid' | 'future' | null>(null)
 
   useEffect(() => {
     const next = parsePartial(value)
     setYear(next.year)
     setMonth(next.month)
     setDay(next.day)
-    setInvalid(false)
+    setInvalidReason(null)
   }, [value])
 
   const commit = (y: string, m: string, d: string, submit: boolean) => {
     const query = toQueryDate(y, m, d)
     if (!query) {
-      setInvalid(true)
+      setInvalidReason('invalid')
       return
     }
-    setInvalid(false)
+    if (isFutureQueryDate(query, calendarDateLocal())) {
+      setInvalidReason('future')
+      return
+    }
+    setInvalidReason(null)
     onChange(query)
     if (submit) onSubmit(query)
   }
 
   const trySubmit = () => commit(year, month, day, true)
   const canSubmit = year.length === 4 && (!day || Boolean(month))
+  const invalid = invalidReason != null
 
   return (
     <section className="date-dial" aria-label="Enter a date">
@@ -121,7 +126,7 @@ export function DateDial({
               aria-invalid={invalid}
               onChange={(e) => {
                 setDay(e.target.value)
-                setInvalid(false)
+                setInvalidReason(null)
               }}
               onKeyDown={(e) => {
                 if (e.key === 'Enter') trySubmit()
@@ -145,7 +150,7 @@ export function DateDial({
                 const next = e.target.value
                 setMonth(next)
                 if (!next) setDay('')
-                setInvalid(false)
+                setInvalidReason(null)
               }}
               onKeyDown={(e) => {
                 if (e.key === 'Enter') trySubmit()
@@ -173,7 +178,7 @@ export function DateDial({
               onChange={(e) => {
                 const next = e.target.value.replace(/\D/g, '').slice(0, 4)
                 setYear(next)
-                setInvalid(false)
+                setInvalidReason(null)
               }}
               onKeyDown={(e) => {
                 if (e.key === 'Enter') trySubmit()
@@ -184,20 +189,18 @@ export function DateDial({
 
         <button
           type="button"
-          className={['btn-primary', loading ? 'btn-primary--loading' : ''].filter(Boolean).join(' ')}
+          className="btn-primary"
           onClick={trySubmit}
           disabled={loading || !canSubmit}
           aria-busy={loading || undefined}
         >
-          {loading ? (
-            <LoadingIndicator compact className="btn-loading" label="Fetching" decorative />
-          ) : (
-            'Look up'
-          )}
+          {loading ? 'Fetching…' : 'Look up'}
         </button>
       </div>
 
-      {invalid ? (
+      {invalidReason === 'future' ? (
+        <p className="date-invalid">That day hasn’t happened yet.</p>
+      ) : invalidReason === 'invalid' ? (
         <p className="date-invalid">That date isn’t valid.</p>
       ) : null}
 
@@ -213,7 +216,11 @@ export function DateDial({
                   setYear(next.year)
                   setMonth(next.month)
                   setDay(next.day)
-                  setInvalid(false)
+                  setInvalidReason(null)
+                  if (isFutureQueryDate(f.date, calendarDateLocal())) {
+                    setInvalidReason('future')
+                    return
+                  }
                   onChange(f.date)
                   onSubmit(f.date)
                 }}

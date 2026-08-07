@@ -373,7 +373,7 @@ a {
 
 .date-fields {
   display: flex;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   gap: 0.45rem;
   flex: 1;
   min-width: 0;
@@ -465,9 +465,8 @@ a {
 }
 
 .date-field--year {
-  flex: 1;
-  min-width: 5.5rem;
-  max-width: 7.5rem;
+  flex: 0 0 5.75rem;
+  width: 5.75rem;
 }
 
 .date-invalid {
@@ -484,6 +483,9 @@ a {
   padding: 0.78rem 1.3rem;
   transition: background 160ms ease, border-color 160ms ease;
   flex-shrink: 0;
+  /* Same width for “Look up” / “Fetching…” so the year field doesn’t wrap. */
+  min-width: 8.75rem;
+  text-align: center;
 }
 
 .btn-primary:hover:not(:disabled) {
@@ -1267,42 +1269,6 @@ a {
   stroke-linecap: round;
 }
 
-.btn-primary--loading {
-  opacity: 1;
-  cursor: wait;
-  min-width: 8.5rem;
-}
-
-.btn-primary--loading:disabled {
-  opacity: 1;
-}
-
-.btn-loading {
-  gap: 0.45rem;
-  color: inherit;
-}
-
-.btn-loading .loading-indicator__clock {
-  width: 1.1rem;
-  height: 1.1rem;
-  color: inherit;
-}
-
-.btn-loading .loading-indicator__face {
-  stroke: currentColor;
-  fill: transparent;
-}
-
-.btn-loading .loading-indicator__hand {
-  stroke: var(--accent-soft);
-}
-
-.btn-loading .loading-indicator__label {
-  color: inherit;
-  font-size: inherit;
-  letter-spacing: inherit;
-}
-
 .loading-indicator__label {
   margin: 0;
   display: flex;
@@ -1369,6 +1335,15 @@ a {
   max-width: 34rem;
   animation: rise 640ms ease both;
   animation-delay: 80ms;
+}
+
+.spotlight-still-making {
+  margin: 0 0 0.4rem;
+  font-family: var(--font-editorial);
+  font-size: 0.95rem;
+  font-style: italic;
+  line-height: 1.4;
+  color: var(--muted);
 }
 
 .spotlight-label {

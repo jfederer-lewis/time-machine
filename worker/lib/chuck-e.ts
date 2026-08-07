@@ -14,6 +14,7 @@ import {
 } from '../../shared/converse-universe'
 import type { Citation, CulturalEvent, Gloss } from '../../shared/provenance'
 import { withHarvard } from '../../shared/provenance'
+import { calendarDateUtc, isFutureQueryDate } from '../../shared/date-bounds'
 import { citationTier, parseQueryDate, toDisplayDate, isCitationAllowed, isCitationBlocked, findRegistryEntry } from '../../shared/source-registry'
 import { assembleDateQuery, type Env } from './assemble'
 import { chatWithChuckE, enrichChuckEDateSignificance, researchChuckETopic, type ClaimCandidate } from '../providers/gemini'
@@ -811,6 +812,17 @@ export async function handleChuckEChat(
   if (intent === 'date') {
     const date = extractDateFromMessage(lastUser.content)
     if (date) {
+      if (isFutureQueryDate(date, calendarDateUtc())) {
+        return {
+          sessionId,
+          message: {
+            role: 'assistant',
+            content:
+              'That day hasn’t happened yet — this Time Machine looks at settled dates. Try a past day, or ask about Converse heritage.',
+          },
+          intent: 'date',
+        }
+      }
       try {
         const result = await assembleDateQuery(date, env, {
           brandId,

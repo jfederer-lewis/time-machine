@@ -2,7 +2,7 @@
 
 > Living document. Update this as the idea develops. Agents: read this before making product or architecture decisions.
 
-**Last updated:** 2026-08-07 (Lookup Converse day-card addon segment)  
+**Last updated:** 2026-08-07 (Present-day date UX)  
 **Client (current):** Converse  
 **Working title:** Good News, Chuck  
 **Live:** https://time-machine.jasminefederer.workers.dev  
@@ -269,6 +269,7 @@ Record material product/architecture choices here as we go.
 
 | Date | Decision | Why |
 |------|----------|-----|
+| 2026-08-07 | Empty dial default; block future; today allowed with “history still being made” when shipping another year | Today often has no settled same-year card (live wire skipped); always prefer a card over empty |
 | 2026-08-07 | Drop Lite/Full toggle — research always full stack | One path; cite upgrade always on; settings keep year + Chuck-E font only |
 | 2026-08-04 | Bloom-style research cards + glosses | Proven citation UX; reduces hallucination risk in press context |
 | 2026-08-04 | Brand packs in `shared/brands/` | Pitch Converse now; other heritage brands later |

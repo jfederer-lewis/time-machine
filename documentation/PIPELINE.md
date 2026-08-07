@@ -100,7 +100,7 @@ VALIDATE AGAIN → SHIP
 GLOSSES (Wikipedia summary) + Converse day segment (`brandMoments`, max 2)
 ```
 
-UI ships **one world spotlight** (`events[0]`) **plus** an optional Converse addon (`brandMoments`) when heritage matches the query. If world is empty, the first brand moment may fill the spotlight (no double-render). Empty both → “No fact on record for this date.” Landmark world pool → `brandMoments` cleared (no Converse segment).
+UI ships **one world spotlight** (`events[0]`) **plus** an optional Converse addon (`brandMoments`) when heritage matches the query. If world is empty, the first brand moment may fill the spotlight (no double-render). Empty both → “No fact on record for this date.” If the **shipped** world spotlight is landmark-defining → `brandMoments` cleared (no Converse segment).
 
 Code: `worker/lib/assemble.ts`, `shared/brand.ts` (`converseDaySegmentForQuery`), `worker/providers/gemini.ts`, `worker/lib/upgrade-claim.ts`, `worker/lib/interest.ts`, `worker/lib/copy-contract.ts`.
 
@@ -142,7 +142,7 @@ Ranking is a **weighted formula** (`scoreInterestBreakdown` in `interest.ts`), n
 
 Knobs: `preferUkGlobalInterest`, `preferPremiumPress`, `preferPositiveWhenTied` (enables the tone term), `preferBrandAffinity` in `shared/copy-knobs.ts`. Universe: `shared/converse-universe.ts`. Weights live as `W` in `interest.ts`.
 
-Brand heritage: curated `brand.timeline` is Timeline UI only. Full History beats live in `brand.heritageKb` (`shared/brands/converse-heritage-kb.ts`). Assemble / Chuck-E use `heritageMoments(brand)`. Lookup Converse addon lanes (`converseDaySegmentForQuery`): **exact YYYY-MM-DD** always; **yearly anniversary** only when `anniversaryEligible` or a universe people anchor (Chuck birthday/death — not collabs); **month-precision** same `YYYY-MM` as “Also this month · Converse”. World shortlist stays world-only; Converse does not compete for the main spotlight. Landmark pool → no Converse segment.
+Brand heritage: curated `brand.timeline` is Timeline UI only. Full History beats live in `brand.heritageKb` (`shared/brands/converse-heritage-kb.ts`). Assemble / Chuck-E use `heritageMoments(brand)`. Lookup Converse addon lanes (`converseDaySegmentForQuery`): **exact YYYY-MM-DD** always; **yearly anniversary** only when `anniversaryEligible` or a universe people anchor (Chuck birthday/death — not collabs); **month-precision** same `YYYY-MM` as “Also this month · Converse”. World shortlist stays world-only; Converse does not compete for the main spotlight. Landmark **spotlight** → no Converse segment (not “any landmark-shaped row in the discovery pool”).
 
 ---
 

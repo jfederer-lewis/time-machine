@@ -7,6 +7,7 @@ import {
   type ChuckECliffNotesRequest,
 } from './lib/chuck-e'
 import { getBrand, listBrands } from '../shared/brands'
+import { calendarDateUtc, isFutureQueryDate } from '../shared/date-bounds'
 import { parseQueryDate } from '../shared/source-registry'
 
 function json(data: unknown, status = 200): Response {
@@ -69,6 +70,9 @@ export default {
       const date = parseQueryDate(url.searchParams.get('date'))
       if (!date) {
         return json({ error: 'Provide ?date=YYYY, YYYY-MM, or YYYY-MM-DD' }, 400)
+      }
+      if (isFutureQueryDate(date, calendarDateUtc())) {
+        return json({ error: 'That day hasn’t happened yet.' }, 400)
       }
       const brandId = url.searchParams.get('brand') || env.BRAND_ID || 'converse'
       const fallbackParam = url.searchParams.get('fallback')

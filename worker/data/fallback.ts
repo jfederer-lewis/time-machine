@@ -247,10 +247,12 @@ export function buildFallbackResult(
   const brand = getBrand(brandId)
   const rawEvents = lookupFallbackEvents(queryDate)
   const events = rawEvents.map((e) => sanitizeEventCitations(e))
-  const poolHasLandmark = events.some((e) => isLandmarkDefiningEvent(e))
-  const brandMoments = poolHasLandmark
-    ? []
-    : buildFallbackConverseSegment(brand, queryDate)
+  // Only suppress Converse when the curated world card itself is landmark-defining.
+  const worldLead = events[0]
+  const brandMoments =
+    worldLead && isLandmarkDefiningEvent(worldLead)
+      ? []
+      : buildFallbackConverseSegment(brand, queryDate)
 
   const hasExact =
     events.some((e) => e.precision === 'exact-day') ||

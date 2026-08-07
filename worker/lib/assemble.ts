@@ -176,14 +176,10 @@ export async function assembleDateQuery(
       ? sameYearRanked
       : rankByInterest(merged, targetYear)
 
-  // Landmark defining days: no Converse addon. Otherwise world spotlight stays
-  // world-only; Converse heritage surfaces as a separate brandMoments segment.
-  const poolHasLandmark = poolForPick.some((e) => isLandmarkDefiningEvent(e))
-  const brandMoments = poolHasLandmark
-    ? []
-    : buildConverseDaySegmentEvents(brand, queryDate)
-
-  if (brandMoments.length) providersUsed.push('brand-timeline')
+  // Converse heritage addon — built now; cleared later only if the *shipped*
+  // world spotlight is a landmark (not if some other Oct-17-in-history event
+  // matches assassination / etc. in the discovery pool).
+  let brandMoments = buildConverseDaySegmentEvents(brand, queryDate)
 
   // World shortlist only — Converse is addon, not a competing spotlight candidate.
   // Prefer substance for the shortlist — thin chart stubs (#1: Song / same fact twice) lose.
@@ -322,6 +318,14 @@ export async function assembleDateQuery(
   }
 
   const hasExact = events.some((e) => e.precision === 'exact-day')
+
+  // Landmark defining *spotlight* only — never Converse-bridge 9/11-class cards.
+  // Do not clear when an unrelated same-calendar-day pool row mentions assassination.
+  if (events[0] && isLandmarkDefiningEvent(events[0])) {
+    brandMoments = []
+  } else if (brandMoments.length && !providersUsed.includes('brand-timeline')) {
+    providersUsed.push('brand-timeline')
+  }
 
   return {
     queryDate,
