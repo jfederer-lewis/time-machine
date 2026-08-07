@@ -133,7 +133,8 @@ export function buildGlossRanges<T extends GlossLike>(
   const ranges: GlossRange<T>[] = []
 
   const words: Array<{ text: string; start: number; end: number }> = []
-  const wordRegex = /[a-zA-Z0-9\x7f-\xff]+/g
+  // Letter–hyphen compounds (Non-Skid) stay one token; digit dates still split on '-'.
+  const wordRegex = /[a-zA-Z\x7f-\xff]+(?:-[a-zA-Z\x7f-\xff]+)+|[a-zA-Z0-9\x7f-\xff]+/g
   let match: RegExpExecArray | null
   while ((match = wordRegex.exec(source)) !== null) {
     words.push({

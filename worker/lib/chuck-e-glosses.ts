@@ -17,7 +17,13 @@ export function glossesFromBrandMoments(moments: BrandMoment[]): Gloss[] {
       m.reference.replace(/\s+/g, ' ').trim().slice(0, 280) ||
       `${m.title} — ${m.synopsis}`.slice(0, 280)
 
-    const candidates = [m.title, year, ...titleTokens(m.title)]
+    // Prefer short, matchable terms that survive Gemini paraphrase + markdown bold.
+    const candidates = [
+      ...titleTokens(m.title),
+      m.title,
+      year,
+      m.date.length > 4 ? m.date : '',
+    ].filter(Boolean)
     for (const term of candidates) {
       const key = term.toLowerCase()
       if (seen.has(key) || term.length < 3) continue

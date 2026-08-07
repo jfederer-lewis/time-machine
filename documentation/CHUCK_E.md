@@ -148,6 +148,7 @@ Runtime: wire stable framing into product packs before treating it as auto-shipp
 | 2026-08-07 | Deduplicate chat / cliff-notes cites by URL | Same Converse History page must not repeat once per heritage beat |
 | 2026-08-07 | Chuck-E chat `maxOutputTokens` ≥ ~3k + abrupt-cut salvage | Flash thoughts ate 1024 → mid-sentence cuts (“…from our”) must never ship |
 | 2026-08-07 | Chuck-E chat budget → 4096 tokens / ~2800-char soft aim | Enough headroom vs 1024 cuts; cheaper middle ground than 8192 |
+| 2026-08-07 | Gloss popovers z-index above Chuck-E panel; hyphenated gloss tokens | Hover cites were painting behind the chat; Non-Skid-style terms never matched |
 
 ---
 
