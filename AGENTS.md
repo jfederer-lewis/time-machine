@@ -27,7 +27,7 @@ Knobs live in `shared/copy-knobs.ts` (day cards), `shared/chuck-e-knobs.ts` (Chu
 - Never ship a card that fails `validateCopyContract` — try next candidate or curated fallback.
 - Cite must be **about the claim** on the upgrade path — Tier A alone is not enough.
 - Discovery aggregators never appear on the public Source line.
-- Ship gate = copy contract. `needsHumanReview` does **not** block ship (and is not shown in the UI yet).
+- Ship gate = copy contract. `needsHumanReview` is an **optional** soft quality flag — it does **not** block ship (and is not shown in the UI yet).
 - **Chuck-E** is cliff notes for press desks, not finished stories; first message must carry hardcoded AI disclosure; cliff-notes exports must carry the AI-origin banner.
 - Chuck Ecosystem KB (`CHUCK_ECOSYSTEM_KB.md`): UI cite = **SPSU27 Chuck Reset Internal Comms**; never announce launches, talent, prices, rollouts or licensing from that deck alone; “What is Converse?” prefers official About Us.
 

@@ -95,8 +95,11 @@ export interface CulturalEvent {
    * Must never be shown as the public citation.
    */
   discoveredVia?: DiscoveryChannel[]
-  /** When true, claim must not ship to press without editor sign-off. */
-  needsHumanReview: boolean
+  /**
+   * Soft quality flag (prototype): cite is provisional / contested / bridge-only.
+   * Optional — omit or false when unset. Does not block ship; not shown in UI yet.
+   */
+  needsHumanReview?: boolean
 }
 
 export interface NarrativeBlock {

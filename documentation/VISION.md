@@ -2,7 +2,7 @@
 
 > Living document. Update this as the idea develops. Agents: read this before making product or architecture decisions.
 
-**Last updated:** 2026-08-07 (editorial schema)  
+**Last updated:** 2026-08-07 (`needsHumanReview` optional / prototype)  
 **Client (current):** Converse  
 **Working title:** Good News, Chuck  
 **Live:** https://time-machine.jasminefederer.workers.dev  
@@ -47,7 +47,7 @@ Every Chuck launch date (and, more broadly, any date) becomes a doorway into wha
 1. **Every historical claim must be human-verified and source-linked.** Invented history on a heritage brand is the worst available failure.
 2. Avoid making this a **listicle one-off** — it should feel like a durable press platform / archive tool.
 3. AI (Gemini etc.) may **discover** and **phrase** day facts. It must **never** be the public citation, invent quotations, or ship a claim without a **credible allowlisted source** that corroborates the date — so users can verify and read more, and so we don’t publish hallucinations.
-4. Contested dates must be labelled **needs human review** / period-estimate — never presented as settled fact. (Chuck signature: brand pack now follows Converse History **1934**; older “1932” secondary lore is superseded for this product.)
+4. Contested dates should be flagged **needs human review** / period-estimate when known — soft quality signal for now (not a UI badge / ship gate in the prototype). (Chuck signature: brand pack now follows Converse History **1934**; older “1932” secondary lore is superseded for this product.)
 5. **Never cite aggregators / hobby time machines as sources** — including onthisday.com, youdidntnotice.com, bdayrecap.com, History.com this-day indexes. They may **discover** events only; pass 2 must find a Tier A/B (or careful C) URL and a Harvard citation.
 6. Prefer **full dates** (`YYYY-MM-DD` / `1999/april/1`) — month-day-only tools are not enough for press packs.
 7. **Never ship aggregator “#1 song on this date” labels** — not research cards. Real music moments need prose + a proper cite (e.g. Official Charts / Billboard week or article URLs).
@@ -312,6 +312,7 @@ Record material product/architecture choices here as we go.
 | 2026-08-07 | Converse-universe affinity + calendar-day people anchors (e.g. Chuck Taylor birthday) | Broad on-this-day can still feel Chuck-adjacent without inventing brand claims; demote competitor footwear days |
 | 2026-08-07 | Never Converse-bridge landmark defining days; soft universe lift only; hard news still ships | 9/11-class respect; brand activation ≠ sugar-coat or force Chuck |
 | 2026-08-07 | Canonical `EDITORIAL_SCHEMA.md` for ranking / tone / universe / landmarks | One place for agents; keep knobs + prompts aligned |
+| 2026-08-07 | `needsHumanReview` optional on `CulturalEvent` — soft flag, not ship gate | Prototype: don’t block builds/ship on missing review labels; UI badge still later |
 
 ---
 
