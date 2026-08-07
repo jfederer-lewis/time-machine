@@ -5,13 +5,18 @@ import type { Gloss } from '../../shared/provenance'
 const OPEN_DELAY_MS = 160
 const CLOSE_DELAY_MS = 180
 
+/** Compact source link — publication / short article name, not a Harvard dump. */
 function certifiedFooter(gloss: Gloss): { href: string; label: string } | null {
   if (!gloss.url || gloss.source === 'ai') return null
-  const titleBit = gloss.originator?.trim() ? `'${gloss.originator.trim()}', ` : ''
-  const pubBit = gloss.sourceLabel?.trim() || (gloss.source === 'wikipedia' ? 'Wikipedia' : 'source')
+  const pub =
+    gloss.sourceLabel?.replace(/\s*\(\d{4}\)\s*$/, '').trim() ||
+    (gloss.source === 'wikipedia' ? 'Wikipedia' : 'Source')
+  const title = gloss.originator?.trim()
+  const shortTitle =
+    title && title.length <= 40 && !/^converse history$/i.test(title) ? title : null
   return {
     href: gloss.url,
-    label: `${titleBit}${pubBit} →`,
+    label: shortTitle ? `Read more — ${shortTitle}` : `Read more — ${pub}`,
   }
 }
 
@@ -103,7 +108,7 @@ export function GlossTerm({ gloss, children }: { gloss: Gloss; children: ReactNo
 
   const popoverStyle = (() => {
     if (!rect) return undefined
-    const width = Math.min(300, window.innerWidth - 28)
+    const width = Math.min(280, window.innerWidth - 28)
     const left = Math.max(14, Math.min(rect.left + rect.width / 2 - width / 2, window.innerWidth - width - 14))
     const top = Math.min(rect.bottom + 8, window.innerHeight - 16)
     return { top, left, width }
@@ -173,7 +178,6 @@ export function GlossTerm({ gloss, children }: { gloss: Gloss; children: ReactNo
                 ) : null}
               </div>
               {gloss.period ? <p className="gloss-period">{gloss.period}</p> : null}
-              {gloss.originator ? <p className="gloss-originator">{gloss.originator}</p> : null}
               <p className={`gloss-body${pinned ? ' is-selectable' : ''}`}>{gloss.gloss}</p>
               {footer ? (
                 <a

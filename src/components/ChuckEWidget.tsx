@@ -7,6 +7,16 @@ import { looksLikeCompleteQuery, useSpeechDictation } from '../hooks/useSpeechDi
 import { ChuckEMessage } from './ChuckEMessage'
 import { CliffNotesPanel } from './CliffNotesPanel'
 
+const TALL_STORAGE_KEY = 'tm-chuck-e-tall'
+
+function readTallPref(): boolean {
+  try {
+    return localStorage.getItem(TALL_STORAGE_KEY) === '1'
+  } catch {
+    return false
+  }
+}
+
 interface ChuckEWidgetProps {
   brand: BrandConfig
   researchMode?: ResearchMode
@@ -14,11 +24,24 @@ interface ChuckEWidgetProps {
 
 export function ChuckEWidget({ brand, researchMode = 'lite' }: ChuckEWidgetProps) {
   const [open, setOpen] = useState(false)
+  const [tall, setTall] = useState(readTallPref)
   const [draft, setDraft] = useState('')
   const listRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLTextAreaElement>(null)
   const draftRef = useRef(draft)
   draftRef.current = draft
+
+  const toggleTall = () => {
+    setTall((prev) => {
+      const next = !prev
+      try {
+        localStorage.setItem(TALL_STORAGE_KEY, next ? '1' : '0')
+      } catch {
+        /* ignore */
+      }
+      return next
+    })
+  }
 
   const {
     messages,
@@ -86,6 +109,19 @@ export function ChuckEWidget({ brand, researchMode = 'lite' }: ChuckEWidgetProps
     if (loading) abortVoice()
   }, [loading, abortVoice])
 
+  const syncComposerHeight = useCallback(() => {
+    const el = inputRef.current
+    if (!el) return
+    el.style.height = 'auto'
+    const max = 160 // ~10rem — grow with text, then scroll
+    el.style.height = `${Math.min(Math.max(el.scrollHeight, 40), max)}px`
+  }, [])
+
+  useEffect(() => {
+    if (!open) return
+    syncComposerHeight()
+  }, [draft, open, syncComposerHeight])
+
   const onSubmit = (e: FormEvent) => {
     e.preventDefault()
     const text = draft.trim()
@@ -106,12 +142,30 @@ export function ChuckEWidget({ brand, researchMode = 'lite' }: ChuckEWidgetProps
   return (
     <div className={['chuck-e', open ? 'chuck-e--open' : ''].filter(Boolean).join(' ')}>
       {open ? (
-        <section className="chuck-e-panel" aria-label={`${CHUCK_E_KNOBS.agentName} chat`} role="dialog" aria-modal="false">
+        <section
+          className={['chuck-e-panel', tall ? 'chuck-e-panel--tall' : ''].filter(Boolean).join(' ')}
+          aria-label={`${CHUCK_E_KNOBS.agentName} chat`}
+          role="dialog"
+          aria-modal="false"
+        >
           <header className="chuck-e-panel__head">
             <div>
               <p className="chuck-e-panel__name">{CHUCK_E_KNOBS.agentName}</p>
             </div>
             <div className="chuck-e-panel__head-actions">
+              <button
+                type="button"
+                className={['chuck-e-icon-btn', tall ? 'is-active' : ''].filter(Boolean).join(' ')}
+                onClick={toggleTall}
+                aria-pressed={tall}
+                aria-label={tall ? 'Shorter chat panel' : 'Taller chat panel'}
+                title={tall ? 'Shorter panel' : 'Taller panel'}
+              >
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true">
+                  <path d="M8 4H4v4M16 4h4v4M8 20H4v-4M16 20h4v-4" strokeLinecap="round" strokeLinejoin="round" />
+                  <path d="M12 7v10M9 9.5 12 7l3 2.5M9 14.5 12 17l3-2.5" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+              </button>
               <button
                 type="button"
                 className="chuck-e-icon-btn"
@@ -198,7 +252,7 @@ export function ChuckEWidget({ brand, researchMode = 'lite' }: ChuckEWidgetProps
                 <textarea
                   ref={inputRef}
                   className="chuck-e-composer__input"
-                  rows={4}
+                  rows={1}
                   placeholder={
                     listening
                       ? 'Listening… pause when finished'
@@ -210,6 +264,7 @@ export function ChuckEWidget({ brand, researchMode = 'lite' }: ChuckEWidgetProps
                     setDraft(e.target.value)
                     clearVoiceError()
                   }}
+                  onInput={syncComposerHeight}
                   onKeyDown={(e) => {
                     if (e.key === 'Enter' && !e.shiftKey) {
                       e.preventDefault()

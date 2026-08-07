@@ -1,6 +1,6 @@
+import { useId, useState } from 'react'
 import type { ChuckEChatMessage } from '../hooks/chuck-e-types'
 import type { Citation } from '../../shared/provenance'
-import { CitationLine } from './CitationLine'
 import { GlossableText } from './GlossableText'
 
 /** Same source URL only once in the chat footer. */
@@ -14,6 +14,16 @@ function dedupeCitationsForDisplay(citations: Citation[]): Citation[] {
     out.push(c)
   }
   return out
+}
+
+function compactSourceLabel(c: Citation): string {
+  const year = c.publishedAt?.slice(0, 4)
+  const pub = c.publisher?.trim() || 'Source'
+  const title = c.title?.trim()
+  if (title && title.length <= 36 && !/^converse history$/i.test(title)) {
+    return year ? `${title} · ${year}` : title
+  }
+  return year ? `${pub} · ${year}` : pub
 }
 
 /** Render light markdown-ish bold + newlines without a full markdown parser. */
@@ -47,9 +57,56 @@ function renderContent(text: string, glosses: ChuckEChatMessage['glosses']) {
   })
 }
 
+/** Collapsed-by-default source inventory under assistant replies. */
+function MessageSources({ citations }: { citations: Citation[] }) {
+  const [open, setOpen] = useState(false)
+  const panelId = useId()
+  const list = citations.slice(0, 6)
+  const count = list.length
+  if (count === 0) return null
+
+  return (
+    <div className={['chuck-e-msg__sources', open ? 'is-open' : ''].filter(Boolean).join(' ')}>
+      <button
+        type="button"
+        className="chuck-e-msg__sources-toggle"
+        aria-expanded={open}
+        aria-controls={panelId}
+        onClick={() => setOpen((v) => !v)}
+      >
+        <span className="chuck-e-msg__sources-label">
+          {count === 1 ? 'Source' : 'Sources'}
+          <span className="chuck-e-msg__sources-count">({count})</span>
+        </span>
+        <span className="chuck-e-msg__sources-chevron" aria-hidden="true">
+          {open ? '−' : '+'}
+        </span>
+      </button>
+      {open ? (
+        <ul id={panelId} className="chuck-e-msg__sources-list">
+          {list.map((c) => (
+            <li key={c.url}>
+              <a
+                className="chuck-e-msg__source-link"
+                href={c.url}
+                target="_blank"
+                rel="noreferrer"
+              >
+                {compactSourceLabel(c)}
+              </a>
+            </li>
+          ))}
+        </ul>
+      ) : null}
+    </div>
+  )
+}
+
 export function ChuckEMessage({ message }: { message: ChuckEChatMessage }) {
   const isUser = message.role === 'user'
   const isDisclosure = Boolean(message.isDisclosure)
+  const cites = message.citations ? dedupeCitationsForDisplay(message.citations) : []
+  const showSources = !isUser && !isDisclosure && cites.length > 0
 
   return (
     <article
@@ -73,15 +130,7 @@ export function ChuckEMessage({ message }: { message: ChuckEChatMessage }) {
           ? renderContent(message.content, undefined)
           : renderContent(message.content, message.glosses)}
       </div>
-      {message.citations && message.citations.length > 0 ? (
-        <div className="chuck-e-msg__cites">
-          {dedupeCitationsForDisplay(message.citations)
-            .slice(0, 4)
-            .map((c) => (
-              <CitationLine key={c.url} citation={c} />
-            ))}
-        </div>
-      ) : null}
+      {showSources ? <MessageSources citations={cites} /> : null}
     </article>
   )
 }

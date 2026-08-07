@@ -1,30 +1,48 @@
 import type { BrandMoment } from '../../shared/brand'
 import type { Citation, Gloss } from '../../shared/provenance'
 import type { ProductFact } from '../../shared/products'
-import { formatHarvardCitation } from '../../shared/source-registry'
 
-/** Short Harvard line for gloss popovers — title, date, publisher always present. */
-function harvardCiteLine(opts: {
-  title: string
-  publisher: string
-  url: string
-  author?: string
-  publishedAt?: string
-  fallbackYear?: string
-}): string {
-  return formatHarvardCitation({
-    author: opts.author,
-    year: opts.publishedAt?.slice(0, 4) || opts.fallbackYear,
-    title: opts.title,
-    publisher: opts.publisher,
-    publishedDisplay: opts.publishedAt,
-    url: opts.url,
-  })
+/**
+ * Clean source snippets for gloss popovers: no curly quotes, page refs,
+ * or “Converse History: …” wrappers — short readable prose only.
+ */
+export function cleanGlossSnippet(raw: string, max = 200): string {
+  let s = String(raw || '')
+    .replace(/\u00a0/g, ' ')
+    .replace(/^Converse History:\s*/i, '')
+    .replace(/^Converse History entry for[^.]*\.?\s*/i, '')
+    .replace(/\(\s*pp?\.\s*\d+[^)]*\)/gi, '')
+    .replace(/\bpp?\.\s*\d+([-–—]\d+)?\b/gi, '')
+    .replace(/[“”«»„]/g, '')
+    .replace(/[‘’‚‛]/g, "'")
+    .replace(/\s+/g, ' ')
+    .trim()
+
+  if (
+    (s.startsWith('"') && s.endsWith('"')) ||
+    (s.startsWith("'") && s.endsWith("'"))
+  ) {
+    s = s.slice(1, -1).trim()
+  }
+
+  // Drop leftover bibliographic noise that isn't prose
+  s = s.replace(/\s*Available at:\s*\S+/gi, '').trim()
+
+  if (s.length <= max) return s
+  const cut = s.slice(0, max)
+  const at = Math.max(cut.lastIndexOf('. '), cut.lastIndexOf('; '), cut.lastIndexOf(', '))
+  return (at > max * 0.45 ? cut.slice(0, at + 1) : `${cut.trimEnd()}…`).trim()
+}
+
+function publisherLabel(publisher: string, year?: string): string {
+  const pub = publisher.trim() || 'Source'
+  return year ? `${pub} (${year})` : pub
 }
 
 /**
  * Build dotted citation glosses so Chuck-E facts stay traceable to the
  * original source (typically Converse History) on hover.
+ * Gloss body = clean prose; link + publisher/year live in the popover footer.
  */
 export function glossesFromBrandMoments(moments: BrandMoment[]): Gloss[] {
   const glosses: Gloss[] = []
@@ -32,20 +50,16 @@ export function glossesFromBrandMoments(moments: BrandMoment[]): Gloss[] {
 
   for (const m of moments) {
     const year = m.citation.publishedAt?.slice(0, 4) || m.date.slice(0, 4)
-    const citeLine = harvardCiteLine({
-      title: m.citation.title,
-      publisher: m.citation.publisher,
-      url: m.citation.url,
-      author: m.citation.author,
-      publishedAt: m.citation.publishedAt,
-      fallbackYear: year,
-    })
-    const body =
-      m.reference.replace(/\s+/g, ' ').trim().slice(0, 220) ||
-      `${m.title} — ${m.synopsis}`.slice(0, 220)
-    const glossBody = `${body}\n\n${citeLine}`
+    const fromSynopsis = cleanGlossSnippet(m.synopsis, 220)
+    const fromRef = cleanGlossSnippet(m.reference, 220)
+    const looksMeta =
+      !fromRef ||
+      fromRef.length < 28 ||
+      /^(see |cf\.|ibid|converse history entry)/i.test(fromRef)
+    const glossBody =
+      fromSynopsis ||
+      (looksMeta ? cleanGlossSnippet(`${m.title}. ${m.synopsis}`, 220) : fromRef)
 
-    // Prefer short, matchable terms that survive Gemini paraphrase + markdown bold.
     const candidates = [
       ...titleTokens(m.title),
       m.title,
@@ -61,7 +75,7 @@ export function glossesFromBrandMoments(moments: BrandMoment[]): Gloss[] {
         gloss: glossBody,
         url: m.citation.url,
         source: 'curated',
-        sourceLabel: `${m.citation.publisher} (${year})`,
+        sourceLabel: publisherLabel(m.citation.publisher, year),
         period: year,
         originator: m.citation.title,
       })
@@ -77,24 +91,17 @@ export function glossesFromCitations(citations: Citation[], content?: string): G
   const hay = (content || '').toLowerCase()
 
   for (const c of citations) {
-    const year = c.publishedAt?.slice(0, 4) || 'n.d.'
-    const citeLine =
-      c.harvard ||
-      harvardCiteLine({
-        title: c.title,
-        publisher: c.publisher,
-        url: c.url,
-        author: c.author,
-        publishedAt: c.publishedAt,
-        fallbackYear: year,
-      })
-    const note = (c.reference || '').replace(/\s+/g, ' ').trim().slice(0, 160)
-    const glossBody = note ? `${note}\n\n${citeLine}` : citeLine
-    const terms = [c.title, year, c.publisher].filter(Boolean) as string[]
+    const year = c.publishedAt?.slice(0, 4)
+    const yearBit = year && year !== 'n.d.' ? year : undefined
+    const note = cleanGlossSnippet(c.reference || '', 160)
+    const glossBody =
+      note ||
+      cleanGlossSnippet(c.title, 120) ||
+      'Open the original source for the full cite.'
+    const terms = [c.title, yearBit, c.publisher].filter(Boolean) as string[]
     for (const term of terms) {
       const key = term.toLowerCase()
       if (seen.has(key) || term.length < 3) continue
-      // Prefer terms that actually appear in the reply when content is known
       if (hay && !hay.includes(key) && term !== c.title) continue
       seen.add(key)
       glosses.push({
@@ -102,8 +109,8 @@ export function glossesFromCitations(citations: Citation[], content?: string): G
         gloss: glossBody,
         url: c.url,
         source: c.tier === 'bridge' || /wikipedia\.org/i.test(c.url) ? 'wikipedia' : 'curated',
-        sourceLabel: `${c.publisher} (${year})`,
-        period: year === 'n.d.' ? undefined : year,
+        sourceLabel: publisherLabel(c.publisher, yearBit),
+        period: yearBit,
         originator: c.title,
       })
     }
@@ -121,19 +128,12 @@ export function glossesFromProductFacts(facts: ProductFact[]): Gloss[] {
     if (seen.has(key)) continue
     seen.add(key)
     const year = f.citation.publishedAt?.slice(0, 4)
-    const citeLine = harvardCiteLine({
-      title: f.citation.title,
-      publisher: f.citation.publisher,
-      url: f.citation.url,
-      publishedAt: f.citation.publishedAt,
-      fallbackYear: year,
-    })
     glosses.push({
       term: f.label,
-      gloss: `${f.body.slice(0, 200)}\n\n${citeLine}`,
+      gloss: cleanGlossSnippet(f.body, 200),
       url: f.citation.url,
       source: 'curated',
-      sourceLabel: `${f.citation.publisher}${year ? ` (${year})` : ''}`,
+      sourceLabel: publisherLabel(f.citation.publisher, year),
       period: year,
       originator: f.citation.title,
     })
@@ -142,7 +142,6 @@ export function glossesFromProductFacts(facts: ProductFact[]): Gloss[] {
 }
 
 function titleTokens(title: string): string[] {
-  // Keep multi-word proper-ish chunks (All Star, Non-Skid, Chuck Taylor…)
   const out: string[] = []
   const known = [
     'All Star',

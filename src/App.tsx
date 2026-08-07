@@ -10,8 +10,10 @@ import { TimelineView, type TimelineAxis } from './components/TimelineView'
 import converseLogo from './assets/converse-logo.png'
 
 type View = 'date' | 'timeline'
+type ChuckFontSize = 'md' | 'lg' | 'xl'
 
 const MODE_STORAGE_KEY = 'tm-research-mode'
+const CHUCK_FONT_STORAGE_KEY = 'tm-chuck-e-font'
 
 const MODE_OPTIONS: { id: ResearchMode; label: string; description: string }[] = [
   {
@@ -26,6 +28,12 @@ const MODE_OPTIONS: { id: ResearchMode; label: string; description: string }[] =
   },
 ]
 
+const CHUCK_FONT_OPTIONS: { id: ChuckFontSize; label: string; desc: string }[] = [
+  { id: 'md', label: 'Medium', desc: 'Compact chat text.' },
+  { id: 'lg', label: 'Large', desc: 'Easier desk reading (default).' },
+  { id: 'xl', label: 'Extra large', desc: 'Biggest chat text.' },
+]
+
 function readStoredMode(): ResearchMode {
   try {
     const stored = localStorage.getItem(MODE_STORAGE_KEY)
@@ -34,6 +42,16 @@ function readStoredMode(): ResearchMode {
     // ignore — private mode / SSR
   }
   return 'lite'
+}
+
+function readStoredChuckFont(): ChuckFontSize {
+  try {
+    const stored = localStorage.getItem(CHUCK_FONT_STORAGE_KEY)
+    if (stored === 'md' || stored === 'lg' || stored === 'xl') return stored
+  } catch {
+    // ignore
+  }
+  return 'lg'
 }
 
 function splitSentences(text: string): string[] {
@@ -118,6 +136,7 @@ export default function App() {
   const [result, setResult] = useState<DateQueryResult | null>(null)
   const [hasQueried, setHasQueried] = useState(false)
   const [researchMode, setResearchMode] = useState<ResearchMode>('lite')
+  const [chuckFont, setChuckFont] = useState<ChuckFontSize>(readStoredChuckFont)
   const [settingsOpen, setSettingsOpen] = useState(false)
   const settingsRef = useRef<HTMLDivElement>(null)
 
@@ -125,6 +144,18 @@ export default function App() {
     setResearchMode(readStoredMode())
   }, [])
 
+  useEffect(() => {
+    document.documentElement.dataset.chuckFont = chuckFont
+  }, [chuckFont])
+
+  const selectChuckFont = (size: ChuckFontSize) => {
+    setChuckFont(size)
+    try {
+      localStorage.setItem(CHUCK_FONT_STORAGE_KEY, size)
+    } catch {
+      // ignore
+    }
+  }
   useEffect(() => {
     if (!settingsOpen) return
     const onPointerDown = (e: MouseEvent) => {
@@ -327,6 +358,28 @@ export default function App() {
                           void query(undefined, opt.id)
                         }
                       }}
+                    >
+                      <span className="settings-mode__name">{opt.label}</span>
+                      <span className="settings-mode__desc">{opt.desc}</span>
+                    </button>
+                  ))}
+                </div>
+
+                <p className="settings-dropdown__label" style={{ marginTop: '0.85rem' }}>Chuck-E text size</p>
+                <div className="settings-modes" role="radiogroup" aria-label="Chuck-E text size">
+                  {CHUCK_FONT_OPTIONS.map((opt) => (
+                    <button
+                      key={opt.id}
+                      type="button"
+                      role="radio"
+                      aria-checked={chuckFont === opt.id}
+                      className={[
+                        'settings-mode',
+                        chuckFont === opt.id ? 'is-active' : '',
+                      ]
+                        .filter(Boolean)
+                        .join(' ')}
+                      onClick={() => selectChuckFont(opt.id)}
                     >
                       <span className="settings-mode__name">{opt.label}</span>
                       <span className="settings-mode__desc">{opt.desc}</span>

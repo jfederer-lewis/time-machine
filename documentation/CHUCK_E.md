@@ -2,7 +2,7 @@
 
 > Living document. Agents: read this before changing Chuck-E persona, disclosure, cliff notes, or routing.  
 > Companion docs: `VISION.md`, `PIPELINE.md`, **`EDITORIAL_SCHEMA.md`** (ranking / landmarks / universe), `COPY_CONTRACT.md`, `SOURCES_AND_LANDSCAPE.md`, **`CHUCK_ECOSYSTEM_KB.md`** (Chuck franchise product / strategy KB).  
-> **Last updated:** 2026-08-07 (editorial schema pointer)
+> **Last updated:** 2026-08-07 (Chuck-E panel height / gloss-first cites)  
 
 ---
 
@@ -124,7 +124,7 @@ When the chat mentions music, scenes, collabs, humanitarian / (PRODUCT) RED, fil
 | — | Broader court → skate → music → fashion arc | [Nike Magazine — Journey of an Icon](https://about.nike.com/en/magazine/converse-chuck-taylor-all-star-iconic-sneaker-true-history) |
 | — | Overview + footnotes / backlinks | [Wikipedia — Chuck Taylor All-Stars](https://en.wikipedia.org/wiki/Chuck_Taylor_All-Stars) (bridge; upgrade to underlying cites) |
 
-**Citation display (non-negotiable for Chuck-E):** every footer cite and gloss popover must show **article/page title, date (or year), and publisher**, plus a hyperlink — even when the only UI surface is a gloss. Format via `formatHarvardCitation` / `chuck-e-glosses.ts`.
+**Citation display (Chuck-E chat):** gloss-first for in-text provenance. Under each assistant reply with cites, a **collapsed Sources (N)** control expands to compact publication/article links — not full Harvard. Popovers show clean prose + year + **Read more — {publication/article}**. Full Harvard stays on **cliff notes** / Lookup day cards via `formatHarvardCitation`.
 
 **Secondary bookshelf** (allowlisted): Dazed, Vogue, Footwear News / Yahoo, Tatler Asia, Esquire ME, L’Officiel USA, Nike Magazine (`about.nike.com` Tier C), Urban Industry (Tier C). Wikipedia remains gloss-bridge. History LP remains the default brand anchor; never let retail blogs overwrite official signature / join years (1934 / 1922).
 
@@ -268,6 +268,8 @@ Runtime: wire stable framing into product packs before treating it as auto-shipp
 | 2026-08-07 | No Converse tie on landmark defining days; don’t force Chuck; significance > positive lean | Tasteless to pair brand with 9/11-class casualties; hard history still ships |
 | 2026-08-07 | Documented in `EDITORIAL_SCHEMA.md` (canonical) | Agents + knobs stay aligned on brand activation vs hard history |
 | 2026-08-07 | Voice: pause ends listen; auto-send when transcript looks like a full query | Hands-free desk flow; incomplete fragments stay in composer for edit |
+| 2026-08-07 | Chuck-E taller panel toggle; settings text size; gloss-first cites + clean snippets | Desk reading comfort; Harvard stays on cliff notes / Lookup, not chat clutter |
+| 2026-08-07 | Chat sources = collapsed expandable under bot replies (not always-on strip) | Inventory on demand; glosses remain the in-text cite |
 
 ---
 
