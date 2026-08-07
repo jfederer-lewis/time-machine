@@ -144,31 +144,38 @@ export function ChuckEWidget({ brand, researchMode = 'lite' }: ChuckEWidgetProps
               </button>
             </div>
             <form className="chuck-e-composer" onSubmit={onSubmit}>
-              <textarea
-                ref={inputRef}
-                className="chuck-e-composer__input"
-                rows={4}
-                placeholder={
-                  listening
-                    ? 'Listening… tap the mic when done'
-                    : 'Ask about the new Chuck, heritage, or a date…'
-                }
-                value={draft}
-                onChange={(e) => {
-                  if (listening) abortVoice()
-                  setDraft(e.target.value)
-                  clearVoiceError()
-                }}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter' && !e.shiftKey) {
-                    e.preventDefault()
-                    onSubmit(e)
+              <div
+                className={[
+                  'chuck-e-composer__field',
+                  voiceSupported ? 'chuck-e-composer__field--with-mic' : '',
+                ]
+                  .filter(Boolean)
+                  .join(' ')}
+              >
+                <textarea
+                  ref={inputRef}
+                  className="chuck-e-composer__input"
+                  rows={4}
+                  placeholder={
+                    listening
+                      ? 'Listening… tap the mic when done'
+                      : 'Ask about the new Chuck, heritage, or a date…'
                   }
-                }}
-                disabled={loading}
-                aria-label="Message Chuck-E"
-              />
-              <div className="chuck-e-composer__actions">
+                  value={draft}
+                  onChange={(e) => {
+                    if (listening) abortVoice()
+                    setDraft(e.target.value)
+                    clearVoiceError()
+                  }}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' && !e.shiftKey) {
+                      e.preventDefault()
+                      onSubmit(e)
+                    }
+                  }}
+                  disabled={loading}
+                  aria-label="Message Chuck-E"
+                />
                 {voiceSupported ? (
                   <button
                     type="button"
@@ -184,15 +191,23 @@ export function ChuckEWidget({ brand, researchMode = 'lite' }: ChuckEWidgetProps
                     aria-label={listening ? 'Stop dictation' : 'Dictate with microphone'}
                     title={listening ? 'Stop dictation' : 'Dictate (Chrome / Edge)'}
                   >
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                    <svg width="17" height="17" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
                       <path d="M12 14a3 3 0 0 0 3-3V6a3 3 0 1 0-6 0v5a3 3 0 0 0 3 3zm5-3a5 5 0 0 1-10 0H5a7 7 0 0 0 6 6.92V21h2v-3.08A7 7 0 0 0 19 11h-2z" />
                     </svg>
                   </button>
                 ) : null}
-                <button type="submit" className="btn-primary chuck-e-composer__send" disabled={loading || !draft.trim()}>
-                  Send
-                </button>
               </div>
+              <button
+                type="submit"
+                className="chuck-e-composer__send"
+                disabled={loading || !draft.trim()}
+                aria-label="Send message"
+                title="Send"
+              >
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                  <path d="M3.4 20.6 21 12 3.4 3.4l.05 6.65L15 12 3.45 13.95l-.05 6.65z" />
+                </svg>
+              </button>
             </form>
           </footer>
         </section>

@@ -676,16 +676,30 @@ a {
 
 .chuck-e-composer {
   display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
+  align-items: flex-end;
+  gap: 0.45rem;
+}
+
+.chuck-e-composer__field {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+  border: 1px solid var(--rule);
+  background: #fff;
+}
+
+.chuck-e-composer__field:focus-within {
+  outline: 1px solid var(--ink);
+  border-color: var(--ink);
 }
 
 .chuck-e-composer__input {
+  display: block;
   width: 100%;
   box-sizing: border-box;
   resize: vertical;
-  border: 1px solid var(--rule);
-  background: #fff;
+  border: 0;
+  background: transparent;
   padding: 0.65rem 0.75rem;
   font-size: 0.9rem;
   line-height: 1.4;
@@ -693,44 +707,63 @@ a {
   max-height: 12rem;
 }
 
-.chuck-e-composer__input:focus {
-  outline: 1px solid var(--ink);
-  border-color: var(--ink);
+.chuck-e-composer__field--with-mic .chuck-e-composer__input {
+  padding-right: 2.75rem;
+  padding-bottom: 2.5rem;
 }
 
-.chuck-e-composer__actions {
-  display: flex;
-  justify-content: flex-end;
-  align-items: center;
-  gap: 0.45rem;
+.chuck-e-composer__input:focus {
+  outline: none;
 }
 
 .chuck-e-composer__mic {
+  position: absolute;
+  right: 0.35rem;
+  bottom: 0.35rem;
+  display: grid;
+  place-items: center;
+  width: 2.15rem;
+  height: 2.15rem;
+  border: 0;
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+}
+
+.chuck-e-composer__mic:hover:not(:disabled) {
+  color: var(--ink);
+}
+
+.chuck-e-composer__mic:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+.chuck-e-composer__mic--listening {
+  color: #fff;
+  background: var(--ink);
+  animation: chuck-e-mic-pulse 1.1s ease-in-out infinite;
+}
+
+.chuck-e-composer__send {
   flex-shrink: 0;
   display: grid;
   place-items: center;
   width: 2.55rem;
   height: 2.55rem;
-  border: 1px solid var(--rule);
-  background: #fff;
-  color: var(--ink);
+  border: 0;
+  background: var(--ink);
+  color: #fff;
   cursor: pointer;
 }
 
-.chuck-e-composer__mic:hover:not(:disabled) {
-  border-color: var(--ink);
+.chuck-e-composer__send:hover:not(:disabled) {
+  opacity: 0.9;
 }
 
-.chuck-e-composer__mic:disabled {
-  opacity: 0.45;
+.chuck-e-composer__send:disabled {
+  opacity: 0.35;
   cursor: not-allowed;
-}
-
-.chuck-e-composer__mic--listening {
-  border-color: var(--ink);
-  background: var(--ink);
-  color: #fff;
-  animation: chuck-e-mic-pulse 1.1s ease-in-out infinite;
 }
 
 @keyframes chuck-e-mic-pulse {
@@ -741,11 +774,6 @@ a {
   50% {
     box-shadow: 0 0 0 6px transparent;
   }
-}
-
-.chuck-e-composer__send {
-  padding: 0.65rem 0.95rem;
-  font-size: 0.82rem;
 }
 
 .chuck-e-inline-dismiss {
