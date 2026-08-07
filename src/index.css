@@ -1432,6 +1432,66 @@ a {
   margin-top: 0;
 }
 
+/* Converse heritage addon — secondary to the world spotlight, not a second hero */
+.converse-segment {
+  margin-top: 2rem;
+  padding-top: 1.35rem;
+  border-top: 1px solid var(--rule);
+  max-width: 34rem;
+  animation: rise 640ms ease both;
+  animation-delay: 160ms;
+}
+
+.converse-segment__item + .converse-segment__item {
+  margin-top: 1.5rem;
+  padding-top: 1.35rem;
+  border-top: 1px solid color-mix(in srgb, var(--rule) 70%, transparent);
+}
+
+.converse-segment__label {
+  margin: 0 0 0.45rem;
+  font-size: 0.68rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--muted);
+  font-weight: 500;
+}
+
+.converse-segment__title {
+  margin: 0;
+  font-size: clamp(1rem, 2vw, 1.15rem);
+  letter-spacing: -0.02em;
+  line-height: 1.3;
+  font-weight: 600;
+}
+
+.converse-segment__line {
+  margin: 0.45rem 0 0;
+  font-size: 0.95rem;
+  line-height: 1.5;
+  color: color-mix(in srgb, var(--ink) 72%, transparent);
+}
+
+.converse-segment__source {
+  margin-top: 0.9rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid color-mix(in srgb, var(--rule) 65%, transparent);
+}
+
+.converse-segment__source-label {
+  margin: 0 0 0.35rem;
+  font-size: 0.58rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: color-mix(in srgb, var(--muted) 80%, transparent);
+  font-weight: 500;
+}
+
+.converse-segment__source .citation-line {
+  margin-top: 0;
+  font-size: 0.78rem;
+}
+
 .citation-harvard {
   margin: 0;
   font-size: 0.82rem;

@@ -3,7 +3,7 @@
 > Companion to `VISION.md`, `PIPELINE.md`, and `EDITORIAL_SCHEMA.md`. Agents must follow the citation rules here.  
 > **Canonical host lists:** `shared/source-registry.ts` (`CITATION_ALLOWLIST` / `CITATION_BLOCKLIST`).  
 > Tables below summarise intent; if a host is missing from the registry, it is **not** allowlisted yet.  
-> **Last updated:** 2026-08-07 (dedicated collab cites + Fast Company)  
+> **Last updated:** 2026-08-07 (basketball: Weapon Highsnobiety + All Star Pro BB Forbes)  
 > **Visual note:** Existing “on this day” products are functional references only — **do not copy their UI.**
 
 ---
@@ -248,3 +248,6 @@ UI shows the full Harvard string + URL link — not a compact `open hostname →
 | 2026-08-07 | Register Fast Company; Chuck-E named collabs prefer dedicated features (e.g. Margiela GQ / Teen Vogue; CDG WWD) over roundup listicles | Roundups map the territory; cite the interesting article |
 | 2026-08-07 | Register Surface, designboom, HBX; Rick Owens TURBODRK + Cobain/One Star dedicated cites | Design press + HBX history for named silhouette collabs |
 | 2026-08-07 | Register WSJ + Ad Age; Nike deal WSJ; Chuck II tech Ad Age/BoF; Vaquera Highsnobiety + Newsroom | Ownership engineering story + experimental fashion collabs |
+| 2026-08-07 | Register si.com, vergemagazine.co.uk, highxtar.com; Billie Eilish By You → dedicated SI / Verge / HIGHXTAR | Collab press over History-only + wrong Wikipedia “Billie” gloss |
+| 2026-08-07 | Tyler / GOLF le FLEUR* → GQ + British Vogue + Highsnobiety (1908 Program) | Dedicated partnership coverage already on allowlisted hosts |
+| 2026-08-07 | Chuck-E basketball bookshelf: Highsnobiety Weapon history + Forbes All Star Pro BB (2019) | Court / Weapon / performance-return colour already on allowlisted hosts |

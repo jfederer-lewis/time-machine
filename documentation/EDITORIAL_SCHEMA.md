@@ -2,10 +2,9 @@
 
 > Canonical rules for what wins a day card / Chuck-E date reply.  
 > Runtime: `worker/lib/interest.ts`, `shared/converse-universe.ts`, `worker/lib/assemble.ts`, `worker/lib/chuck-e.ts`, Gemini pick prompts.  
-> **Last updated:** 2026-08-07 (Chuck-E: no world backdrop on Converse-tied answers)  
+> **Last updated:** 2026-08-07 (Lookup Converse day-card addon segment)  
 > Knobs: `shared/copy-knobs.ts`, `shared/chuck-e-knobs.ts`.  
-> Companion: `PIPELINE.md`, `COPY_CONTRACT.md`, `CHUCK_E.md`, `SOURCES_AND_LANDSCAPE.md`.  
-> **Last updated:** 2026-08-07
+> Companion: `PIPELINE.md`, `COPY_CONTRACT.md`, `CHUCK_E.md`, `SOURCES_AND_LANDSCAPE.md`.
 
 ---
 
@@ -46,7 +45,7 @@ Knob `preferPositiveWhenTied` enables the tone term. Knob `preferBrandAffinity` 
 | Rule | Runtime |
 |------|---------|
 | Always acknowledge; never soft-pedal for brand tone | Landmark skips the tone term; large significance boost |
-| Landmark wins the spotlight over brand / campaign / universe anchors | Assemble: if any landmark is in the world pool, brand moments **do not compete** for spotlight |
+| Landmark wins the spotlight over brand / campaign / universe anchors | Assemble: landmark world pool → `brandMoments` cleared (no Lookup Converse segment); brand does not enter the world shortlist |
 | **No Converse bridge** beside landmarks | Chuck-E: do not append heritage, campaign, birthday, or “In the Converse universe…” next to a landmark — that reads as tasteless next to casualties / world memory |
 | Hypothetical same-day brand activation (e.g. a Times Square campaign on 9/11) must **not** lead or share the spotlight | Significance + landmark gates above |
 
@@ -62,8 +61,10 @@ Patterns + people anchors: `shared/converse-universe.ts`.
 |-----|---------|----------|
 | Direct brand text already in the candidate | Prefer over weak adjacent stub | Never invent a Converse claim |
 | Soft universe theme in candidate text | Light ranking lift | Never invent shoe facts from “basketball” alone |
-| Calendar-day people anchor (e.g. Chuck Taylor born 24 June 1901) | Optional bridge after non-landmark world news; explain who he became for Converse with cites | Not on landmark days |
-| Exact History / KB day (e.g. Nike close 4 Sep 2003) | May lead the reply when the ask is Converse-framed | Not if a landmark defines the day; do **not** append unrelated world “backdrop” beside it |
+| Calendar-day people anchor (e.g. Chuck Taylor born 24 June 1901) | Lookup Converse segment (“this day in {year}”) + optional Chuck-E bridge after non-landmark world news | Not on landmark days; not for ordinary collab drops |
+| Exact History / KB day (e.g. Nike close 4 Sep 2003) | Lookup: world news + Converse · this day addon; Chuck-E may lead when Converse-framed | Not if a landmark defines the day; do **not** append unrelated world “backdrop” beside Converse-tied Chuck-E answers |
+| Month-precision release / iconic moment (same YYYY-MM) | Lookup “Also this month · Converse” addon beside on-this-day world news | Not an anniversary every year; not on landmark days |
+| `anniversaryEligible` house milestone (first products, Nike deal/close) | Yearly calendar-day Lookup segment | Collabs / By You / GOLF etc. stay exact-day or month only |
 | Competing brand day (Adidas, Vans, standalone Nike sports) | Soft demote | Do not use as the Chuck hook |
 
 **Chuck-E date replies:** use the same assemble pipeline as Lookup.
@@ -113,4 +114,5 @@ Culture / fashion / museum hosts for claim-relevant cites: `shared/source-regist
 | 2026-08-07 | Codify editorial schema (significance > tone; landmark no Chuck bridge; soft universe) | Agents need one place; brand activation must not undermine hard history |
 | 2026-08-07 | Soft universe affinity + people anchors | Chuck-adjacent on-this-day without inventing claims |
 | 2026-08-07 | No world backdrop on Converse-tied Chuck-E answers; light bridge only when world-only | Backdrop was noise on Swooshed-class asks; April-1-style dates may lightly re-anchor |
+| 2026-08-07 | Lookup Converse addon segment (exact / curated anniversary / month); world shortlist world-only; landmark clears segment | Desks see classic on-this-day news plus Converse when dates align — not collab anniversary spam |
 | 2026-08-06 | Prefer positive when tied; never soft-pedal landmarks | Good News, Chuck lean without ignoring 9/11-class dates |

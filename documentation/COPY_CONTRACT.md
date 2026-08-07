@@ -6,7 +6,7 @@
 > Ranking / landmarks / universe: `documentation/EDITORIAL_SCHEMA.md`.  
 > Agents: keep Gemini prompts and validators aligned with the knobs.
 
-**Last updated:** 2026-08-07 (full stack only)
+**Last updated:** 2026-08-07 (Converse day-card addon segment)
 
 ---
 
@@ -93,7 +93,9 @@ export const COPY_KNOBS = {
 } as const
 ```
 
-Interest ranking (`worker/lib/interest.ts`) — full schema in `documentation/EDITORIAL_SCHEMA.md` — uses a weighted formula: **significance first** (culture / UK-global / landmark / Converse-affinity), then a **light positive/neutral tone lean**, plus credibility and quality. Landmark defining days (9/11-class) skip the tone term **and** exclude brand / Converse-universe bridges. Tone is a nudge, not a veto over clearly more significant hard news — including difficult history. Brand affinity lifts Converse / Chuck / All Star story beats, and Nike only when the claim is about Converse — standalone iconic Nike sports days do not get the boost. Soft universe themes lift lightly; never force Chuck over a more significant world story.
+Interest ranking (`worker/lib/interest.ts`) — full schema in `documentation/EDITORIAL_SCHEMA.md` — uses a weighted formula: **significance first** (culture / UK-global / landmark / Converse-affinity), then a **light positive/neutral tone lean**, plus credibility and quality. Landmark defining days (9/11-class) skip the tone term **and** exclude brand / Converse-universe bridges (no Lookup Converse segment either). Tone is a nudge, not a veto over clearly more significant hard news — including difficult history. Brand affinity lifts Converse / Chuck / All Star story beats, and Nike only when the claim is about Converse — standalone iconic Nike sports days do not get the boost. Soft universe themes lift lightly; never force Chuck over a more significant world story.
+
+**Lookup Converse addon (not copy-contract fields):** when heritage matches the queried day, UI may show a secondary Converse segment under the world spotlight — labels `Converse · this day` / `Converse · this day in {year}` / `Also this month · Converse`. Same day-card prose rules (title, synopsis, Source). Cap 2; exact-day + curated anniversaries + month-precision only (`shared/brand.ts`).
 
 ### Operational polish notes (not knobs)
 

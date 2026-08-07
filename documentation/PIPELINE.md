@@ -2,7 +2,7 @@
 
 > How a date lookup becomes a day card. Agents: follow this when changing discovery, ranking, polish, or cites.  
 > Companion docs: `VISION.md` (product), `SOURCES_AND_LANDSCAPE.md` (citation law), `COPY_CONTRACT.md` (card format).  
-> **Last updated:** 2026-08-07 (full stack only — Lite mode removed)
+> **Last updated:** 2026-08-07 (Converse day-card addon segment)
 
 ---
 
@@ -66,8 +66,8 @@ RANK  (worker/lib/interest.ts)
   Prefer candidates already cited from premium-press hosts (see interest.ts PREMIUM_PRESS)
   Soft Converse-universe affinity (basketball / skate / punk / youth / canvas…) — light only; see `shared/converse-universe.ts`
   Soft-demote competing footwear brand days (Nike only when the claim is about Converse)
-  Same-calendar-day heritage + people anchors (e.g. Chuck Taylor birthday) can enter the brand pool
-  **Landmark defining days:** brand / universe moments do **not** compete for spotlight; no Chuck bridge beside 9/11-class events
+  Converse day segment (separate stack): exact-day KB + curated anniversaries (`anniversaryEligible` / Chuck birthday) + month-precision — not merged into world shortlist
+  **Landmark defining days:** no Converse segment; no Chuck bridge beside 9/11-class events
   Soft-penalise admin trivia; wire dumps −40; year proximity (unless anyYear)
   Same-year pool if best same-year interest ≥ 2; else all years by proximity
        │
@@ -97,12 +97,12 @@ VALIDATE AGAIN → SHIP
   If empty pool or all candidates fail → curated fallback (usingFallback: true)
        │
        ▼
-GLOSSES (Wikipedia summary) + brand moments (max 1, separate stack)
+GLOSSES (Wikipedia summary) + Converse day segment (`brandMoments`, max 2)
 ```
 
-UI ships **one spotlight** (`events[0]`, else `brandMoments[0]`). Empty both → “No fact on record for this date.”
+UI ships **one world spotlight** (`events[0]`) **plus** an optional Converse addon (`brandMoments`) when heritage matches the query. If world is empty, the first brand moment may fill the spotlight (no double-render). Empty both → “No fact on record for this date.” Landmark world pool → `brandMoments` cleared (no Converse segment).
 
-Code: `worker/lib/assemble.ts`, `worker/providers/gemini.ts`, `worker/lib/upgrade-claim.ts`, `worker/lib/interest.ts`, `worker/lib/copy-contract.ts`.
+Code: `worker/lib/assemble.ts`, `shared/brand.ts` (`converseDaySegmentForQuery`), `worker/providers/gemini.ts`, `worker/lib/upgrade-claim.ts`, `worker/lib/interest.ts`, `worker/lib/copy-contract.ts`.
 
 ---
 
@@ -142,7 +142,7 @@ Ranking is a **weighted formula** (`scoreInterestBreakdown` in `interest.ts`), n
 
 Knobs: `preferUkGlobalInterest`, `preferPremiumPress`, `preferPositiveWhenTied` (enables the tone term), `preferBrandAffinity` in `shared/copy-knobs.ts`. Universe: `shared/converse-universe.ts`. Weights live as `W` in `interest.ts`.
 
-Brand heritage: curated `brand.timeline` is Timeline UI only. Full History beats live in `brand.heritageKb` (`shared/brands/converse-heritage-kb.ts`). Assemble / Chuck-E use `heritageMoments(brand)`. Exact-day and month KB hits are merged into the Lookup shortlist so Converse doorways can win the spotlight — except when a landmark is already in the world pool.
+Brand heritage: curated `brand.timeline` is Timeline UI only. Full History beats live in `brand.heritageKb` (`shared/brands/converse-heritage-kb.ts`). Assemble / Chuck-E use `heritageMoments(brand)`. Lookup Converse addon lanes (`converseDaySegmentForQuery`): **exact YYYY-MM-DD** always; **yearly anniversary** only when `anniversaryEligible` or a universe people anchor (Chuck birthday/death — not collabs); **month-precision** same `YYYY-MM` as “Also this month · Converse”. World shortlist stays world-only; Converse does not compete for the main spotlight. Landmark pool → no Converse segment.
 
 ---
 
@@ -191,7 +191,8 @@ Brand heritage: curated `brand.timeline` is Timeline UI only. Full History beats
 | File | Role |
 |------|------|
 | `worker/index.ts` | `/api/query` params: date, anyYear, fallback, brand |
-| `worker/lib/assemble.ts` | Orchestration: discover → filter → rank → pick → polish → cite → ship |
+| `worker/lib/assemble.ts` | Orchestration: discover → filter → rank → pick → polish → cite → ship; Converse day segment |
+| `shared/brand.ts` | `converseDaySegmentForQuery` / `anniversaryEligible` match lanes |
 | `worker/lib/interest.ts` | Cultural + premium-press + universe ranking (`EDITORIAL_SCHEMA.md`) |
 | `shared/converse-universe.ts` | Soft affinity / competitor demote / calendar people anchors |
 | `worker/lib/copy-contract.ts` | Hard/soft validation |

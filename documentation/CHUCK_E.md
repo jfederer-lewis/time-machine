@@ -2,7 +2,7 @@
 
 > Living document. Agents: read this before changing Chuck-E persona, disclosure, cliff notes, or routing.  
 > Companion docs: `VISION.md`, `PIPELINE.md`, **`EDITORIAL_SCHEMA.md`** (ranking / landmarks / universe), `COPY_CONTRACT.md`, `SOURCES_AND_LANDSCAPE.md`, **`CHUCK_ECOSYSTEM_KB.md`** (Chuck franchise product / strategy KB).  
-> **Last updated:** 2026-08-07 (dedicated collab coverage over roundup listicles)  
+> **Last updated:** 2026-08-07 (basketball press: Weapon Highsnobiety + All Star Pro BB Forbes)  
 
 ---
 
@@ -100,19 +100,20 @@ Composer placeholder stays short: new Chuck / heritage / a date.
 
 When the chat mentions sports, basketball, Olympics, NCAA, etc., prefer a **spread** of History-backed moments — e.g.:
 
-| Year / day | Beat (History) |
-|------------|----------------|
-| 1917 / 1919 | Non-Skid → All Star basketball shoe |
-| 1922 | Chuck Taylor joins |
-| 1924 | Edmonton Grads sponsorship |
-| 1936 | First U.S. Olympic men’s basketball team / white All Star colorway |
-| 1939-03-27 | First NCAA title game — both teams in All Stars |
-| 1982-03-29 | Jordan / UNC title in Pro Leather |
-| **1984** | Official Olympic footwear; U.S. men’s & women’s gold — Michael Jordan & Lynette Woodward in **Pro Stars** |
-| 1986 | Weapon + Bird–Magic “Choose Your Weapon” |
-| 2021 | Weapon CX return; Draymond Green / Tokyo Olympic gold |
+| Year / day | Beat | Primary cite lane |
+|------------|------|-------------------|
+| 1917 / 1919 | Non-Skid → All Star basketball shoe | Converse History |
+| 1922 | Chuck Taylor joins | Converse History |
+| 1924 | Edmonton Grads sponsorship | Converse History |
+| 1936 | First U.S. Olympic men’s basketball team / white All Star colorway | Converse History |
+| 1939-03-27 | First NCAA title game — both teams in All Stars | Converse History |
+| 1982-03-29 | Jordan / UNC title in Pro Leather | Converse History |
+| **1984** | Official Olympic footwear; U.S. men’s & women’s gold — Michael Jordan & Lynette Woodward in **Pro Stars** | Converse History |
+| **1986** | Weapon + Bird–Magic “Choose Your Weapon” | Converse History + [Highsnobiety — Weapon history](https://www.highsnobiety.com/p/converse-weapon-history/) (Fabian Gorsler) — Magic/Bird colourways, wider NBA roster, CX relaunch / TURBOWPN colour |
+| **2019-04-18** | All Star Pro BB — return to performance basketball | [Forbes](https://www.forbes.com/sites/timnewcomb/2019/04/18/converse-returns-to-performance-basketball-with-history-reimagined/) (Tim Newcomb) — Non-Skid → Pro BB lineage; Kelly Oubre Jr.; Nike tech under the vintage silhouette (+ History “Back to basketball”) |
+| 2021 | Weapon CX return; Draymond Green / Tokyo Olympic gold | Converse History (+ Highsnobiety Weapon history for CX / ambassadors arc) |
 
-Enrich replies from the History LP first; **web search** may add claim-relevant colour or fill gaps when the pack is thin / off-topic. Prefer allowlisted premium press when those URLs surface; Gemini is never the public citation host. Never let blogs overwrite official signature / join years (1934 / 1922).
+Enrich replies from the History LP first; pull the Forbes / Highsnobiety basketball features when the ask is about court lineage, Weapon, Bird–Magic, or the performance return. **Web search** may add claim-relevant colour or fill gaps when the pack is thin / off-topic. Prefer allowlisted premium press when those URLs surface; Gemini is never the public citation host. Never let blogs overwrite official signature / join years (1934 / 1922).
 
 ### Music / collabs / humanitarian / global influence (go deeper)
 
@@ -130,8 +131,11 @@ When the chat mentions music, scenes, collabs, humanitarian / (PRODUCT) RED, fil
 | **2013-09** | Maison Margiela painted Chucks / Jack Purcell | [GQ exclusive](https://www.gq.com/story/converse-maison-martin-margiela-collaboration) (4 Sep 2013) + [Teen Vogue](https://www.teenvogue.com/story/maison-martin-margiela-converse) / [Fast Company](https://www.fastcompany.com/3017816/converse-all-stars-get-the-margiela-treatment) / [Hypebeast](https://hypebeast.com/2013/9/maison-martin-margiela-x-converse-first-string-2013-collection-official-release-details) |
 | **2013-06-15** | The Simpsons pack | [Complex](https://www.complex.com/sneakers/a/brennan-hiro-williams/the-simpsons-x-converse-chuck-taylor-all-star-collection1) (Brennan Hiro Williams, 13 Jun 2013) |
 | **2015-07-23** | Chuck Taylor All Star II / Nike tech | [Ad Age](https://adage.com/creativity/work/nike-tech-infused-chuck-taylor-all-star-ii/42820/) + [BoF — sore feet / feel like Nikes](https://www.businessoffashion.com/news/news-analysis/after-a-billion-sore-feet-converse-wants-chucks-to-feel-like-nikes/) |
+| **2017-08-03** | Tyler / GOLF le FLEUR* One Star | [GQ](https://www.gq.com/story/tyler-the-creator-new-converse-sneakers) (Jake Woolf, 27 Jul 2017) — early One Star Golf Le Fleur colourways |
 | **2018** | Virgil Abloh / The Ten Chuck 70 | [Forbes](https://www.forbes.com/sites/declaneytan/2018/04/30/virgil-abloh-and-converse-collaborate-on-limited-edition-sneaker/) (Declan Eytan, 30 Apr 2018) + [Hypebeast closer look](https://hypebeast.com/2018/5/converse-virgil-abloh-chuck-70-the-ten-closer-look) — Ghosting Chuck 70 inside Nike “The Ten” |
 | **2021** | Rick Owens DRKSHDW TURBODRK | [Surface](https://www.surfacemag.com/articles/rick-owens-converse-chuck-70-collaboration/) + [designboom](https://www.designboom.com/design/converse-x-rick-owens-turbodork-chuck-70-01-28-2021/) + [British GQ](https://www.gq-magazine.co.uk/fashion/article/rick-owens-converse-drkshdw-turbodrk-chuck-70) + [GQ pentagram fuss](https://www.gq.com/story/rick-owens-converse-satan-controversy) |
+| **2024-10-17** | Billie Eilish By You | [SI Kicks](https://www.si.com/fannation/sneakers/off-court/billie-eilish-converse-unveil-custom-chuck-taylor-experience) + [Verge Magazine](https://vergemagazine.co.uk/converse-celebrates-the-creative-genius-of-billie-eilish-with-custom-chuck-taylor-by-you-experience/) + [HIGHXTAR](https://highxtar.com/en/billie-eilish-revolutionises-converses-chuck-silhouette-with-by-you/) — seven-day custom Chuck / Lift; entity gloss = Billie Eilish (not other Billies) |
+| **2025-05 / 06** | Tyler 1908 Program | [British Vogue interview](https://www.vogue.co.uk/article/tyler-the-creator-converse-interview) (Riann Phillip, 27 May 2025) + [Highsnobiety](https://www.highsnobiety.com/p/leave-it-to-tyler-the-creator-to-make-the-coolest-converse-in-years/) — archive Coach Jogger / Naut-1; ~nine-year / 20th collection partnership colour |
 | **2025** | Vaquera experimental Chuck | [Highsnobiety](https://www.highsnobiety.com/p/vaquera-converse-sneaker/) + [Nike Newsroom Slouch Wedge](https://about.nike.com/en-GB/newsroom/releases/nike-and-converse-begin-vaquera-partnership-with-two-bold-expressions-of-the-chuck-taylor-all-star) — pair with Owens for “weird” fashion Chucks |
 | **2021-03-24** | Film & TV screen moments | [L’Officiel USA](https://www.lofficielusa.com/film-tv/converse-movie-moments-marie-antoinette) (Orquídea Alburquerque) |
 | **2025-12-04** | Stranger Things pack (secondary screen collab) | [Nike Newsroom](https://about.nike.com/en/newsroom/releases/nike-converse-stranger-things-collection-official-images) — useful beside Simpsons for film/TV collab asks; not a house-defining fashion moment |
@@ -157,9 +161,9 @@ Skip household brands (Nike, Converse, …), countries, bare product words, and 
 
 Never reuse a citation gloss on an entity surname/token in the synopsis (that made “Simpsons” open the collab roundup cite).
 
-**Secondary bookshelf** (allowlisted): Dazed, Vogue / Teen Vogue, GQ / British GQ, WWD / Footwear News, Surface, designboom, Hypebeast / HBX, Fast Company, Yahoo (syndicated), Tatler Asia, Esquire ME, L’Officiel USA, Nike Magazine (`about.nike.com` Tier C), Urban Industry (Tier C). Wikipedia remains gloss-bridge. History LP remains the default brand anchor; never let retail blogs overwrite official signature / join years (1934 / 1922).
+**Secondary bookshelf** (allowlisted): Dazed, Vogue / Teen Vogue, GQ / British GQ, WWD / Footwear News, Surface, designboom, Hypebeast / HBX, Highsnobiety (Weapon history; Tyler 1908; Vaquera), Forbes (Abloh The Ten; All Star Pro BB), Fast Company, Sports Illustrated (`si.com`), Verge Magazine, HIGHXTAR, Yahoo (syndicated), Tatler Asia, Esquire ME, L’Officiel USA, Nike Magazine (`about.nike.com` Tier C), Urban Industry (Tier C). Wikipedia remains gloss-bridge. History LP remains the default brand anchor; never let retail blogs overwrite official signature / join years (1934 / 1922).
 
-**Named collab / model depth:** when the chat asks about a specific house or release (Margiela, CDG PLAY, Rick Owens TURBODRK, Kurt Cobain / One Star, Virgil Abloh / The Ten…), prefer **dedicated** coverage of that partnership over “most iconic / best collaborations” roundups. Roundups are a map — dig for the interesting article (paint/wear story, silhouette distortion, retail moment, cultural fuss, multi-year partnership history). Cobain answers should foreground how often he wore the **One Star**, not Chuck-only shorthand. Abloh answers can note the Chuck 70 sat inside Nike **“The Ten”** (other Nike icons in the same series) because Nike owns Converse — interesting context, not a detour into inventing other SKUs. For **film/TV collabs**, lead with The Simpsons; *Stranger Things* (Nike Newsroom) is a fine secondary example — not in the Margiela/CDG tier.
+**Named collab / model depth:** when the chat asks about a specific house or release (Margiela, CDG PLAY, Rick Owens TURBODRK, Kurt Cobain / One Star, Virgil Abloh / The Ten, Billie Eilish By You, Tyler / GOLF le FLEUR*…), prefer **dedicated** coverage of that partnership over “most iconic / best collaborations” roundups. Roundups are a map — dig for the interesting article (paint/wear story, silhouette distortion, retail moment, cultural fuss, multi-year partnership history). Cobain answers should foreground how often he wore the **One Star**, not Chuck-only shorthand. Abloh answers can note the Chuck 70 sat inside Nike **“The Ten”** (other Nike icons in the same series) because Nike owns Converse — interesting context, not a detour into inventing other SKUs. For **Billie Eilish By You**, cite SI / Verge / HIGHXTAR — never a wrong Wikipedia Billie page as the collab gloss. For **Tyler / GOLF le FLEUR***, cite [GQ](https://www.gq.com/story/tyler-the-creator-new-converse-sneakers) (early One Star) plus [British Vogue](https://www.vogue.co.uk/article/tyler-the-creator-converse-interview) / [Highsnobiety](https://www.highsnobiety.com/p/leave-it-to-tyler-the-creator-to-make-the-coolest-converse-in-years/) for the long partnership and 1908 Program — not History-only “Tyler team-up.” For **film/TV collabs**, lead with The Simpsons; *Stranger Things* (Nike Newsroom) is a fine secondary example — not in the Margiela/CDG tier.
 
 **Dated asks stay on that day:** UK/US calendar phrasing (e.g. **4 September 2003** / September 4, 2003) routes to date intent. Do not spray unrelated collab beats from month-name token matches (September → Simpsons). Theme spreads (sports / music / collabs) apply to theme questions, not single-day significance asks.
 
@@ -323,6 +327,9 @@ Runtime: wire stable framing into product packs before treating it as auto-shipp
 | 2026-08-07 | Stranger Things → Nike Newsroom as secondary film/TV collab beside Simpsons | Useful screen-pack example; not framed as house-iconic |
 | 2026-08-07 | Nike purchase → NYT “Legend on the Blacktop” (10 Jul 2003); Swooshed stays History close day | Paper-of-record cite for the deal; don’t conflate announce vs close |
 | 2026-08-07 | Nike purchase also → WSJ “Nike to Buy Converse…”; Chuck II Nike tech → Ad Age + BoF; Vaquera beside Owens | Deal desk + ownership/engineering story + experimental fashion lane |
+| 2026-08-07 | Billie Eilish By You → SI / Verge / HIGHXTAR; wiki aliases + refuse OpenSearch first-name expansions | “Billie By You” was glossing Billie Burke; collab needs dedicated press |
+| 2026-08-07 | Tyler / GOLF le FLEUR* → GQ One Star (2017) + British Vogue + Highsnobiety 1908 Program | Long partnership needs dedicated press, not History-only “Tyler team-up” |
+| 2026-08-07 | Basketball / Weapon / Pro BB → Highsnobiety Weapon history + Forbes All Star Pro BB (2019) | Court theme needs ambassador + performance-return press beside History beats |
 
 ---
 

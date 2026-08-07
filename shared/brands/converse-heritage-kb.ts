@@ -58,6 +58,7 @@ export const CONVERSE_HERITAGE_KB: BrandMoment[] = withHeritageImages([
         publisher: 'Converse',
       },
       isExactQuote: true,
+      anniversaryEligible: true,
     },
     {
       id: 'cv-1910',
@@ -382,6 +383,25 @@ export const CONVERSE_HERITAGE_KB: BrandMoment[] = withHeritageImages([
       isExactQuote: false,
     },
     {
+      id: 'cv-1986-weapon-highsnobiety',
+      date: '2021',
+      precision: 'year',
+      title: 'Weapon: Bird, Magic, and the court arc',
+      synopsis:
+        'Highsnobiety’s Weapon history traces the 1986 high-top as Converse’s most advanced basketball shoe of its day — worn by Magic Johnson and Larry Bird in team colourways under “Choose Your Weapon,” with a wider NBA roster (Isiah Thomas, Kevin McHale, and others) before Air Jordan marketing shifted the league. The piece also covers the CX Foam relaunch that kept the 1986 upper blueprint and the Rick Owens DRKSHDW TURBOWPN collaboration.',
+      reference:
+        'Fabian Gorsler / Highsnobiety ‘Converse Weapon: A Brief History of the Iconic Basketball Shoe’. Available at: https://www.highsnobiety.com/p/converse-weapon-history/',
+      citation: {
+        title: 'Converse Weapon: A Brief History of the Iconic Basketball Shoe',
+        url: 'https://www.highsnobiety.com/p/converse-weapon-history/',
+        publisher: 'Highsnobiety',
+        author: 'Fabian Gorsler',
+        publishedAt: '2021',
+      },
+      isExactQuote: false,
+      storyCluster: 'weapon-basketball-press',
+    },
+    {
       id: 'cv-1991',
       date: '1991',
       precision: 'year',
@@ -464,6 +484,7 @@ export const CONVERSE_HERITAGE_KB: BrandMoment[] = withHeritageImages([
       },
       isExactQuote: false,
       storyCluster: 'nike-announce-2003',
+      anniversaryEligible: true,
     },
     {
       id: 'cv-2003-announce-wsj',
@@ -483,6 +504,7 @@ export const CONVERSE_HERITAGE_KB: BrandMoment[] = withHeritageImages([
       },
       isExactQuote: false,
       storyCluster: 'nike-announce-2003',
+      anniversaryEligible: true,
     },
     {
       id: 'cv-2003',
@@ -499,6 +521,7 @@ export const CONVERSE_HERITAGE_KB: BrandMoment[] = withHeritageImages([
         publisher: 'Converse',
       },
       isExactQuote: false,
+      anniversaryEligible: true,
     },
     {
       id: 'cv-2008',
@@ -769,20 +792,23 @@ export const CONVERSE_HERITAGE_KB: BrandMoment[] = withHeritageImages([
       storyCluster: 'chuck-ii-nike-tech',
     },
     {
-      id: 'cv-2017',
-      date: '2017-11-02',
+      id: 'cv-2017-tyler-gq',
+      date: '2017-08-03',
       precision: 'exact-day',
-      title: 'Tyler team-up',
+      title: 'GOLF le FLEUR* One Star',
       synopsis:
-        'Converse and Tyler, the Creator introduced the GOLF le FLEUR* signature — the start of a long-term partnership — with a global release on 2 November 2017.',
+        'GQ covered Tyler, the Creator’s early Converse One Star “Golf Le Fleur” colourways — pink, yellow, blue, purple suede with the flower logo around the star, Flower Boy insoles, and a midsole manifesto — dropping 3 August 2017 after the first wave sold out.',
       reference:
-        'Converse History frames the 2017 GOLF le FLEUR* debut; SneakerFiles / FADER reported Kasina (18 Oct) then global (2 Nov 2017).',
+        'Jake Woolf / GQ (27 July 2017) ‘Tyler, the Creator’s New Converse Sneakers Are as Bright and Happy as He Is’. Available at: https://www.gq.com/story/tyler-the-creator-new-converse-sneakers',
       citation: {
-        title: 'Converse History',
-        url: HISTORY_URL,
-        publisher: 'Converse',
+        title: 'Tyler, the Creator’s New Converse Sneakers Are as Bright and Happy as He Is',
+        url: 'https://www.gq.com/story/tyler-the-creator-new-converse-sneakers',
+        publisher: 'GQ',
+        author: 'Jake Woolf',
+        publishedAt: '2017-07-27',
       },
       isExactQuote: false,
+      storyCluster: 'tyler-golf-le-fleur',
     },
     {
       id: 'cv-2018-abloh-forbes',
@@ -836,6 +862,25 @@ export const CONVERSE_HERITAGE_KB: BrandMoment[] = withHeritageImages([
         publisher: 'Converse',
       },
       isExactQuote: false,
+    },
+    {
+      id: 'cv-2019-all-star-pro-bb-forbes',
+      date: '2019-04-18',
+      precision: 'exact-day',
+      title: 'All Star Pro BB — back to performance',
+      synopsis:
+        'Forbes covered Converse’s 2019 return to performance basketball with the All Star Pro BB — a modern reimagining of the Non-Skid / All Star court lineage, built with Nike design leadership (Eric Avar) and materials such as Quadfit mesh and React foam, while nodding to Weapon via the Star Chevron. Kelly Oubre Jr. was the signed athlete at launch; the shoe tied the lifestyle Chuck’s street power back to on-court performance.',
+      reference:
+        'Tim Newcomb / Forbes (18 April 2019) ‘Converse Returns To Performance Basketball With History Reimagined’. Available at: https://www.forbes.com/sites/timnewcomb/2019/04/18/converse-returns-to-performance-basketball-with-history-reimagined/',
+      citation: {
+        title: 'Converse Returns To Performance Basketball With History Reimagined',
+        url: 'https://www.forbes.com/sites/timnewcomb/2019/04/18/converse-returns-to-performance-basketball-with-history-reimagined/',
+        publisher: 'Forbes',
+        author: 'Tim Newcomb',
+        publishedAt: '2019-04-18',
+      },
+      isExactQuote: false,
+      storyCluster: 'all-star-pro-bb',
     },
     {
       id: 'cv-2020',
@@ -1014,20 +1059,101 @@ export const CONVERSE_HERITAGE_KB: BrandMoment[] = withHeritageImages([
       storyCluster: 'rick-owens-turbodrk',
     },
     {
-      id: 'cv-2024',
+      id: 'cv-2024-billie-si',
       date: '2024-10-17',
       precision: 'exact-day',
-      title: 'Billie By You',
+      title: 'Billie Eilish By You',
       synopsis:
-        'Converse launched the Billie Eilish By You experience — custom Chucks with insignia and lyrics from Hit Me Hard and Soft — on 17 October 2024.',
+        'Converse and Billie Eilish opened a seven-day By You experience on 17 October 2024 — custom Chuck Taylor All Star and Lift styles with Hit Me Hard and Soft lyrics, Blosh embroidery, and other insignia from her world.',
       reference:
-        'Converse History lists the experience under 2024; Rolling Stone / SNKRDUNK reported the seven-day By You window opening 17 October 2024.',
+        'Pat Benson / Sports Illustrated Kicks On SI (16 October 2024) ‘Billie Eilish & Converse Unveil Custom Chuck Taylor Experience’. Available at: https://www.si.com/fannation/sneakers/off-court/billie-eilish-converse-unveil-custom-chuck-taylor-experience',
       citation: {
-        title: 'Converse History',
-        url: HISTORY_URL,
-        publisher: 'Converse',
+        title: 'Billie Eilish & Converse Unveil Custom Chuck Taylor Experience',
+        url: 'https://www.si.com/fannation/sneakers/off-court/billie-eilish-converse-unveil-custom-chuck-taylor-experience',
+        publisher: 'Sports Illustrated',
+        author: 'Pat Benson',
+        publishedAt: '2024-10-16',
       },
       isExactQuote: false,
+      storyCluster: 'billie-eilish-by-you',
+    },
+    {
+      id: 'cv-2024-billie-verge',
+      date: '2024-10-17',
+      precision: 'exact-day',
+      title: 'Billie By You custom Chucks',
+      synopsis:
+        'Verge Magazine covered the Converse × Billie Eilish By You window — white / black / egret uppers, lyric midsoles, One Box shipping — exclusive for seven days from 17 October 2024 on Converse.com (US EST / Western Europe CET).',
+      reference:
+        'Taye Rowland-Dixon / Verge Magazine (18 October 2024) ‘Converse Celebrates the Creative Genius of Billie Eilish with Custom Chuck Taylor “By You” Experience’. Available at: https://vergemagazine.co.uk/converse-celebrates-the-creative-genius-of-billie-eilish-with-custom-chuck-taylor-by-you-experience/',
+      citation: {
+        title:
+          'Converse Celebrates the Creative Genius of Billie Eilish with Custom Chuck Taylor “By You” Experience',
+        url: 'https://vergemagazine.co.uk/converse-celebrates-the-creative-genius-of-billie-eilish-with-custom-chuck-taylor-by-you-experience/',
+        publisher: 'Verge Magazine',
+        author: 'Taye Rowland-Dixon',
+        publishedAt: '2024-10-18',
+      },
+      isExactQuote: false,
+      storyCluster: 'billie-eilish-by-you',
+    },
+    {
+      id: 'cv-2024-billie-highxtar',
+      date: '2024-10-17',
+      precision: 'exact-day',
+      title: 'Billie Eilish Chuck By You',
+      synopsis:
+        'HIGHXTAR framed the Billie Eilish × Converse By You drop as a customisable Chuck Taylor All Star / Lift collaboration timed to Hit Me Hard and Soft — limited to seven days on converse.com.',
+      reference:
+        'Mar Piera / HIGHXTAR (17 October 2024) ‘Billie Eilish revolutionises Converse’s Chuck silhouette with ‘By You’’. Available at: https://highxtar.com/en/billie-eilish-revolutionises-converses-chuck-silhouette-with-by-you/',
+      citation: {
+        title: 'Billie Eilish revolutionises Converse’s Chuck silhouette with ‘By You’',
+        url: 'https://highxtar.com/en/billie-eilish-revolutionises-converses-chuck-silhouette-with-by-you/',
+        publisher: 'HIGHXTAR',
+        author: 'Mar Piera',
+        publishedAt: '2024-10-17',
+      },
+      isExactQuote: false,
+      storyCluster: 'billie-eilish-by-you',
+    },
+    {
+      id: 'cv-2025-tyler-vogue',
+      date: '2025-05-27',
+      precision: 'exact-day',
+      title: 'Tyler, the Creator × Converse',
+      synopsis:
+        'British Vogue interviewed Tyler, the Creator on his long Converse partnership ahead of the archive-led 1908 collection — his 20th with the brand after roughly nine years — reworking deck trainers and joggers through a Golf le Fleur lens for a 20 June 2025 launch.',
+      reference:
+        'Riann Phillip / British Vogue (27 May 2025) ‘“This Is The Only Thing I Was Supposed To Do”: Tyler, The Creator On Delusion, Gatekeeping And His Latest Collab With Converse’. Available at: https://www.vogue.co.uk/article/tyler-the-creator-converse-interview',
+      citation: {
+        title:
+          '“This Is The Only Thing I Was Supposed To Do”: Tyler, The Creator On Delusion, Gatekeeping And His Latest Collab With Converse',
+        url: 'https://www.vogue.co.uk/article/tyler-the-creator-converse-interview',
+        publisher: 'British Vogue',
+        author: 'Riann Phillip',
+        publishedAt: '2025-05-27',
+      },
+      isExactQuote: false,
+      storyCluster: 'tyler-golf-le-fleur',
+    },
+    {
+      id: 'cv-2025-tyler-1908-highsno',
+      date: '2025-06-20',
+      precision: 'exact-day',
+      title: '1908 Program',
+      synopsis:
+        'Highsnobiety covered Converse × Tyler’s 1908 Program — archival Coach Jogger (1976 Olympic runner) and Naut-1 (1971) silhouettes reimagined with le FLEUR* script, colour blocking, and Darryl dog motifs — retail 20 June 2025.',
+      reference:
+        'Tayler Adigun / Highsnobiety ‘Leave It to Tyler the Creator to Make the Coolest Converse In Years’. Available at: https://www.highsnobiety.com/p/leave-it-to-tyler-the-creator-to-make-the-coolest-converse-in-years/',
+      citation: {
+        title: 'Leave It to Tyler the Creator to Make the Coolest Converse In Years',
+        url: 'https://www.highsnobiety.com/p/leave-it-to-tyler-the-creator-to-make-the-coolest-converse-in-years/',
+        publisher: 'Highsnobiety',
+        author: 'Tayler Adigun',
+        publishedAt: '2025-06',
+      },
+      isExactQuote: false,
+      storyCluster: 'tyler-golf-le-fleur',
     },
     {
       id: 'cv-2025-stranger-things',

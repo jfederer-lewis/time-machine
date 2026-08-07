@@ -1,9 +1,14 @@
 import type { CulturalEvent, DateQueryResult, ProviderId, ResearchMode } from '../../shared/provenance'
 import { withHarvard } from '../../shared/provenance'
-import { brandMomentsForQueryDate } from '../../shared/brand'
+import {
+  converseDaySegmentForQuery,
+  type BrandMoment,
+  type ConverseDaySegmentLane,
+} from '../../shared/brand'
 import { getBrand } from '../../shared/brands'
 import {
   universeAnchorsForQueryDate,
+  type ConverseUniverseAnchor,
 } from '../../shared/converse-universe'
 import { queryDatePrecision, toDisplayDate, toOnThisDayPath } from '../../shared/source-registry'
 import { buildFallbackResult, PROVIDER_CATALOGUE } from '../data/fallback'
@@ -171,82 +176,19 @@ export async function assembleDateQuery(
       ? sameYearRanked
       : rankByInterest(merged, targetYear)
 
-  const brandMoments: CulturalEvent[] = brandMomentsForQueryDate(brand, queryDate)
-    .map((m) =>
-      sanitizeEventCitations({
-        id: m.id,
-        year: Number(m.date.slice(0, 4)),
-        title: m.title,
-        synopsis: m.synopsis,
-        category: 'brand',
-        precision: m.precision,
-        discoveredVia: ['internal-curated'],
-        needsHumanReview: m.precision === 'period-estimate',
-        citations: [
-          withHarvard({
-            title: m.citation.title,
-            url: m.citation.url,
-            publisher: m.citation.publisher,
-            author: m.citation.author,
-            publishedAt: m.citation.publishedAt,
-            accessedAt: new Date().toISOString(),
-            sourceQuality:
-              m.precision === 'period-estimate' ? 'needs-human-review' : 'curated-fallback',
-            evidenceKind: m.isExactQuote ? 'quote' : 'paraphrase',
-            reference: m.reference,
-            provider: 'brand-timeline',
-            isExactQuote: m.isExactQuote,
-          }),
-        ],
-      }),
-    )
-
-  // People / hinge anchors (e.g. Chuck Taylor birthday) — same calendar day, any year
-  for (const anchor of universeAnchorsForQueryDate(queryDate)) {
-    if (brandMoments.some((b) => b.id === anchor.id)) continue
-    brandMoments.push(
-      sanitizeEventCitations({
-        id: anchor.id,
-        year: Number(anchor.date.slice(0, 4)),
-        title: anchor.title,
-        synopsis: `${anchor.synopsis} ${anchor.converseTie}`,
-        category: 'brand',
-        precision: 'exact-day',
-        discoveredVia: ['internal-curated'],
-        citations: [
-          withHarvard({
-            title: anchor.citation.title,
-            url: anchor.citation.url,
-            publisher: anchor.citation.publisher,
-            author: anchor.citation.author,
-            publishedAt: anchor.citation.publishedAt ?? anchor.date,
-            accessedAt: new Date().toISOString(),
-            sourceQuality: 'trusted-source-snippet',
-            evidenceKind: 'paraphrase',
-            reference: anchor.reference,
-            provider: 'brand-timeline',
-            isExactQuote: false,
-          }),
-        ],
-      }),
-    )
-  }
+  // Landmark defining days: no Converse addon. Otherwise world spotlight stays
+  // world-only; Converse heritage surfaces as a separate brandMoments segment.
+  const poolHasLandmark = poolForPick.some((e) => isLandmarkDefiningEvent(e))
+  const brandMoments = poolHasLandmark
+    ? []
+    : buildConverseDaySegmentEvents(brand, queryDate)
 
   if (brandMoments.length) providersUsed.push('brand-timeline')
 
-  // Exact-day / month heritage beats compete for the spotlight (not only as a side note)
-  // — except on landmark defining days (9/11-class), where brand must not win or dilute.
-  const poolHasLandmark = poolForPick.some((e) => isLandmarkDefiningEvent(e))
-  const brandForSpotlight = poolHasLandmark
-    ? []
-    : brandMoments.filter((m) => m.precision === 'exact-day' || m.precision === 'month')
-  const poolWithBrand = brandForSpotlight.length
-    ? rankByInterest([...poolForPick, ...brandForSpotlight], targetYear)
-    : poolForPick
-
+  // World shortlist only — Converse is addon, not a competing spotlight candidate.
   // Prefer substance for the shortlist — thin chart stubs (#1: Song / same fact twice) lose.
-  const substanceFirst = poolWithBrand.filter((e) => !isThinDiscoveryStub(e))
-  const shortlist = (substanceFirst.length ? substanceFirst : poolWithBrand).slice(0, 8)
+  const substanceFirst = poolForPick.filter((e) => !isThinDiscoveryStub(e))
+  const shortlist = (substanceFirst.length ? substanceFirst : poolForPick).slice(0, 8)
 
   // Ordered try list: Gemini pick first, then remaining shortlist by interest rank.
   let ordered = [...shortlist]
@@ -390,11 +332,119 @@ export async function assembleDateQuery(
     brandId: brand.id,
     narrative,
     events,
-    brandMoments: brandMoments.slice(0, 1),
+    brandMoments,
     providersUsed,
     usingFallback: false,
     generatedAt: new Date().toISOString(),
   }
+}
+
+const SEGMENT_LANE_ORDER: Record<ConverseDaySegmentLane, number> = {
+  exact: 0,
+  anniversary: 1,
+  month: 2,
+}
+
+function culturalEventFromBrandMoment(m: BrandMoment): CulturalEvent {
+  return sanitizeEventCitations({
+    id: m.id,
+    year: Number(m.date.slice(0, 4)),
+    title: m.title,
+    synopsis: m.synopsis,
+    category: 'brand',
+    precision: m.precision,
+    discoveredVia: ['internal-curated'],
+    needsHumanReview: m.precision === 'period-estimate',
+    citations: [
+      withHarvard({
+        title: m.citation.title,
+        url: m.citation.url,
+        publisher: m.citation.publisher,
+        author: m.citation.author,
+        publishedAt: m.citation.publishedAt,
+        accessedAt: new Date().toISOString(),
+        sourceQuality:
+          m.precision === 'period-estimate' ? 'needs-human-review' : 'curated-fallback',
+        evidenceKind: m.isExactQuote ? 'quote' : 'paraphrase',
+        reference: m.reference,
+        provider: 'brand-timeline',
+        isExactQuote: m.isExactQuote,
+      }),
+    ],
+  })
+}
+
+function culturalEventFromUniverseAnchor(anchor: ConverseUniverseAnchor): CulturalEvent {
+  return sanitizeEventCitations({
+    id: anchor.id,
+    year: Number(anchor.date.slice(0, 4)),
+    title: anchor.title,
+    synopsis: `${anchor.synopsis} ${anchor.converseTie}`,
+    category: 'brand',
+    precision: 'exact-day',
+    discoveredVia: ['internal-curated'],
+    citations: [
+      withHarvard({
+        title: anchor.citation.title,
+        url: anchor.citation.url,
+        publisher: anchor.citation.publisher,
+        author: anchor.citation.author,
+        publishedAt: anchor.citation.publishedAt ?? anchor.date,
+        accessedAt: new Date().toISOString(),
+        sourceQuality: 'trusted-source-snippet',
+        evidenceKind: 'paraphrase',
+        reference: anchor.reference,
+        provider: 'brand-timeline',
+        isExactQuote: false,
+      }),
+    ],
+  })
+}
+
+/**
+ * Lookup Converse addon: exact-day heritage, curated yearly anniversaries
+ * (incl. universe people anchors), and same-month release beats. Cap 2.
+ */
+function buildConverseDaySegmentEvents(
+  brand: ReturnType<typeof getBrand>,
+  queryDate: string,
+  limit = 2,
+): CulturalEvent[] {
+  type Tagged = { lane: ConverseDaySegmentLane; event: CulturalEvent; cluster?: string }
+  const tagged: Tagged[] = converseDaySegmentForQuery(brand, queryDate, { limit: 8 }).map(
+    (hit) => ({
+      lane: hit.lane,
+      event: culturalEventFromBrandMoment(hit.moment),
+      cluster: hit.moment.storyCluster,
+    }),
+  )
+
+  for (const anchor of universeAnchorsForQueryDate(queryDate)) {
+    if (tagged.some((t) => t.event.id === anchor.id)) continue
+    tagged.push({
+      lane: 'anniversary',
+      event: culturalEventFromUniverseAnchor(anchor),
+    })
+  }
+
+  tagged.sort((a, b) => {
+    const laneDiff = SEGMENT_LANE_ORDER[a.lane] - SEGMENT_LANE_ORDER[b.lane]
+    if (laneDiff !== 0) return laneDiff
+    return b.event.year - a.event.year
+  })
+
+  const out: CulturalEvent[] = []
+  const seenIds = new Set<string>()
+  const seenClusters = new Set<string>()
+  for (const row of tagged) {
+    if (seenIds.has(row.event.id)) continue
+    if (row.cluster && seenClusters.has(row.cluster)) continue
+    seenIds.add(row.event.id)
+    if (row.cluster) seenClusters.add(row.cluster)
+    out.push(row.event)
+    if (out.length >= limit) break
+  }
+  return out
 }
 
 export function listProviders(env: Env) {

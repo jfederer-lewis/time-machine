@@ -22,6 +22,51 @@ function normalizeTitle(value: string): string {
     .slice(0, 160)
 }
 
+function normalizeAliasKey(value: string): string {
+  return String(value || '')
+    .toLowerCase()
+    .replace(/[’']/g, "'")
+    .replace(/\s+/g, ' ')
+    .trim()
+}
+
+/**
+ * Product / collab shorthand that OpenSearch mis-resolves (e.g. “Billie By You” → Billie Burke).
+ * Map to the person / entity page desks actually need.
+ */
+const WIKI_TITLE_ALIASES: Record<string, string> = {
+  'billie by you': 'Billie Eilish',
+  'billie eilish by you': 'Billie Eilish',
+  'converse x billie eilish': 'Billie Eilish',
+  'converse by you x billie eilish': 'Billie Eilish',
+  'tyler team-up': 'Tyler, the Creator',
+  'tyler the creator': 'Tyler, the Creator',
+  'tyler, the creator': 'Tyler, the Creator',
+  'golf le fleur': 'Tyler, the Creator',
+  'golf le fleur*': 'Tyler, the Creator',
+  'golf le fleur* one star': 'Tyler, the Creator',
+  'le fleur': 'Tyler, the Creator',
+  'le fleur*': 'Tyler, the Creator',
+  '1908 program': 'Tyler, the Creator',
+}
+
+/** Tiny connectors — not enough alone to justify a person-page expansion. */
+const OPENSEARCH_STOP = new Set([
+  'a',
+  'an',
+  'and',
+  'by',
+  'for',
+  'in',
+  'of',
+  'on',
+  'the',
+  'to',
+  'x',
+  'you',
+  'with',
+])
+
 const WIKIPEDIA_SUMMARY_BASE = 'https://en.wikipedia.org/api/rest_v1/page/summary'
 const WIKIPEDIA_OPENSEARCH =
   'https://en.wikipedia.org/w/api.php?action=opensearch&limit=5&namespace=0&format=json&origin=*&search='
@@ -85,6 +130,59 @@ async function fetchSummaryForTitle(title: string): Promise<WikiSummaryHit | nul
   return hit
 }
 
+/**
+ * Refuse OpenSearch expansions that only share a first name with a multi-word query
+ * (“Billie By You” → Billie Burke). Prefer silence over the wrong person.
+ */
+export function isPlausibleWikipediaTitle(query: string, title: string): boolean {
+  const q = String(query || '').replace(/\s+/g, ' ').trim().toLowerCase()
+  const t = String(title || '')
+    .replace(/\s+/g, ' ')
+    .replace(/\s*\([^)]*\)\s*/g, ' ')
+    .trim()
+    .toLowerCase()
+  if (!q || !t) return false
+  if (t === q) return true
+  if (t.startsWith(q) || q.startsWith(t)) return true
+
+  const qParts = q.split(/\s+/).filter(Boolean)
+  const tParts = t.split(/\s+/).filter(Boolean)
+  if (qParts.length <= 1) return true
+
+  const qContent = qParts.filter((p) => !OPENSEARCH_STOP.has(p) && p.length > 1)
+  const overlap = qContent.filter((p) =>
+    tParts.some((tp) => tp === p || tp.startsWith(p) || p.startsWith(tp)),
+  )
+
+  if (qContent.length >= 2) {
+    return overlap.length >= Math.ceil(qContent.length * 0.6)
+  }
+
+  // Multi-word product / campaign shorthand with one content token (“Billie By You”):
+  // do not expand to “Billie Burke” / “Billie Young”.
+  if (qContent.length === 1 && qParts.length >= 2) {
+    return tParts.length === 1 && tParts[0] === qContent[0]
+  }
+
+  return overlap.length >= 1
+}
+
+function pickOpenSearchTitle(query: string, titles: string[]): string | null {
+  const qLower = query.toLowerCase()
+  const exact = titles.find((t) => t.toLowerCase() === qLower)
+  if (exact) return exact
+
+  const starts = titles.find(
+    (t) => t.toLowerCase().startsWith(qLower) && isPlausibleWikipediaTitle(query, t),
+  )
+  if (starts) return starts
+
+  for (const t of titles) {
+    if (isPlausibleWikipediaTitle(query, t)) return t
+  }
+  return null
+}
+
 /** Resolve an ambiguous / approximate name to a page title via OpenSearch. */
 async function searchWikipediaTitle(query: string): Promise<string | null> {
   const q = String(query || '').replace(/\s+/g, ' ').trim()
@@ -97,26 +195,28 @@ async function searchWikipediaTitle(query: string): Promise<string | null> {
   // OpenSearch returns [query, [titles], [descriptions], [urls]]
   if (!Array.isArray(data) || !Array.isArray(data[1]) || data[1].length === 0) return null
 
-  const titles = data[1] as string[]
-  const qLower = q.toLowerCase()
-  const exact = titles.find((t) => t.toLowerCase() === qLower)
-  if (exact) return exact
-  // Prefer a title that starts with the query (person pages often do)
-  const starts = titles.find((t) => t.toLowerCase().startsWith(qLower))
-  if (starts) return starts
-  return titles[0] || null
+  return pickOpenSearchTitle(q, data[1] as string[])
 }
 
 /**
  * Look up a Wikipedia summary for a term.
- * Tries the exact title first; on miss / disambiguation, OpenSearch then summary.
+ * Tries aliases + exact title first; on miss / disambiguation, OpenSearch then summary.
  */
 export async function fetchWikipediaSummary(titleOrTerm: string): Promise<WikiSummaryHit | null> {
-  const direct = await fetchSummaryForTitle(titleOrTerm)
+  const raw = String(titleOrTerm || '').replace(/\s+/g, ' ').trim()
+  if (!raw) return null
+
+  const alias = WIKI_TITLE_ALIASES[normalizeAliasKey(raw)]
+  if (alias) {
+    const aliased = await fetchSummaryForTitle(alias)
+    if (aliased) return aliased
+  }
+
+  const direct = await fetchSummaryForTitle(raw)
   if (direct) return direct
 
-  const searched = await searchWikipediaTitle(titleOrTerm)
-  if (!searched || searched.toLowerCase() === titleOrTerm.replace(/_/g, ' ').toLowerCase()) {
+  const searched = await searchWikipediaTitle(raw)
+  if (!searched || searched.toLowerCase() === raw.toLowerCase()) {
     return null
   }
   return fetchSummaryForTitle(searched)

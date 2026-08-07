@@ -295,7 +295,7 @@ function preferCollabCiteQuality(m: BrandMoment): number {
   const title = m.citation.title || ''
   if (looksLikeCollabRoundup(url, title)) return 0
   if (
-    /gq\.com|gq-magazine\.co\.uk|nytimes\.com|wsj\.com|wwd\.com|teenvogue\.com|fastcompany\.com|hypebeast\.com|hbx\.com|surfacemag\.com|designboom\.com|complex\.com|forbes\.com|businessoffashion\.com|adage\.com|highsnobiety\.com|vogue\.|dazeddigital\.com/i.test(
+    /gq\.com|gq-magazine\.co\.uk|nytimes\.com|wsj\.com|wwd\.com|teenvogue\.com|fastcompany\.com|hypebeast\.com|hbx\.com|surfacemag\.com|designboom\.com|complex\.com|forbes\.com|businessoffashion\.com|adage\.com|highsnobiety\.com|vogue\.|dazeddigital\.com|si\.com|vergemagazine\.co\.uk|highxtar\.com/i.test(
       url,
     )
   ) {
@@ -306,7 +306,7 @@ function preferCollabCiteQuality(m: BrandMoment): number {
 
 /** Named house / model asks — allow several dedicated articles on the same collab. */
 const SPECIFIC_COLLAB_RE =
-  /\b(margiela|maison\s+martin\s+margiela|comme\s+des\s+gar[cç]ons|cdg|rick\s+owens|drkshdw|turbodrk|vaquera|simpsons|stranger\s+things|varvatos|golf\s+le\s+fleur|tyler|john\s+richmond|kurt\s+cobain|cobain|one\s+star|virgil|abloh|off[\s-]?white|the\s+ten|chuck\s*(ii|2|two)|lunarlon)\b/i
+  /\b(margiela|maison\s+martin\s+margiela|comme\s+des\s+gar[cç]ons|cdg|rick\s+owens|drkshdw|turbodrk|turbowpn|vaquera|simpsons|stranger\s+things|varvatos|golf\s+le\s+fleur|le\s*fleur|tyler(?:[,\s]+the\s+creator)?|1908\s+program|naut-?1|coach\s+jogger|john\s+richmond|kurt\s+cobain|cobain|one\s+star|virgil|abloh|off[\s-]?white|the\s+ten|billie(?:\s+eilish)?|eilish|billie\s+by\s+you|chuck\s*(ii|2|two)|lunarlon|weapon|all\s+star\s+(?:bb\s+pro|pro\s+bb)|pro\s+bb|kelly\s+oubre|choose\s+your\s+weapon)\b/i
 
 /** Keep one beat per story cluster — unless a named collab ask wants dedicated depth. */
 function pickHeritageHits(
@@ -391,6 +391,16 @@ function matchHeritageMoments(
       if (/\bncaa\b/.test(hay)) score += 2
       if (/\bedmonton|grads\b/.test(hay)) score += 1
       if (/\bbasketball\b|\bnon-skid\b|\ball star\b/.test(hay)) score += 1
+      // Dedicated basketball press colour (Weapon history; All Star Pro BB return).
+      if (
+        /highsnobiety\.com\/p\/converse-weapon-history|forbes\.com\/sites\/timnewcomb\/2019\/04\/18\/converse-returns-to-performance-basketball/i.test(
+          citeUrl,
+        )
+      ) {
+        score += 3
+      }
+      if (/all star pro bb|performance basketball|bird|magic johnson|larry bird|choose your weapon|kelly oubre/.test(hay))
+        score += 1
     }
     if (cultureTheme && !datedFocus) {
       if (/\bpunk|grunge|ramones|cobain|subcultur/.test(hay)) score += 3
@@ -429,7 +439,17 @@ function matchHeritageMoments(
       if (/chuck\s*(ii|2|two)|lunarlon/.test(q) && /chuck ii|chuck taylor all star ii|lunarlon|feel like nikes/.test(hay))
         score += 4
       if (
-        /gq\.com|gq-magazine\.co\.uk|wwd\.com|teenvogue\.com|fastcompany\.com|hypebeast\.com|hbx\.com|surfacemag\.com|designboom\.com|complex\.com|forbes\.com|about\.nike\.com|nytimes\.com|wsj\.com|adage\.com|businessoffashion\.com|highsnobiety\.com/i.test(
+        /\bweapon\b|choose\s+your\s+weapon|turbowpn/.test(q) &&
+        /weapon|choose your weapon|bird|magic|turbowpn/.test(hay)
+      )
+        score += 4
+      if (
+        /all\s+star\s+(?:bb\s+pro|pro\s+bb)|pro\s+bb|kelly\s+oubre|performance\s+basketball/.test(q) &&
+        /all star pro bb|all star bb pro|performance basketball|kelly oubre|pro bb/.test(hay)
+      )
+        score += 4
+      if (
+        /gq\.com|gq-magazine\.co\.uk|wwd\.com|teenvogue\.com|fastcompany\.com|hypebeast\.com|hbx\.com|surfacemag\.com|designboom\.com|complex\.com|forbes\.com|about\.nike\.com|nytimes\.com|wsj\.com|adage\.com|businessoffashion\.com|highsnobiety\.com|si\.com|vergemagazine\.co\.uk|highxtar\.com/i.test(
           citeUrl,
         )
       ) {

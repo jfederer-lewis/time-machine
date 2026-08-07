@@ -6,7 +6,16 @@ import type {
 } from '../../shared/provenance'
 import { withHarvard } from '../../shared/provenance'
 import { getBrand } from '../../shared/brands'
-import { brandMomentsForQueryDate } from '../../shared/brand'
+import {
+  converseDaySegmentForQuery,
+  type BrandMoment,
+  type ConverseDaySegmentLane,
+} from '../../shared/brand'
+import {
+  universeAnchorsForQueryDate,
+  type ConverseUniverseAnchor,
+} from '../../shared/converse-universe'
+import { isLandmarkDefiningEvent } from '../lib/interest'
 import { toDisplayDate, toOnThisDayPath } from '../../shared/source-registry'
 import { sanitizeEventCitations } from '../lib/verify'
 
@@ -238,35 +247,10 @@ export function buildFallbackResult(
   const brand = getBrand(brandId)
   const rawEvents = lookupFallbackEvents(queryDate)
   const events = rawEvents.map((e) => sanitizeEventCitations(e))
-  const brandMoments: CulturalEvent[] = brandMomentsForQueryDate(brand, queryDate)
-    .map((m) =>
-      sanitizeEventCitations({
-        id: m.id,
-        year: Number(m.date.slice(0, 4)),
-        title: m.title,
-        synopsis: m.synopsis,
-        category: 'brand',
-        precision: m.precision,
-        discoveredVia: ['internal-curated'],
-        needsHumanReview: m.precision === 'period-estimate',
-        citations: [
-          withHarvard({
-            title: m.citation.title,
-            url: m.citation.url,
-            publisher: m.citation.publisher,
-            author: m.citation.author,
-            publishedAt: m.citation.publishedAt,
-            accessedAt,
-            sourceQuality:
-              m.precision === 'period-estimate' ? 'needs-human-review' : 'curated-fallback',
-            evidenceKind: m.isExactQuote ? 'quote' : 'paraphrase',
-            reference: m.reference,
-            provider: 'brand-timeline',
-            isExactQuote: m.isExactQuote,
-          }),
-        ],
-      }),
-    )
+  const poolHasLandmark = events.some((e) => isLandmarkDefiningEvent(e))
+  const brandMoments = poolHasLandmark
+    ? []
+    : buildFallbackConverseSegment(brand, queryDate)
 
   const hasExact =
     events.some((e) => e.precision === 'exact-day') ||
@@ -292,11 +276,115 @@ export function buildFallbackResult(
       disclaimer: '',
     },
     events: events.slice(0, 1),
-    brandMoments: brandMoments.slice(0, 1),
+    brandMoments,
     providersUsed: ['curated-fallback', 'brand-timeline'],
     usingFallback: true,
     generatedAt: new Date().toISOString(),
   }
+}
+
+const FALLBACK_SEGMENT_LANE_ORDER: Record<ConverseDaySegmentLane, number> = {
+  exact: 0,
+  anniversary: 1,
+  month: 2,
+}
+
+function fallbackEventFromMoment(m: BrandMoment): CulturalEvent {
+  return sanitizeEventCitations({
+    id: m.id,
+    year: Number(m.date.slice(0, 4)),
+    title: m.title,
+    synopsis: m.synopsis,
+    category: 'brand',
+    precision: m.precision,
+    discoveredVia: ['internal-curated'],
+    needsHumanReview: m.precision === 'period-estimate',
+    citations: [
+      withHarvard({
+        title: m.citation.title,
+        url: m.citation.url,
+        publisher: m.citation.publisher,
+        author: m.citation.author,
+        publishedAt: m.citation.publishedAt,
+        accessedAt,
+        sourceQuality:
+          m.precision === 'period-estimate' ? 'needs-human-review' : 'curated-fallback',
+        evidenceKind: m.isExactQuote ? 'quote' : 'paraphrase',
+        reference: m.reference,
+        provider: 'brand-timeline',
+        isExactQuote: m.isExactQuote,
+      }),
+    ],
+  })
+}
+
+function fallbackEventFromAnchor(anchor: ConverseUniverseAnchor): CulturalEvent {
+  return sanitizeEventCitations({
+    id: anchor.id,
+    year: Number(anchor.date.slice(0, 4)),
+    title: anchor.title,
+    synopsis: `${anchor.synopsis} ${anchor.converseTie}`,
+    category: 'brand',
+    precision: 'exact-day',
+    discoveredVia: ['internal-curated'],
+    citations: [
+      withHarvard({
+        title: anchor.citation.title,
+        url: anchor.citation.url,
+        publisher: anchor.citation.publisher,
+        author: anchor.citation.author,
+        publishedAt: anchor.citation.publishedAt ?? anchor.date,
+        accessedAt,
+        sourceQuality: 'trusted-source-snippet',
+        evidenceKind: 'paraphrase',
+        reference: anchor.reference,
+        provider: 'brand-timeline',
+        isExactQuote: false,
+      }),
+    ],
+  })
+}
+
+function buildFallbackConverseSegment(
+  brand: ReturnType<typeof getBrand>,
+  queryDate: string,
+  limit = 2,
+): CulturalEvent[] {
+  type Tagged = { lane: ConverseDaySegmentLane; event: CulturalEvent; cluster?: string }
+  const tagged: Tagged[] = converseDaySegmentForQuery(brand, queryDate, { limit: 8 }).map(
+    (hit) => ({
+      lane: hit.lane,
+      event: fallbackEventFromMoment(hit.moment),
+      cluster: hit.moment.storyCluster,
+    }),
+  )
+
+  for (const anchor of universeAnchorsForQueryDate(queryDate)) {
+    if (tagged.some((t) => t.event.id === anchor.id)) continue
+    tagged.push({
+      lane: 'anniversary',
+      event: fallbackEventFromAnchor(anchor),
+    })
+  }
+
+  tagged.sort((a, b) => {
+    const laneDiff = FALLBACK_SEGMENT_LANE_ORDER[a.lane] - FALLBACK_SEGMENT_LANE_ORDER[b.lane]
+    if (laneDiff !== 0) return laneDiff
+    return b.event.year - a.event.year
+  })
+
+  const out: CulturalEvent[] = []
+  const seenIds = new Set<string>()
+  const seenClusters = new Set<string>()
+  for (const row of tagged) {
+    if (seenIds.has(row.event.id)) continue
+    if (row.cluster && seenClusters.has(row.cluster)) continue
+    seenIds.add(row.event.id)
+    if (row.cluster) seenClusters.add(row.cluster)
+    out.push(row.event)
+    if (out.length >= limit) break
+  }
+  return out
 }
 
 function lookupFallbackEvents(queryDate: string): CulturalEvent[] {

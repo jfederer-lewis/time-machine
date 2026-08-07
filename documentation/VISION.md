@@ -2,7 +2,7 @@
 
 > Living document. Update this as the idea develops. Agents: read this before making product or architecture decisions.
 
-**Last updated:** 2026-08-07 (full stack only — Lite mode removed)  
+**Last updated:** 2026-08-07 (Lookup Converse day-card addon segment)  
 **Client (current):** Converse  
 **Working title:** Good News, Chuck  
 **Live:** https://time-machine.jasminefederer.workers.dev  
@@ -304,6 +304,7 @@ Record material product/architecture choices here as we go.
 | 2026-08-06 | Prefer positive when interest is tied; never soft-pedal landmark defining days | “Good News, Chuck” lean without ignoring 9/11-class dates |
 | 2026-08-06 | Interest = significance (primary) + light tone lean + credibility + quality | Balance cultural weight with a slight positive/neutral bias; tone is not a veto |
 | 2026-08-07 | Chuck-E opening hints + sports-depth heritage matching | Entry-point date prompt (4 Sep 2003); sports queries boost Olympics / Weapon / Jordan beats from History LP |
+| 2026-08-07 | Chuck-E basketball press: Highsnobiety Weapon history + Forbes All Star Pro BB | Court / ambassador / performance-return colour beside History sports beats |
 | 2026-08-07 | Vogue + Dazed on citation allowlist; heritage KB gains Varvatos/(PRODUCT) RED + punk/grunge colour | Collabs / humanitarian / scenes answers need culture-press cites (History still primary brand anchor) |
 | 2026-08-07 | Gloss/footer cites always show title + date + publisher; FN/Tatler/L’Officiel/Urban Industry collab & screen beats | Desk needs full bibliographic handle even when only a gloss is visible |
 | 2026-08-07 | Broad culture-press + museum allowlist; Reddit blocked | Ship claim-relevant Vogue/i-D/System/museum cites; keep forums out of Harvard |
@@ -315,6 +316,7 @@ Record material product/architecture choices here as we go.
 | 2026-08-07 | Chuck-E: UK dates parse; citation vs entity vs publisher gloss roles | Date hint was heritage-noisy; “Simpsons” cite gloss was wrong kind |
 | 2026-08-07 | Exact-day brand moments; Chuck-E Gemini enrich on Converse date significance | Don’t mix announce/close; researched colour on the queried day |
 | 2026-08-07 | Chuck-E heritage / general may web-search beyond the pack | Pack first when on-topic; search fills gaps — Gemini never public cite |
+| 2026-08-07 | Lookup Converse day-card addon (exact / curated yearly anniversary / month) beside world news | Iconic Converse dates surface without replacing on-this-day; collabs aren’t annualised |
 
 ---
 

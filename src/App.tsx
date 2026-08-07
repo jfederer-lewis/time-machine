@@ -94,6 +94,33 @@ function pickSpotlight(result: DateQueryResult): CulturalEvent | null {
   return exact[0] ?? around[0] ?? result.brandMoments[0] ?? null
 }
 
+type ConverseSegmentLane = 'exact' | 'anniversary' | 'month'
+
+/** Infer Converse addon lane from event vs queried day (wire has no segmentLane field). */
+function converseSegmentLane(event: CulturalEvent, queryDate: string): ConverseSegmentLane {
+  if (event.precision === 'month') return 'month'
+  const qYear = Number(queryDate.slice(0, 4))
+  if (Number.isFinite(qYear) && event.year !== qYear) return 'anniversary'
+  return 'exact'
+}
+
+function converseSegmentLabel(lane: ConverseSegmentLane, year: number): string {
+  if (lane === 'month') return 'Also this month · Converse'
+  if (lane === 'anniversary') return `Converse · this day in ${year}`
+  return 'Converse · this day'
+}
+
+/** Converse addon under world news — omit items already shown as the sole spotlight. */
+function pickConverseSegment(
+  result: DateQueryResult,
+  spotlight: CulturalEvent | null,
+): CulturalEvent[] {
+  const moments = result.brandMoments ?? []
+  if (!moments.length) return []
+  if (result.events.length > 0) return moments
+  return moments.filter((m) => m.id !== spotlight?.id)
+}
+
 /** Local calendar date as YYYY-MM-DD (not UTC — avoids off-by-one near midnight). */
 function todayQueryDate() {
   const now = new Date()
@@ -204,9 +231,25 @@ export default function App() {
         : null,
     [spotlight],
   )
+  const converseSegment = useMemo(
+    () => (result ? pickConverseSegment(result, spotlight) : []),
+    [result, spotlight],
+  )
   const queryYear = result ? Number(result.queryDate.slice(0, 4)) : null
-  const yearMismatch =
-    spotlight != null && queryYear != null && Number.isFinite(queryYear) && spotlight.year !== queryYear
+  const worldYearMismatch =
+    spotlight != null &&
+    result != null &&
+    result.events.some((e) => e.id === spotlight.id) &&
+    queryYear != null &&
+    Number.isFinite(queryYear) &&
+    spotlight.year !== queryYear
+  const brandSpotlightLabel =
+    spotlight &&
+    result &&
+    result.events.length === 0 &&
+    result.brandMoments.some((b) => b.id === spotlight.id)
+      ? converseSegmentLabel(converseSegmentLane(spotlight, result.queryDate), spotlight.year)
+      : null
 
   return (
     <div
@@ -373,7 +416,9 @@ export default function App() {
 
               {spotlight ? (
                 <article className="spotlight">
-                  {yearMismatch ? (
+                  {brandSpotlightLabel ? (
+                    <p className="spotlight-label">{brandSpotlightLabel}</p>
+                  ) : worldYearMismatch ? (
                     <p className="spotlight-label">Also on this day · {spotlight.year}</p>
                   ) : null}
                   <h3 className="spotlight-title">{spotlight.title}</h3>
@@ -398,6 +443,30 @@ export default function App() {
               ) : (
                 <p className="empty-day">No fact on record for this date.</p>
               )}
+
+              {converseSegment.length > 0 && result ? (
+                <aside className="converse-segment" aria-label="Converse on this day">
+                  {converseSegment.map((beat) => {
+                    const lane = converseSegmentLane(beat, result.queryDate)
+                    const line = distinctSynopsis(beat.title, beat.synopsis, { fullProse: true })
+                    return (
+                      <div key={beat.id} className="converse-segment__item">
+                        <p className="converse-segment__label">
+                          {converseSegmentLabel(lane, beat.year)}
+                        </p>
+                        <h3 className="converse-segment__title">{beat.title}</h3>
+                        {line ? <p className="converse-segment__line">{line}</p> : null}
+                        {beat.citations[0] ? (
+                          <div className="converse-segment__source">
+                            <p className="converse-segment__source-label">Source</p>
+                            <CitationLine citation={beat.citations[0]} />
+                          </div>
+                        ) : null}
+                      </div>
+                    )
+                  })}
+                </aside>
+              ) : null}
             </section>
           ) : null}
         </main>
