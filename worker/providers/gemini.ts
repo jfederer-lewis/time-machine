@@ -665,7 +665,7 @@ export async function chatWithChuckE(opts: {
     'Finish every sentence. Never trail off mid-clause or end on a dangling word (of / the / our / from…).',
     `Keep it concise (soft ~${CHUCK_E_KNOBS.chatReplySoftMaxChars} chars): sharp, no jargon, no padding or repetition. Finish cleanly — never truncate mid-thought.`,
     useSearch
-      ? 'You may use Google Search for claim-relevant colour beyond the supplied pack — prefer pack / History facts when they answer the question; search when the pack is thin, off-topic, or needs corroboration. Never invent shoe launch specs. Prefer premium press and Converse History over blogs.'
+      ? 'You may use Google Search for claim-relevant colour beyond the supplied pack — prefer pack / History facts when they answer the question; search when the pack is thin, off-topic, or needs corroboration. Never invent shoe launch specs. Prefer premium press and Converse History over blogs. For a named collab or model, prefer a dedicated feature on that release over “best collaborations” roundups.'
       : 'If the knowledge context does not contain a product detail, say you do not have that detail yet. Do not invent from the web.',
     'Never cite yourself, Gemini, or AI as a bibliographic source.',
   ].join('\n')
@@ -696,17 +696,36 @@ export async function researchChuckETopic(opts: {
   apiKey: string
   userQuestion: string
   systemContext: string
-  packBeats?: Array<{ date: string; title: string; synopsis: string }>
+  packBeats?: Array<{ date: string; title: string; synopsis: string; citeUrl?: string }>
+  /** When the ask names a house / model, steer search toward dedicated coverage. */
+  preferDedicatedCollabCoverage?: boolean
 }): Promise<{ content: string; groundedSources: ClaimCandidate[] } | null> {
-  const { apiKey, userQuestion, systemContext, packBeats = [] } = opts
+  const {
+    apiKey,
+    userQuestion,
+    systemContext,
+    packBeats = [],
+    preferDedicatedCollabCoverage = false,
+  } = opts
 
   const beatBlock =
     packBeats.length > 0
       ? [
           'Supplied Converse History / pack beats (prefer these when they answer the question):',
-          ...packBeats.slice(0, 8).map((b) => `- ${b.date}: ${b.title} — ${b.synopsis}`),
+          ...packBeats.slice(0, 8).map((b) => {
+            const cite = b.citeUrl ? ` [prefer cite: ${b.citeUrl}]` : ''
+            return `- ${b.date}: ${b.title} — ${b.synopsis}${cite}`
+          }),
         ].join('\n')
       : 'No strong pack beats matched this question — use Google Search for claim-relevant Converse / Chuck facts.'
+
+  const collabGuidance = preferDedicatedCollabCoverage
+    ? [
+        'This question names a specific collaboration, house, or model.',
+        'Prefer dedicated coverage of that release (feature, exclusive, history of that partnership) over roundup listicles (“most iconic collaborations”, “best Converse collabs”).',
+        'Roundups are only a map — dig for the underlying article with interesting detail (materials, paint/wear story, silhouette variants, retail moment). Prefer the supplied prefer-cite URLs when they match.',
+      ].join(' ')
+    : 'For named collabs or models, prefer dedicated features over “best collaborations” roundups when search surfaces both.'
 
   const prompt = [
     ...CHUCK_E_KNOBS.personaGuardrails,
@@ -717,6 +736,7 @@ export async function researchChuckETopic(opts: {
     '',
     'Task: answer the journalist’s theme / heritage question in chat.',
     'Prefer the supplied pack beats when they are on-topic. Use Google Search to find additional claim-relevant colour, corroboration, or answers when the pack is thin or off-topic.',
+    collabGuidance,
     'Do not invent partnerships, launch specs, or quotations. If search does not support a detail, omit it.',
     'Shape: one short grounding sentence, then optional plain bullets for distinct sourced moments — not a bare dump and not a research memo.',
     'No ### headings, no Pointers to Cite / sources block in the body.',

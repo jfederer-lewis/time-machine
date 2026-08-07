@@ -2,7 +2,7 @@
 
 > Living document. Agents: read this before changing Chuck-E persona, disclosure, cliff notes, or routing.  
 > Companion docs: `VISION.md`, `PIPELINE.md`, **`EDITORIAL_SCHEMA.md`** (ranking / landmarks / universe), `COPY_CONTRACT.md`, `SOURCES_AND_LANDSCAPE.md`, **`CHUCK_ECOSYSTEM_KB.md`** (Chuck franchise product / strategy KB).  
-> **Last updated:** 2026-08-07 (no forced backdrop; light Converse bridge only when needed)  
+> **Last updated:** 2026-08-07 (dedicated collab coverage over roundup listicles)  
 
 ---
 
@@ -80,6 +80,9 @@ Chuck-E date turns use the **same assemble pipeline** as Lookup (Wiki + day-inde
 | Situation | Behaviour |
 |-----------|-----------|
 | Ask / answer already Converse-tied (e.g. 4 Sep 2003 / Swooshed) | Stay on that beat. **Do not** append unrelated world “cultural backdrop.” |
+| Nike purchase / acquisition (not a specific close day) | Prefer [NYT — Legend on the Blacktop](https://www.nytimes.com/2003/07/10/business/nike-purchasing-converse-a-legend-on-the-blacktop.html) + [WSJ — Nike to Buy Converse](https://www.wsj.com/articles/SB105778918424757500) for the deal story; History **Swooshed** for the 4 Sep close |
+| Nike tech / Chuck comfort after ownership | [Ad Age — Nike tech Chuck II](https://adage.com/creativity/work/nike-tech-infused-chuck-taylor-all-star-ii/42820/) + [BoF — sore feet / feel like Nikes](https://www.businessoffashion.com/news/news-analysis/after-a-billion-sore-feet-converse-wants-chucks-to-feel-like-nikes/) (Jul 2015 Lunarlon) |
+| Experimental / weird fashion Chucks | Rick Owens TURBODRK **and** [Vaquera](https://www.highsnobiety.com/p/vaquera-converse-sneaker/) ([Nike Newsroom](https://about.nike.com/en-GB/newsroom/releases/nike-and-converse-begin-vaquera-partnership-with-two-bold-expressions-of-the-chuck-taylor-all-star)) |
 | Broad date with no Converse claim (e.g. 1 April 1999) | Answer the world fact. If a **sourced** same-day History beat or calendar-day people anchor exists, optionally add **one light** Converse bridge — never invent, never force. |
 | Soft affinity in ranking only | Basketball, skate, punk/grunge, canvas / youth culture — light lift in Lookup ranking; **soft-demote** competing footwear brands (Nike only when about Converse). |
 
@@ -122,14 +125,18 @@ When the chat mentions music, scenes, collabs, humanitarian / (PRODUCT) RED, fil
 | 2000 | First fashion collab — John Richmond | Converse History |
 | **2008** | One Hund(RED) artists × cause | Converse History (+ Nike Magazine colour) |
 | **2008-02-26** | John Varvatos + (PRODUCT) RED | [British Vogue — ALL STARS](https://www.vogue.co.uk/article/all-stars) |
-| **2008-05** | Converse × Kurt Cobain | [Footwear News via Yahoo — iconic collabs](https://www.yahoo.com/lifestyle/converse-most-iconic-collaborations-maison-223606495.html) (Amina Ayoud, 12 Dec 2023) |
-| 2009 | CDG PLAY | Converse History (+ FN / Tatler colour) |
-| **2014-05-23** | Maison Margiela painted Chucks / Jack Purcell | Footwear News via Yahoo (same FN feature) |
-| **2014-09** | The Simpsons pack | Footwear News via Yahoo |
+| **2008-03** | Converse × Kurt Cobain | [Hypebeast — collection](https://hypebeast.com/2008/3/kurt-cobain-converse-collection) (One Star / All Star / Jack Purcell) + [HBX — One Star history / Cobain wear](https://hbx.com/journal/2017/7/history-behind-converse-one-star) |
+| 2009 | CDG PLAY | Converse History + [FN/WWD Play history](https://wwd.com/footwear-news/sneaker-news/cdg-converse-play-comme-des-garcon-hearts-sneakers-history-1237702640/) (Ian Servantes, 7 Oct 2023) |
+| **2013-09** | Maison Margiela painted Chucks / Jack Purcell | [GQ exclusive](https://www.gq.com/story/converse-maison-martin-margiela-collaboration) (4 Sep 2013) + [Teen Vogue](https://www.teenvogue.com/story/maison-martin-margiela-converse) / [Fast Company](https://www.fastcompany.com/3017816/converse-all-stars-get-the-margiela-treatment) / [Hypebeast](https://hypebeast.com/2013/9/maison-martin-margiela-x-converse-first-string-2013-collection-official-release-details) |
+| **2013-06-15** | The Simpsons pack | [Complex](https://www.complex.com/sneakers/a/brennan-hiro-williams/the-simpsons-x-converse-chuck-taylor-all-star-collection1) (Brennan Hiro Williams, 13 Jun 2013) |
+| **2015-07-23** | Chuck Taylor All Star II / Nike tech | [Ad Age](https://adage.com/creativity/work/nike-tech-infused-chuck-taylor-all-star-ii/42820/) + [BoF — sore feet / feel like Nikes](https://www.businessoffashion.com/news/news-analysis/after-a-billion-sore-feet-converse-wants-chucks-to-feel-like-nikes/) |
+| **2018** | Virgil Abloh / The Ten Chuck 70 | [Forbes](https://www.forbes.com/sites/declaneytan/2018/04/30/virgil-abloh-and-converse-collaborate-on-limited-edition-sneaker/) (Declan Eytan, 30 Apr 2018) + [Hypebeast closer look](https://hypebeast.com/2018/5/converse-virgil-abloh-chuck-70-the-ten-closer-look) — Ghosting Chuck 70 inside Nike “The Ten” |
+| **2021** | Rick Owens DRKSHDW TURBODRK | [Surface](https://www.surfacemag.com/articles/rick-owens-converse-chuck-70-collaboration/) + [designboom](https://www.designboom.com/design/converse-x-rick-owens-turbodork-chuck-70-01-28-2021/) + [British GQ](https://www.gq-magazine.co.uk/fashion/article/rick-owens-converse-drkshdw-turbodrk-chuck-70) + [GQ pentagram fuss](https://www.gq.com/story/rick-owens-converse-satan-controversy) |
+| **2025** | Vaquera experimental Chuck | [Highsnobiety](https://www.highsnobiety.com/p/vaquera-converse-sneaker/) + [Nike Newsroom Slouch Wedge](https://about.nike.com/en-GB/newsroom/releases/nike-and-converse-begin-vaquera-partnership-with-two-bold-expressions-of-the-chuck-taylor-all-star) — pair with Owens for “weird” fashion Chucks |
 | **2021-03-24** | Film & TV screen moments | [L’Officiel USA](https://www.lofficielusa.com/film-tv/converse-movie-moments-marie-antoinette) (Orquídea Alburquerque) |
+| **2025-12-04** | Stranger Things pack (secondary screen collab) | [Nike Newsroom](https://about.nike.com/en/newsroom/releases/nike-converse-stranger-things-collection-official-images) — useful beside Simpsons for film/TV collab asks; not a house-defining fashion moment |
 | **2021-09-06** | Iconic closet staples list | [Tatler Asia](https://www.tatlerasia.com/style/fashion/sneaker-series-most-iconic-converse-shoes) |
 | **2022-09-05** | Narrative history overview | [Urban Industry](https://www.urbanindustry.co.uk/blogs/news/a-brief-history-of-the-converse-chuck-taylor-all-star) (Tier C; defer to History on contested dates) |
-| **2023-05-16** | Rick Owens DRKSHDW TURBODRK | Footwear News via Yahoo |
 | — | Chuck Modern / II modernisation colour | [Esquire Middle East](https://www.esquireme.com/style/19681-the-iconic-converse-all-star-gets-a-modern-make-over) |
 | — | Broader court → skate → music → fashion arc | [Nike Magazine — Journey of an Icon](https://about.nike.com/en/magazine/converse-chuck-taylor-all-star-iconic-sneaker-true-history) |
 | — | Overview + footnotes / backlinks | [Wikipedia — Chuck Taylor All-Stars](https://en.wikipedia.org/wiki/Chuck_Taylor_All-Stars) (bridge; upgrade to underlying cites) |
@@ -150,7 +157,9 @@ Skip household brands (Nike, Converse, …), countries, bare product words, and 
 
 Never reuse a citation gloss on an entity surname/token in the synopsis (that made “Simpsons” open the collab roundup cite).
 
-**Secondary bookshelf** (allowlisted): Dazed, Vogue, Footwear News / Yahoo, Tatler Asia, Esquire ME, L’Officiel USA, Nike Magazine (`about.nike.com` Tier C), Urban Industry (Tier C). Wikipedia remains gloss-bridge. History LP remains the default brand anchor; never let retail blogs overwrite official signature / join years (1934 / 1922).
+**Secondary bookshelf** (allowlisted): Dazed, Vogue / Teen Vogue, GQ / British GQ, WWD / Footwear News, Surface, designboom, Hypebeast / HBX, Fast Company, Yahoo (syndicated), Tatler Asia, Esquire ME, L’Officiel USA, Nike Magazine (`about.nike.com` Tier C), Urban Industry (Tier C). Wikipedia remains gloss-bridge. History LP remains the default brand anchor; never let retail blogs overwrite official signature / join years (1934 / 1922).
+
+**Named collab / model depth:** when the chat asks about a specific house or release (Margiela, CDG PLAY, Rick Owens TURBODRK, Kurt Cobain / One Star, Virgil Abloh / The Ten…), prefer **dedicated** coverage of that partnership over “most iconic / best collaborations” roundups. Roundups are a map — dig for the interesting article (paint/wear story, silhouette distortion, retail moment, cultural fuss, multi-year partnership history). Cobain answers should foreground how often he wore the **One Star**, not Chuck-only shorthand. Abloh answers can note the Chuck 70 sat inside Nike **“The Ten”** (other Nike icons in the same series) because Nike owns Converse — interesting context, not a detour into inventing other SKUs. For **film/TV collabs**, lead with The Simpsons; *Stranger Things* (Nike Newsroom) is a fine secondary example — not in the Margiela/CDG tier.
 
 **Dated asks stay on that day:** UK/US calendar phrasing (e.g. **4 September 2003** / September 4, 2003) routes to date intent. Do not spray unrelated collab beats from month-name token matches (September → Simpsons). Theme spreads (sports / music / collabs) apply to theme questions, not single-day significance asks.
 
@@ -307,6 +316,13 @@ Runtime: wire stable framing into product packs before treating it as auto-shipp
 | 2026-08-07 | Chuck-E heritage / general may web-search beyond the pack | Pack first when on-topic; search fills gaps — Gemini never the public cite host |
 | 2026-08-07 | Chuck-E chat = concise prose (+ optional bullets), not report briefs; soft ~900 chars; strip ### / Pointers to Cite | Chat ≠ Lookup day cards / cliff-notes export; desks want sharp digests without jargon or cite blocks in the body |
 | 2026-08-07 | No world backdrop on Converse-tied date answers; light Converse bridge only for world-only days | Backdrop was forced noise; re-anchor only when the day has no Converse hook |
+| 2026-08-07 | Named collabs prefer dedicated coverage (Margiela → GQ/Teen Vogue/Fast Co/Hypebeast; CDG → WWD Play history) over “best collabs” roundups | Roundups are a map; desks want interesting release detail, not listicle cites |
+| 2026-08-07 | Rick Owens → Surface / designboom / British GQ / GQ pentagram feature; Cobain → Hypebeast collab + HBX One Star wear history | TURBODRK + Cobain One Star need dedicated colour, not FN roundup dates |
+| 2026-08-07 | Simpsons collab → Complex (Jun 2013 release), not FN roundup’s 2014 date | Dedicated footwear-collab coverage over listicle chronology |
+| 2026-08-07 | Virgil Abloh Ghosted Chuck 70 → Forbes + Hypebeast; context = Nike “The Ten” | Big collab moment; Nike-family series makes Converse seat interesting |
+| 2026-08-07 | Stranger Things → Nike Newsroom as secondary film/TV collab beside Simpsons | Useful screen-pack example; not framed as house-iconic |
+| 2026-08-07 | Nike purchase → NYT “Legend on the Blacktop” (10 Jul 2003); Swooshed stays History close day | Paper-of-record cite for the deal; don’t conflate announce vs close |
+| 2026-08-07 | Nike purchase also → WSJ “Nike to Buy Converse…”; Chuck II Nike tech → Ad Age + BoF; Vaquera beside Owens | Deal desk + ownership/engineering story + experimental fashion lane |
 
 ---
 

@@ -99,7 +99,7 @@ const PRODUCT_INTENT_RE =
   /\b(shoe|sneaker|chuck|all[\s-]?star|feature|features|engineering|sole|canvas|rubber|vulcaniz|material|upper|toe\s*cap|eyelet|launch|silhouette|construction|spec|specs)\b/i
 
 const HERITAGE_INTENT_RE =
-  /\b(heritage|history|founded|founding|non[\s-]?skid|chuck\s+taylor|ankle\s+patch|signature|nike\s+acquir|malden|1917|1922|1934|1932|novel\s+nugget|nugget|basketball|olympic|olympics|ncaa|sport|sports|hoops|weapon|pro\s+leather|pro\s+stars?|cultural\s+significance|collab|collaboration|humanitarian|product\s*red|\(product\)\s*red|music|punk|grunge|subculture|varvatos)\b/i
+  /\b(heritage|history|founded|founding|non[\s-]?skid|chuck\s+taylor|ankle\s+patch|signature|nike\s+acquir|malden|1917|1922|1934|1932|novel\s+nugget|nugget|basketball|olympic|olympics|ncaa|sport|sports|hoops|weapon|pro\s+leather|pro\s+stars?|cultural\s+significance|collab|collaboration|humanitarian|product\s*red|\(product\)\s*red|music|punk|grunge|subculture|varvatos|margiela|comme\s+des\s+gar[cç]ons|cdg|rick\s+owens|drkshdw|turbodrk|simpsons|stranger\s+things|vaquera|golf\s+le\s+fleur|kurt\s+cobain|cobain|one\s+star|virgil|abloh|off[\s-]?white|chuck\s*(ii|2|two)|lunarlon|comfort|engineering)\b/i
 
 /** Theme queries that should surface several sports History beats, not only All Star origin. */
 const SPORTS_THEME_RE =
@@ -107,7 +107,7 @@ const SPORTS_THEME_RE =
 
 /** Music / scenes / collabs / cause — pull fashion-press + History collab beats together. */
 const CULTURE_THEME_RE =
-  /\b(music|punk|grunge|subculture|collab|collaboration|fashion|artist|humanitarian|product\s*red|\(product\)\s*red|varvatos|comme\s+des\s+gar[cç]ons|cdg|youth\s+culture|scenes?|margiela|rick\s+owens|simpsons|film|movie|television|tv|warhol)\b/i
+  /\b(music|punk|grunge|subculture|collab|collaboration|fashion|artist|humanitarian|product\s*red|\(product\)\s*red|varvatos|comme\s+des\s+gar[cç]ons|cdg|youth\s+culture|scenes?|margiela|rick\s+owens|drkshdw|turbodrk|vaquera|simpsons|stranger\s+things|cobain|one\s+star|virgil|abloh|off[\s-]?white|the\s+ten|film|movie|television|tv|warhol|experimental|weird)\b/i
 
 export function classifyIntent(text: string): ChuckEIntent {
   const t = text.trim()
@@ -278,24 +278,67 @@ function preferHistoryPublisher(m: BrandMoment): number {
     : 0
 }
 
-/** Keep one beat per story cluster — prefer Converse History over secondary press colour. */
+/** Roundup listicles are maps — not the preferred cite once a named collab has dedicated coverage. */
+function looksLikeCollabRoundup(url: string, title = ''): boolean {
+  return /most-iconic-collaborations|iconic-collaborations|best[- ].*collaborat|collaborations-maison/i.test(
+    `${url} ${title}`,
+  )
+}
+
+/**
+ * Prefer History, then dedicated collab / model features (GQ, WWD, Teen Vogue…),
+ * over “best collaborations” roundups.
+ */
+function preferCollabCiteQuality(m: BrandMoment): number {
+  if (preferHistoryPublisher(m)) return 4
+  const url = m.citation.url || ''
+  const title = m.citation.title || ''
+  if (looksLikeCollabRoundup(url, title)) return 0
+  if (
+    /gq\.com|gq-magazine\.co\.uk|nytimes\.com|wsj\.com|wwd\.com|teenvogue\.com|fastcompany\.com|hypebeast\.com|hbx\.com|surfacemag\.com|designboom\.com|complex\.com|forbes\.com|businessoffashion\.com|adage\.com|highsnobiety\.com|vogue\.|dazeddigital\.com/i.test(
+      url,
+    )
+  ) {
+    return 3
+  }
+  return 1
+}
+
+/** Named house / model asks — allow several dedicated articles on the same collab. */
+const SPECIFIC_COLLAB_RE =
+  /\b(margiela|maison\s+martin\s+margiela|comme\s+des\s+gar[cç]ons|cdg|rick\s+owens|drkshdw|turbodrk|vaquera|simpsons|stranger\s+things|varvatos|golf\s+le\s+fleur|tyler|john\s+richmond|kurt\s+cobain|cobain|one\s+star|virgil|abloh|off[\s-]?white|the\s+ten|chuck\s*(ii|2|two)|lunarlon)\b/i
+
+/** Keep one beat per story cluster — unless a named collab ask wants dedicated depth. */
 function pickHeritageHits(
   scored: Array<{ m: BrandMoment; score: number }>,
   limit: number,
+  opts: { spreadClusters?: boolean } = {},
 ): BrandMoment[] {
   const sorted = scored
     .filter((x) => x.score > 0)
     .sort((a, b) => {
       if (b.score !== a.score) return b.score - a.score
+      const q = preferCollabCiteQuality(b.m) - preferCollabCiteQuality(a.m)
+      if (q !== 0) return q
       return preferHistoryPublisher(b.m) - preferHistoryPublisher(a.m)
     })
 
   const out: BrandMoment[] = []
   const seenClusters = new Set<string>()
+  const clusterCounts = new Map<string, number>()
   for (const { m } of sorted) {
     const cluster = heritageStoryCluster(m)
-    if (cluster && seenClusters.has(cluster)) continue
-    if (cluster) seenClusters.add(cluster)
+    if (cluster) {
+      if (opts.spreadClusters) {
+        const n = clusterCounts.get(cluster) || 0
+        if (n >= 3) continue
+        clusterCounts.set(cluster, n + 1)
+      } else if (seenClusters.has(cluster)) {
+        continue
+      } else {
+        seenClusters.add(cluster)
+      }
+    }
     out.push(m)
     if (out.length >= limit) break
   }
@@ -312,16 +355,26 @@ function matchHeritageMoments(
   const q = query.toLowerCase()
   const sportsTheme = SPORTS_THEME_RE.test(q)
   const cultureTheme = CULTURE_THEME_RE.test(q)
+  const specificCollab = SPECIFIC_COLLAB_RE.test(q)
+  const nikeTechAsk =
+    /\b(lunarlon|chuck\s*(ii|2|two)|comfort|cushion|engineering|tech(?:nology)?|sore\s+feet)\b/.test(q) ||
+    (/\bnike\b/.test(q) && /\b(tech|technology|comfort|cushion|engineer|feel like)\b/.test(q))
+  const nikeDealAsk =
+    /\b(acquir|acquisition|purchas|bought|buyout|swooshed)\b/.test(q) ||
+    (/\bnike\b/.test(q) && /\b(buy|bought|purchase|deal|takeover|acquir)\b/.test(q))
   const queryDate = extractDateFromMessage(query)
   // Dated asks (e.g. Nike close) stay on that day — don't spray collab colour from month-name tokens.
   const datedFocus = Boolean(queryDate && queryDate.length >= 10)
   const effectiveLimit = datedFocus
     ? Math.min(limit, 2)
-    : sportsTheme || cultureTheme
-      ? Math.max(limit, 5)
-      : limit
+    : specificCollab
+      ? Math.max(limit, 4)
+      : sportsTheme || cultureTheme
+        ? Math.max(limit, 5)
+        : limit
   const scored = heritageMoments(brand).map((m) => {
     const hay = `${m.title} ${m.synopsis} ${m.date}`.toLowerCase()
+    const citeUrl = m.citation.url || ''
     let score = datedFocus && queryDate ? brandMomentQueryRank(m, queryDate) : 0
     if (datedFocus && score === 0) return { m, score: 0 }
     for (const token of q.split(/\W+/).filter((t) => t.length > 2)) {
@@ -341,20 +394,70 @@ function matchHeritageMoments(
     }
     if (cultureTheme && !datedFocus) {
       if (/\bpunk|grunge|ramones|cobain|subcultur/.test(hay)) score += 3
-      if (/\bcollab|varvatos|comme des gar|cdg|richmond|golf le fleur|tyler|margiela|rick owens|simpsons|warhol/.test(hay))
+      if (
+        /\bcollab|varvatos|comme des gar|cdg|richmond|golf le fleur|tyler|margiela|rick owens|vaquera|simpsons|abloh|virgil|off-white|the ten|warhol/.test(
+          hay,
+        )
+      )
         score += 3
       if (/\b\(product\)\s*red|product red|hund\(red\)|aids|humanitarian|malaria/.test(hay)) score += 3
-      if (/\bfilm|movie|television|mcfly|antoinette/.test(hay)) score += 2
+      if (/\bfilm|movie|television|mcfly|antoinette|simpsons|stranger things/.test(hay)) score += 2
       if (/\bmusic|skate|youth|fashion|artist/.test(hay)) score += 1
+      // Film/TV collab asks: Simpsons + screen-wear colour + later packs like Stranger Things.
+      if (/\b(film|movie|television|\btv\b|screen)/.test(q)) {
+        if (/simpsons|stranger things|chucks on screen|film and tv|marie antoinette|mcfly/.test(hay))
+          score += 2
+      }
+      // Experimental / weird fashion collabs: Owens + Vaquera.
+      if (/\b(experimental|weird|radical|distort|avant[\s-]?garde)\b/.test(q)) {
+        if (/rick owens|turbodrk|vaquera|slouch wedge|margiela/.test(hay)) score += 3
+      }
+    }
+    // Named collab / model: lift dedicated coverage; soft-demote roundup listicles.
+    if (specificCollab && !datedFocus) {
+      if (looksLikeCollabRoundup(citeUrl, m.citation.title)) score -= 4
+      if (/margiela/.test(q) && /margiela|martin margiela/.test(hay)) score += 4
+      if (/\b(cdg|comme)\b/.test(q) && /cdg|comme des gar|play comme/.test(hay)) score += 4
+      if (/rick\s+owens|drkshdw|turbodrk/.test(q) && /rick owens|drkshdw|turbodrk/.test(hay))
+        score += 4
+      if (/vaquera/.test(q) && /vaquera|slouch wedge/.test(hay)) score += 4
+      if (/cobain|one\s+star/.test(q) && /cobain|one star/.test(hay)) score += 4
+      if (/simpsons/.test(q) && /simpsons/.test(hay)) score += 4
+      if (/stranger\s+things/.test(q) && /stranger things/.test(hay)) score += 4
+      if (/abloh|virgil|off[\s-]?white|the\s+ten/.test(q) && /abloh|virgil|off-white|the ten|ghosting/.test(hay))
+        score += 4
+      if (/chuck\s*(ii|2|two)|lunarlon/.test(q) && /chuck ii|chuck taylor all star ii|lunarlon|feel like nikes/.test(hay))
+        score += 4
+      if (
+        /gq\.com|gq-magazine\.co\.uk|wwd\.com|teenvogue\.com|fastcompany\.com|hypebeast\.com|hbx\.com|surfacemag\.com|designboom\.com|complex\.com|forbes\.com|about\.nike\.com|nytimes\.com|wsj\.com|adage\.com|businessoffashion\.com|highsnobiety\.com/i.test(
+          citeUrl,
+        )
+      ) {
+        score += 2
+      }
+    }
+    // Nike purchase / acquisition: prefer NYT + WSJ deal coverage.
+    if (!datedFocus && nikeDealAsk) {
+      if (/nytimes\.com|wsj\.com/i.test(citeUrl) && /nike|acquir|purchas|blacktop|to buy converse/.test(hay))
+        score += 5
+      if (/swooshed|nike to acquire|nike completed|nike to buy/.test(hay)) score += 2
+    }
+    // Nike tech / comfort / how ownership changed the shoe.
+    if (!datedFocus && nikeTechAsk) {
+      if (/chuck ii|all star ii|lunarlon|feel like nikes|nike tech/.test(hay)) score += 5
+      if (/adage\.com|businessoffashion\.com/i.test(citeUrl)) score += 2
     }
     return { m, score }
   })
   const hits = scored.filter((x) => x.score > 0)
+  const pickOpts = {
+    spreadClusters: (specificCollab || nikeTechAsk || nikeDealAsk) && !datedFocus,
+  }
   if (datedFocus && hits.length && queryDate) {
     const exact = hits.filter((x) => x.m.date === queryDate)
-    if (exact.length) return pickHeritageHits(exact, effectiveLimit)
+    if (exact.length) return pickHeritageHits(exact, effectiveLimit, pickOpts)
   }
-  if (hits.length) return pickHeritageHits(hits, effectiveLimit)
+  if (hits.length) return pickHeritageHits(hits, effectiveLimit, pickOpts)
   // Soft fallback: return a couple of core moments when user asks generally about heritage
   if (opts.softFallback !== false && !datedFocus) return brand.timeline.slice(0, effectiveLimit)
   return []
@@ -573,14 +676,25 @@ async function finalizeChuckEGlosses(
 }
 
 /** Allowlisted grounding URLs from Gemini search — Gemini itself is never the cite host. */
-function citationsFromGroundedSources(sources: ClaimCandidate[]): Citation[] {
+function citationsFromGroundedSources(
+  sources: ClaimCandidate[],
+  opts: { demoteCollabRoundups?: boolean } = {},
+): Citation[] {
   const out: Citation[] = []
   const seen = new Set<string>()
-  for (const s of sources) {
+  const ranked = [...sources].sort((a, b) => {
+    if (!opts.demoteCollabRoundups) return 0
+    const ar = looksLikeCollabRoundup(a.url || '', a.title || '') ? 1 : 0
+    const br = looksLikeCollabRoundup(b.url || '', b.title || '') ? 1 : 0
+    return ar - br
+  })
+  for (const s of ranked) {
     const url = s.url?.trim()
     if (!url || seen.has(url.toLowerCase())) continue
     if (isCitationBlocked(url) || !isCitationAllowed(url)) continue
     if (/generativelanguage\.googleapis|gemini\.google/i.test(url)) continue
+    // Prefer dedicated collab coverage already on the pack over generic “best collabs” lists.
+    if (opts.demoteCollabRoundups && looksLikeCollabRoundup(url, s.title || '')) continue
     seen.add(url.toLowerCase())
     const entry = findRegistryEntry(url)
     out.push(
@@ -850,16 +964,19 @@ export async function handleChuckEChat(
     // Prefer scored pack beats (no soft timeline dump). Web search fills gaps / adds colour.
     const moments = matchHeritageMoments(lastUser.content, brandId, 5, { softFallback: false })
     const systemContext = buildSystemContext(brandId)
+    const specificCollab = SPECIFIC_COLLAB_RE.test(lastUser.content)
 
     if (env.GEMINI_API_KEY) {
       const researched = await researchChuckETopic({
         apiKey: env.GEMINI_API_KEY,
         userQuestion: lastUser.content,
         systemContext,
+        preferDedicatedCollabCoverage: specificCollab,
         packBeats: moments.map((m) => ({
           date: m.date,
           title: m.title,
           synopsis: m.synopsis,
+          citeUrl: m.citation.url,
         })),
       })
       if (researched?.content) {
@@ -868,7 +985,9 @@ export async function handleChuckEChat(
         )
         const citations = dedupeCitationsByUrl([
           ...moments.map((m) => citationFromBrandMoment(m)),
-          ...citationsFromGroundedSources(researched.groundedSources),
+          ...citationsFromGroundedSources(researched.groundedSources, {
+            demoteCollabRoundups: specificCollab,
+          }),
         ])
         return {
           sessionId,

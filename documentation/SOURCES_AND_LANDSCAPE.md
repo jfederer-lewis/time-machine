@@ -3,7 +3,7 @@
 > Companion to `VISION.md`, `PIPELINE.md`, and `EDITORIAL_SCHEMA.md`. Agents must follow the citation rules here.  
 > **Canonical host lists:** `shared/source-registry.ts` (`CITATION_ALLOWLIST` / `CITATION_BLOCKLIST`).  
 > Tables below summarise intent; if a host is missing from the registry, it is **not** allowlisted yet.  
-> **Last updated:** 2026-08-07 (fashion journalism + archives)  
+> **Last updated:** 2026-08-07 (dedicated collab cites + Fast Company)  
 > **Visual note:** Existing “on this day” products are functional references only — **do not copy their UI.**
 
 ---
@@ -128,7 +128,7 @@ Hosts marked *aspirational* below are **not** registered yet — do not assume t
 | Telegraph / Independent | telegraph.co.uk, independent.co.uk |
 | Reuters / AP / AFP | reuters.com, apnews.com, afp.com |
 | BBC articles | bbc.co.uk, bbc.com |
-| FT / WaPo / LA Times | ft.com, washingtonpost.com, latimes.com |
+| FT / WSJ / WaPo / LA Times | ft.com, wsj.com, washingtonpost.com, latimes.com |
 | New Yorker / Atlantic / TIME / Vanity Fair | newyorker.com, theatlantic.com, time.com, vanityfair.com |
 | Le Monde | lemonde.fr |
 | Asahi / Nikkei | asahi.com, nikkei.com |
@@ -144,8 +144,8 @@ Claim-relevant features only — editorial culture titles, not Reddit / forums /
 |--------|---------|
 | Vogue family | vogue.com, vogue.co.uk, teenvogue.com, voguebusiness.com, vogue.fr / .it / .de / .es / .jp / .in / .me / .sg / .hk / .mx / .pt / .ua, vogue.com.au, voguescandinavia.com |
 | Dazed Media / indie culture | dazeddigital.com, i-d.co, anothermag.com, nowness.com, theface.com, hungertv.com, showstudio.com |
-| System / street / trade | system-magazine.com, highsnobiety.com, hypebeast.com, hypebae.com, wwd.com, businessoffashion.com, footwearnews.com, fashionnetwork.com, fashionunited.com, fashionista.com, models.com |
-| Glossies / lifestyle | harpersbazaar.com (+ .co.uk / .com.au), elle.com, elleuk.com, gq.com, gq-magazine.co.uk, esquire.com, esquireme.com, tatler.com, tatlerasia.com, vanityfair.com, wmagazine.com, marieclaire.com (+ .co.uk), graziamagazine.com, graziadaily.co.uk, stylist.co.uk, whowhatwear.com, refinery29.com |
+| System / street / trade | system-magazine.com, highsnobiety.com, hypebeast.com, hbx.com, hypebae.com, surfacemag.com, designboom.com, wwd.com, businessoffashion.com, adage.com, footwearnews.com, fashionnetwork.com, fashionunited.com, fashionista.com, models.com |
+| Glossies / lifestyle | harpersbazaar.com (+ .co.uk / .com.au), elle.com, elleuk.com, gq.com, gq-magazine.co.uk, esquire.com, esquireme.com, tatler.com, tatlerasia.com, vanityfair.com, wmagazine.com, marieclaire.com (+ .co.uk), graziamagazine.com, graziadaily.co.uk, stylist.co.uk, whowhatwear.com, refinery29.com, fastcompany.com |
 | L’Officiel / indie glossies | lofficielusa.com, lofficiel.com, numero.com, purple.fr, 032c.com, documentjournal.com, 10magazine.com, hero-magazine.com, wonderlandmagazine.com |
 | NY culture desks | thecut.com, nymag.com |
 | Design / art | wallpaper.com, frieze.com, artforum.com, interviewmagazine.com |
@@ -245,3 +245,6 @@ UI shows the full Harvard string + URL link — not a compact `open hostname →
 | 2026-08-07 | Register Footwear News / Yahoo, Tatler Asia, Esquire ME, L’Officiel USA (Tier B); Urban Industry Tier C | Collab + film/TV + secondary history colour; Wikipedia remains gloss-bridge |
 | 2026-08-07 | Expand culture allowlist: global Vogues / Teen Vogue, museums (Met, Tate, …), i-D, System, Highsnobiety, Hypebeast, BoF, WWD, glossies, music press; block Reddit | Credible cultural publishers ship as cites; forums stay out |
 | 2026-08-07 | Add fashion journalism + costume archives (The Cut, W, Vogue Business, The Face, SHOWstudio, FIT / Galliera / KCI, CFDA / BFC, sneaker press, …) | Chuck-E collab / culture answers lean on fashion desks and heritage collections |
+| 2026-08-07 | Register Fast Company; Chuck-E named collabs prefer dedicated features (e.g. Margiela GQ / Teen Vogue; CDG WWD) over roundup listicles | Roundups map the territory; cite the interesting article |
+| 2026-08-07 | Register Surface, designboom, HBX; Rick Owens TURBODRK + Cobain/One Star dedicated cites | Design press + HBX history for named silhouette collabs |
+| 2026-08-07 | Register WSJ + Ad Age; Nike deal WSJ; Chuck II tech Ad Age/BoF; Vaquera Highsnobiety + Newsroom | Ownership engineering story + experimental fashion collabs |

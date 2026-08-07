@@ -7,8 +7,10 @@ import {
 /**
  * Heritage + culture knowledge pack for Chuck-E / date attach.
  * Core narrative: https://www.converse.com/uk/en/landing-converse-history
- * Secondary culture colour (collabs / scenes / cause): claim-relevant Vogue, Dazed, Nike Magazine —
- * not the public Timeline surface (that stays curated in converse.ts).
+ * Secondary culture colour (collabs / scenes / cause): claim-relevant dedicated press
+ * (GQ / Teen Vogue / WWD / Hypebeast / Fast Company / Vogue / Dazed…) — prefer articles
+ * about the named collab or model over “best collaborations” roundups.
+ * Not the public Timeline surface (that stays curated in converse.ts).
  */
 
 const HISTORY_URL = CONVERSE_HISTORY_PAGE_UK
@@ -451,15 +453,36 @@ export const CONVERSE_HERITAGE_KB: BrandMoment[] = withHeritageImages([
       precision: 'exact-day',
       title: 'Nike to acquire Converse',
       synopsis:
-        'Nike announced a definitive agreement to acquire Converse for about $305 million — folding the heritage silhouette into a global portfolio while keeping the Converse label distinct.',
+        'Nike announced a definitive agreement to acquire Converse for about $305 million — the blacktop legend folding into Nike’s portfolio while keeping the Converse label distinct.',
       reference:
-        'Converse History lists the Nike purchase under 2003 (“Swooshed”). Exact announce day 9 July 2003 corroborated by Nike SEC 8-K “NIKE, INC. TO ACQUIRE CONVERSE, INC.”',
+        'Agreement announced 9 July 2003 (Nike SEC 8-K). Public press: The New York Times (10 July 2003) ‘Nike Purchasing Converse, a Legend on the Blacktop’. Available at: https://www.nytimes.com/2003/07/10/business/nike-purchasing-converse-a-legend-on-the-blacktop.html. Also WSJ same-day deal coverage. Converse History frames the purchase year as “Swooshed.”',
       citation: {
-        title: 'Converse History',
-        url: HISTORY_URL,
-        publisher: 'Converse',
+        title: 'Nike Purchasing Converse, a Legend on the Blacktop',
+        url: 'https://www.nytimes.com/2003/07/10/business/nike-purchasing-converse-a-legend-on-the-blacktop.html',
+        publisher: 'The New York Times',
+        publishedAt: '2003-07-10',
       },
       isExactQuote: false,
+      storyCluster: 'nike-announce-2003',
+    },
+    {
+      id: 'cv-2003-announce-wsj',
+      date: '2003-07-09',
+      precision: 'exact-day',
+      title: 'Nike to buy Converse',
+      synopsis:
+        'The Wall Street Journal reported Nike’s ~$305 million deal for Converse — framing the Swoosh swallowing Chuck Taylor as culturally outsized versus the cash figure, pairing Nike’s high-tech sneakers with Converse’s low-tech blacktop classic.',
+      reference:
+        'Maureen Tkacik / The Wall Street Journal (9 July 2003) ‘Nike to Buy Converse For About $305 Million’. Available at: https://www.wsj.com/articles/SB105778918424757500',
+      citation: {
+        title: 'Nike to Buy Converse For About $305 Million',
+        url: 'https://www.wsj.com/articles/SB105778918424757500',
+        publisher: 'The Wall Street Journal',
+        author: 'Maureen Tkacik',
+        publishedAt: '2003-07-09',
+      },
+      isExactQuote: false,
+      storyCluster: 'nike-announce-2003',
     },
     {
       id: 'cv-2003',
@@ -469,7 +492,7 @@ export const CONVERSE_HERITAGE_KB: BrandMoment[] = withHeritageImages([
       synopsis:
         'Nike completed its acquisition of Converse — folding the heritage All Star into a global portfolio while keeping the Converse label distinct.',
       reference:
-        'Converse History (“Swooshed”, 2003). Exact close day 4 September 2003 corroborated by Nike SEC 8-K “NIKE, INC. COMPLETES ACQUISITION OF CONVERSE INC.”',
+        'Converse History (“Swooshed”, 2003). Exact close day 4 September 2003 corroborated by Nike SEC 8-K “NIKE, INC. COMPLETES ACQUISITION OF CONVERSE INC.” For the July announcement / purchase story, prefer The New York Times and The Wall Street Journal deal coverage.',
       citation: {
         title: 'Converse History',
         url: HISTORY_URL,
@@ -514,22 +537,40 @@ export const CONVERSE_HERITAGE_KB: BrandMoment[] = withHeritageImages([
       storyCluster: 'product-red-2008',
     },
     {
-      id: 'cv-2008-cobain-fn',
-      date: '2008-05',
-      precision: 'month',
+      id: 'cv-2008-cobain-hypebeast',
+      date: '2008-03-18',
+      precision: 'exact-day',
       title: 'Converse x Kurt Cobain',
       synopsis:
-        'In May 2008 Converse released a Kurt Cobain collection with notebook artwork, scribbles and distressed detailing nodding to how he wore broken-in Chuck Taylors.',
+        'Hypebeast reported Converse’s Kurt Cobain collection — notebook artwork, lyric scribbles and distressed wear — across One Star, Chuck Taylor All Star and Jack Purcell, the silhouettes he was often pictured in; retail was slated from May 2008.',
       reference:
-        'Amina Ayoud / Footwear News via Yahoo (12 December 2023) ‘Converse’s Most Iconic Collaborations: From Maison Margiela to the Simpsons’. Available at: https://www.yahoo.com/lifestyle/converse-most-iconic-collaborations-maison-223606495.html',
+        'Hypebeast (18 March 2008) ‘Kurt Cobain Converse Collection’. Available at: https://hypebeast.com/2008/3/kurt-cobain-converse-collection',
       citation: {
-        title: 'Converse’s Most Iconic Collaborations: From Maison Margiela to the Simpsons',
-        url: 'https://www.yahoo.com/lifestyle/converse-most-iconic-collaborations-maison-223606495.html',
-        publisher: 'Footwear News',
-        author: 'Amina Ayoud',
-        publishedAt: '2023-12-12',
+        title: 'Kurt Cobain Converse Collection',
+        url: 'https://hypebeast.com/2008/3/kurt-cobain-converse-collection',
+        publisher: 'Hypebeast',
+        publishedAt: '2008-03-18',
       },
       isExactQuote: false,
+      storyCluster: 'cobain-converse',
+    },
+    {
+      id: 'cv-2008-cobain-onestar-hbx',
+      date: '2008',
+      precision: 'year',
+      title: 'Cobain and the One Star',
+      synopsis:
+        'HBX’s One Star history stresses how often Kurt Cobain wore the classic One Star — affirming it as a grunge-era rebellion marker — and notes Converse’s 2008 Kurt Cobain × One Star tribute as part of that silhouette’s street lore.',
+      reference:
+        'HBX Journal (July 2017) ‘The History Behind the Converse One Star’. Available at: https://hbx.com/journal/2017/7/history-behind-converse-one-star',
+      citation: {
+        title: 'The History Behind the Converse One Star',
+        url: 'https://hbx.com/journal/2017/7/history-behind-converse-one-star',
+        publisher: 'HBX',
+        publishedAt: '2017-07',
+      },
+      isExactQuote: false,
+      storyCluster: 'cobain-converse',
     },
     {
       id: 'cv-2009-cons',
@@ -555,13 +596,33 @@ export const CONVERSE_HERITAGE_KB: BrandMoment[] = withHeritageImages([
       synopsis:
         'Comme des Garçons PLAY put models in Converse and launched a collaboration that became Converse’s longest-running contemporary partnership.',
       reference:
-        'Converse History dates the collab to 2009; contemporary press (Interview Magazine, LA Times, FashionNetwork) covered the debut for late August 2009.',
+        'Converse History dates the collab to 2009; contemporary press (Interview Magazine, LA Times, FashionNetwork) covered the debut for late August 2009. For the heart-logo Chuck run since 2009 — seasonal restocks, Chuck 70 from 2015, online from 2018 — see Footwear News / WWD (Ian Servantes, 7 Oct 2023).',
       citation: {
         title: 'Converse History',
         url: HISTORY_URL,
         publisher: 'Converse',
       },
       isExactQuote: false,
+      storyCluster: 'cdg-play',
+    },
+    {
+      id: 'cv-2009-cdg-wwd',
+      date: '2009',
+      precision: 'year',
+      title: 'Play Comme des Garçons × Converse',
+      synopsis:
+        'Footwear News traces Play Comme des Garçons × Converse from the 2009 heart-logo Chuck Taylor All Star through Chuck 70 restocks, Pro Leather / Jack Purcell / One Star detours, and the partnership’s shift from Dover Street Market exclusivity to wider online availability in 2018.',
+      reference:
+        'Ian Servantes / Footwear News via WWD (7 October 2023) ‘A History of Play Comme des Garçon and Converse’s Sneaker Collaborations’. Available at: https://wwd.com/footwear-news/sneaker-news/cdg-converse-play-comme-des-garcon-hearts-sneakers-history-1237702640/',
+      citation: {
+        title: 'A History of Play Comme des Garçon and Converse’s Sneaker Collaborations',
+        url: 'https://wwd.com/footwear-news/sneaker-news/cdg-converse-play-comme-des-garcon-hearts-sneakers-history-1237702640/',
+        publisher: 'Footwear News',
+        author: 'Ian Servantes',
+        publishedAt: '2023-10-07',
+      },
+      isExactQuote: false,
+      storyCluster: 'cdg-play',
     },
     {
       id: 'cv-2013',
@@ -580,40 +641,79 @@ export const CONVERSE_HERITAGE_KB: BrandMoment[] = withHeritageImages([
       isExactQuote: false,
     },
     {
-      id: 'cv-2014-margiela-fn',
-      date: '2014-05-23',
+      id: 'cv-2013-margiela-gq',
+      date: '2013-09-04',
       precision: 'exact-day',
       title: 'Converse x Maison Margiela',
       synopsis:
-        'Converse and Maison Margiela released hand-painted white Chuck Taylor All Star Hi and Jack Purcell pairs — paint meant to chip with wear, echoing Margiela’s Bianchetto Tabi treatment.',
+        'GQ revealed Converse × Maison Martin Margiela’s white-painted Chuck Taylor All Stars — a flat-matte coat that chips with wear to show the canvas beneath — with matching Jack Purcell pairs in the First String drop.',
       reference:
-        'Amina Ayoud / Footwear News via Yahoo (12 December 2023) ‘Converse’s Most Iconic Collaborations: From Maison Margiela to the Simpsons’ (release dated 23 May 2014). Available at: https://www.yahoo.com/lifestyle/converse-most-iconic-collaborations-maison-223606495.html',
+        'Mark Byrne / GQ (4 September 2013) ‘GQ Exclusive: Converse x Maison Martin Margiela Revealed’. Available at: https://www.gq.com/story/converse-maison-martin-margiela-collaboration. Corroborated by Teen Vogue (10 Sep 2013), Fast Company (paint / poetry of white; ~20 Sep retail), and Hypebeast First String 2013 release notes.',
       citation: {
-        title: 'Converse’s Most Iconic Collaborations: From Maison Margiela to the Simpsons',
-        url: 'https://www.yahoo.com/lifestyle/converse-most-iconic-collaborations-maison-223606495.html',
-        publisher: 'Footwear News',
-        author: 'Amina Ayoud',
-        publishedAt: '2023-12-12',
+        title: 'GQ Exclusive: Converse x Maison Martin Margiela Revealed',
+        url: 'https://www.gq.com/story/converse-maison-martin-margiela-collaboration',
+        publisher: 'GQ',
+        author: 'Mark Byrne',
+        publishedAt: '2013-09-04',
       },
       isExactQuote: false,
+      storyCluster: 'margiela-paint',
     },
     {
-      id: 'cv-2014-simpsons-fn',
-      date: '2014-09',
-      precision: 'month',
-      title: 'Converse x The Simpsons',
+      id: 'cv-2013-margiela-teenvogue',
+      date: '2013-09-10',
+      precision: 'exact-day',
+      title: 'Margiela painted Chucks',
       synopsis:
-        'In September 2014 Converse released a Chuck Taylor All Stars × The Simpsons pack (high and low) with character graphics — timed to the show’s anniversary presence in Germany per Footwear News.',
+        'Teen Vogue described the Margiela × Converse paint job as all-out minimalist: white over high-top All Stars and low-top Jack Purcells so wear chips the coat and reveals Converse red, navy, yellow, or black underneath — each pair shaped by how it’s worn.',
       reference:
-        'Amina Ayoud / Footwear News via Yahoo (12 December 2023) ‘Converse’s Most Iconic Collaborations: From Maison Margiela to the Simpsons’. Available at: https://www.yahoo.com/lifestyle/converse-most-iconic-collaborations-maison-223606495.html',
+        'Media Brecher / Teen Vogue (10 September 2013) ‘Maison Martin Margiela Gives Converse the Avant-Garde Treatment’. Available at: https://www.teenvogue.com/story/maison-martin-margiela-converse',
       citation: {
-        title: 'Converse’s Most Iconic Collaborations: From Maison Margiela to the Simpsons',
-        url: 'https://www.yahoo.com/lifestyle/converse-most-iconic-collaborations-maison-223606495.html',
-        publisher: 'Footwear News',
-        author: 'Amina Ayoud',
-        publishedAt: '2023-12-12',
+        title: 'Maison Martin Margiela Gives Converse the Avant-Garde Treatment',
+        url: 'https://www.teenvogue.com/story/maison-martin-margiela-converse',
+        publisher: 'Teen Vogue',
+        author: 'Media Brecher',
+        publishedAt: '2013-09-10',
       },
       isExactQuote: false,
+      storyCluster: 'margiela-paint',
+    },
+    {
+      id: 'cv-2013-margiela-fastco',
+      date: '2013-09',
+      precision: 'month',
+      title: 'Margiela’s white All Stars',
+      synopsis:
+        'Fast Company reported the Margiela treatment as white paint over Chuck Taylors and Jack Purcells — including a Margiela-exclusive vintage yellow canvas — quoting the Maison’s “poetry” of white and a ~20 September retail window at $200.',
+      reference:
+        'Fast Company ‘Converse All Stars Get The Margiela Treatment’. Available at: https://www.fastcompany.com/3017816/converse-all-stars-get-the-margiela-treatment. See also Hypebeast First String 2013 release details: https://hypebeast.com/2013/9/maison-martin-margiela-x-converse-first-string-2013-collection-official-release-details',
+      citation: {
+        title: 'Converse All Stars Get The Margiela Treatment',
+        url: 'https://www.fastcompany.com/3017816/converse-all-stars-get-the-margiela-treatment',
+        publisher: 'Fast Company',
+        publishedAt: '2013-09',
+      },
+      isExactQuote: false,
+      storyCluster: 'margiela-paint',
+    },
+    {
+      id: 'cv-2013-simpsons-complex',
+      date: '2013-06-15',
+      precision: 'exact-day',
+      title: 'Converse x The Simpsons',
+      synopsis:
+        'Complex covered The Simpsons’ first footwear collab — Chuck Taylor All Stars with character graphics (Homer “D’oh!” / “Woo Hoo!”, Bart’s chalkboard lines, a Family colourway) — releasing 15 June 2013 at Journeys, Converse stores and converse.com.',
+      reference:
+        'Brennan Hiro Williams / Complex (13 June 2013) ‘The Simpsons x Converse Chuck Taylor All Star Collection’. Available at: https://www.complex.com/sneakers/a/brennan-hiro-williams/the-simpsons-x-converse-chuck-taylor-all-star-collection1',
+      citation: {
+        title: 'The Simpsons x Converse Chuck Taylor All Star Collection',
+        url: 'https://www.complex.com/sneakers/a/brennan-hiro-williams/the-simpsons-x-converse-chuck-taylor-all-star-collection1',
+        publisher: 'Complex',
+        author: 'Brennan Hiro Williams',
+        publishedAt: '2013-06-13',
+      },
+      isExactQuote: false,
+      storyCluster: 'simpsons-converse',
     },
     {
       id: 'cv-2015',
@@ -632,6 +732,43 @@ export const CONVERSE_HERITAGE_KB: BrandMoment[] = withHeritageImages([
       isExactQuote: false,
     },
     {
+      id: 'cv-2015-chuck-ii-adage',
+      date: '2015-07-23',
+      precision: 'exact-day',
+      title: 'Chuck Taylor All Star II',
+      synopsis:
+        'Ad Age covered Converse’s Chuck Taylor All Star II — the silhouette’s comfort refresh using Nike Lunarlon and related parent-company tech so Chucks could feel more cushioned without abandoning the classic look.',
+      reference:
+        'Ashley Rodriguez / Ad Age (23 July 2015) ‘Converse Uses Nike Tech to Make Your Chucks a Lot More Comfortable’. Available at: https://adage.com/creativity/work/nike-tech-infused-chuck-taylor-all-star-ii/42820/',
+      citation: {
+        title: 'Converse Uses Nike Tech to Make Your Chucks a Lot More Comfortable',
+        url: 'https://adage.com/creativity/work/nike-tech-infused-chuck-taylor-all-star-ii/42820/',
+        publisher: 'Ad Age',
+        author: 'Ashley Rodriguez',
+        publishedAt: '2015-07-23',
+      },
+      isExactQuote: false,
+      storyCluster: 'chuck-ii-nike-tech',
+    },
+    {
+      id: 'cv-2015-chuck-ii-bof',
+      date: '2015-07-23',
+      precision: 'exact-day',
+      title: 'Chucks that feel like Nikes',
+      synopsis:
+        'Business of Fashion / Bloomberg-era coverage framed the Chuck II as Converse answering a century of sore feet by importing Nike Lunarlon cushioning — the clearest product story of how Nike ownership changed Chuck engineering.',
+      reference:
+        'The Business of Fashion ‘After a Billion Sore Feet, Converse Wants Chucks to Feel Like Nikes’ (23 July 2015). Available at: https://www.businessoffashion.com/news/news-analysis/after-a-billion-sore-feet-converse-wants-chucks-to-feel-like-nikes/',
+      citation: {
+        title: 'After a Billion Sore Feet, Converse Wants Chucks to Feel Like Nikes',
+        url: 'https://www.businessoffashion.com/news/news-analysis/after-a-billion-sore-feet-converse-wants-chucks-to-feel-like-nikes/',
+        publisher: 'The Business of Fashion',
+        publishedAt: '2015-07-23',
+      },
+      isExactQuote: false,
+      storyCluster: 'chuck-ii-nike-tech',
+    },
+    {
       id: 'cv-2017',
       date: '2017-11-02',
       precision: 'exact-day',
@@ -646,6 +783,43 @@ export const CONVERSE_HERITAGE_KB: BrandMoment[] = withHeritageImages([
         publisher: 'Converse',
       },
       isExactQuote: false,
+    },
+    {
+      id: 'cv-2018-abloh-forbes',
+      date: '2018-04-30',
+      precision: 'exact-day',
+      title: 'Converse x Virgil Abloh',
+      synopsis:
+        'Forbes covered Virgil Abloh’s translucent “Ghosting” Chuck 70 — red cable tie, “shoelaces” printed laces, “vulcanized” on the foxing — as the Converse chapter of Abloh’s Nike “The Ten” series, which also rebuilt other Nike icons after Nike’s 2003 Converse acquisition.',
+      reference:
+        'Declan Eytan / Forbes (30 April 2018) ‘Virgil Abloh and Converse Collaborate on Limited Edition Sneaker’. Available at: https://www.forbes.com/sites/declaneytan/2018/04/30/virgil-abloh-and-converse-collaborate-on-limited-edition-sneaker/',
+      citation: {
+        title: 'Virgil Abloh and Converse Collaborate on Limited Edition Sneaker',
+        url: 'https://www.forbes.com/sites/declaneytan/2018/04/30/virgil-abloh-and-converse-collaborate-on-limited-edition-sneaker/',
+        publisher: 'Forbes',
+        author: 'Declan Eytan',
+        publishedAt: '2018-04-30',
+      },
+      isExactQuote: false,
+      storyCluster: 'abloh-the-ten',
+    },
+    {
+      id: 'cv-2018-abloh-hypebeast',
+      date: '2018-05',
+      precision: 'month',
+      title: 'Abloh Chuck 70 — The Ten',
+      synopsis:
+        'Hypebeast’s closer look at the Converse × Virgil Abloh Chuck 70 framed the Ghosted upper and text-as-detail treatment inside “The Ten” — Abloh’s Off-White reworks of Nike-family icons, with the Chuck 70 as Converse’s seat at that table.',
+      reference:
+        'Hypebeast (May 2018) ‘Converse Virgil Abloh Chuck 70 The Ten Closer Look’. Available at: https://hypebeast.com/2018/5/converse-virgil-abloh-chuck-70-the-ten-closer-look',
+      citation: {
+        title: 'Converse Virgil Abloh Chuck 70 The Ten Closer Look',
+        url: 'https://hypebeast.com/2018/5/converse-virgil-abloh-chuck-70-the-ten-closer-look',
+        publisher: 'Hypebeast',
+        publishedAt: '2018-05',
+      },
+      isExactQuote: false,
+      storyCluster: 'abloh-the-ten',
     },
     {
       id: 'cv-2019',
@@ -764,22 +938,80 @@ export const CONVERSE_HERITAGE_KB: BrandMoment[] = withHeritageImages([
       isExactQuote: false,
     },
     {
-      id: 'cv-2023-rick-owens-fn',
-      date: '2023-05-16',
+      id: 'cv-2021-rick-owens-surface',
+      date: '2021-07-22',
       precision: 'exact-day',
       title: 'Converse x Rick Owens DRKSHDW',
       synopsis:
-        'Converse and Rick Owens DRKSHDW released a laceless hot-pink TURBODRK Chuck 70 (16 May 2023) — one beat in a longer high-fashion collab run that Footwear News groups with Margiela, CDG and other house partnerships.',
+        'Surface covered Rick Owens’s DRKSHDW × Converse TURBODRK Chuck 70 — square-toe bumper, dramatically extended tongue, punk knee-high nod — shown at Paris Men’s, with retail from 27 July 2021; Owens called earlier SS14 Ramones Chucks a “louder and dumber” precursor.',
       reference:
-        'Amina Ayoud / Footwear News via Yahoo (12 December 2023) ‘Converse’s Most Iconic Collaborations: From Maison Margiela to the Simpsons’. Available at: https://www.yahoo.com/lifestyle/converse-most-iconic-collaborations-maison-223606495.html',
+        'Ryan Waddoups / Surface (22 July 2021) ‘Rick Owens Radically Reshapes the Converse Chuck 70’. Available at: https://www.surfacemag.com/articles/rick-owens-converse-chuck-70-collaboration/',
       citation: {
-        title: 'Converse’s Most Iconic Collaborations: From Maison Margiela to the Simpsons',
-        url: 'https://www.yahoo.com/lifestyle/converse-most-iconic-collaborations-maison-223606495.html',
-        publisher: 'Footwear News',
-        author: 'Amina Ayoud',
-        publishedAt: '2023-12-12',
+        title: 'Rick Owens Radically Reshapes the Converse Chuck 70',
+        url: 'https://www.surfacemag.com/articles/rick-owens-converse-chuck-70-collaboration/',
+        publisher: 'Surface',
+        author: 'Ryan Waddoups',
+        publishedAt: '2021-07-22',
       },
       isExactQuote: false,
+      storyCluster: 'rick-owens-turbodrk',
+    },
+    {
+      id: 'cv-2021-rick-owens-designboom',
+      date: '2021-01-28',
+      precision: 'exact-day',
+      title: 'TURBODRK Chuck 70 debut',
+      synopsis:
+        'designboom reported the TURBODRK Chuck 70’s Venice / Lido Fall 2021 debut — Owens squaring the toe and extending the tongue for the first time in the silhouette’s century, tying the black-and-white Chuck to punk subculture.',
+      reference:
+        'Juliana Neira / designboom (28 January 2021) ‘rick owens reshapes the converse chuck 70 with a square-toe execution’. Available at: https://www.designboom.com/design/converse-x-rick-owens-turbodork-chuck-70-01-28-2021/',
+      citation: {
+        title: 'rick owens reshapes the converse chuck 70 with a square-toe execution',
+        url: 'https://www.designboom.com/design/converse-x-rick-owens-turbodork-chuck-70-01-28-2021/',
+        publisher: 'designboom',
+        author: 'Juliana Neira',
+        publishedAt: '2021-01-28',
+      },
+      isExactQuote: false,
+      storyCluster: 'rick-owens-turbodrk',
+    },
+    {
+      id: 'cv-2021-rick-owens-gq-uk',
+      date: '2021-07-27',
+      precision: 'exact-day',
+      title: 'Square-toe TURBODRK retail',
+      synopsis:
+        'British GQ framed the DRKSHDW × Converse TURBODRK Chuck 70 as square-toe trainers entering the mainstream — high and low, black/white plus a white colourway — on sale 27 July 2021 after the digital Paris show buzz.',
+      reference:
+        'Zak Maoui / British GQ (27 July 2021) ‘Are square-toe trainers the future? Rick Owens and Converse say yes’. Available at: https://www.gq-magazine.co.uk/fashion/article/rick-owens-converse-drkshdw-turbodrk-chuck-70',
+      citation: {
+        title: 'Are square-toe trainers the future? Rick Owens and Converse say yes',
+        url: 'https://www.gq-magazine.co.uk/fashion/article/rick-owens-converse-drkshdw-turbodrk-chuck-70',
+        publisher: 'British GQ',
+        author: 'Zak Maoui',
+        publishedAt: '2021-07-27',
+      },
+      isExactQuote: false,
+      storyCluster: 'rick-owens-turbodrk',
+    },
+    {
+      id: 'cv-2021-rick-owens-gq-satan',
+      date: '2021-08-06',
+      precision: 'exact-day',
+      title: 'TURBODRK pentagram fuss',
+      synopsis:
+        'GQ covered the online boycott storm after DRKSHDW’s pentagram imagery appeared with the TURBODRK — Owens’s long-running geometric / “alternative system” motif — while Converse stressed it was the designer’s logo, not a brand religious statement.',
+      reference:
+        'Rachel Tashjian / GQ (6 August 2021) ‘Is the Sneaker Industry in Bed With Satan?’. Available at: https://www.gq.com/story/rick-owens-converse-satan-controversy',
+      citation: {
+        title: 'Is the Sneaker Industry in Bed With Satan?',
+        url: 'https://www.gq.com/story/rick-owens-converse-satan-controversy',
+        publisher: 'GQ',
+        author: 'Rachel Tashjian',
+        publishedAt: '2021-08-06',
+      },
+      isExactQuote: false,
+      storyCluster: 'rick-owens-turbodrk',
     },
     {
       id: 'cv-2024',
@@ -796,6 +1028,61 @@ export const CONVERSE_HERITAGE_KB: BrandMoment[] = withHeritageImages([
         publisher: 'Converse',
       },
       isExactQuote: false,
+    },
+    {
+      id: 'cv-2025-stranger-things',
+      date: '2025-12-04',
+      precision: 'exact-day',
+      title: 'Converse x Stranger Things',
+      synopsis:
+        'Nike Newsroom announced a Nike × Converse × Netflix Stranger Things pack ahead of the show’s final season — including a Chuck 70 with WSQK radio graphics and a Weapon colourway — a later film/TV collab example beside earlier packs like The Simpsons (not a house-defining fashion moment).',
+      reference:
+        'Nike Newsroom (20 November 2025) ‘Nike and Converse Enter the Upside Down With New Stranger Things Collection’ (global retail 4 December 2025). Available at: https://about.nike.com/en/newsroom/releases/nike-converse-stranger-things-collection-official-images',
+      citation: {
+        title: 'Nike and Converse Enter the Upside Down With New Stranger Things Collection',
+        url: 'https://about.nike.com/en/newsroom/releases/nike-converse-stranger-things-collection-official-images',
+        publisher: 'Nike',
+        publishedAt: '2025-11-20',
+      },
+      isExactQuote: false,
+      storyCluster: 'stranger-things-converse',
+    },
+    {
+      id: 'cv-2025-vaquera-highsnobiety',
+      date: '2025-03-03',
+      precision: 'exact-day',
+      title: 'Converse x Vaquera',
+      synopsis:
+        'Highsnobiety covered Vaquera’s barely-recognisable Chuck — a pile of adjustable canvas that pulls up like a boot or slumps slouchy, with a hidden wedge — an experimental fashion distortion in the same lane as Rick Owens’s TURBODRK rather than a logo slap.',
+      reference:
+        'Jake Silbert / Highsnobiety ‘Vaquera’s Converse Chuck Is a Giant, Transforming Boot’ (PFW debut 3 March 2025). Available at: https://www.highsnobiety.com/p/vaquera-converse-sneaker/',
+      citation: {
+        title: "Vaquera's Converse Chuck Is a Giant, Transforming Boot",
+        url: 'https://www.highsnobiety.com/p/vaquera-converse-sneaker/',
+        publisher: 'Highsnobiety',
+        author: 'Jake Silbert',
+        publishedAt: '2025-03-03',
+      },
+      isExactQuote: false,
+      storyCluster: 'vaquera-chuck',
+    },
+    {
+      id: 'cv-2025-vaquera-nike',
+      date: '2025-11-05',
+      precision: 'exact-day',
+      title: 'Vaquera Slouch Wedge Chucks',
+      synopsis:
+        'Nike Newsroom framed the Converse × Vaquera XXXHi and XHi Slouch Wedge — laceless, supersized uppers over hidden wedges in waxed canvas — as the first chapter of a broader NIKE, Inc. × Vaquera partnership (retail from 8–11 November 2025).',
+      reference:
+        'Nike Newsroom (5 November 2025) ‘Nike and Converse Begin Vaquera Partnership with Two Bold Expressions of the Chuck Taylor All Star’. Available at: https://about.nike.com/en-GB/newsroom/releases/nike-and-converse-begin-vaquera-partnership-with-two-bold-expressions-of-the-chuck-taylor-all-star',
+      citation: {
+        title: 'Nike and Converse Begin Vaquera Partnership with Two Bold Expressions of the Chuck Taylor All Star',
+        url: 'https://about.nike.com/en-GB/newsroom/releases/nike-and-converse-begin-vaquera-partnership-with-two-bold-expressions-of-the-chuck-taylor-all-star',
+        publisher: 'Nike',
+        publishedAt: '2025-11-05',
+      },
+      isExactQuote: false,
+      storyCluster: 'vaquera-chuck',
     },
 ])
 
