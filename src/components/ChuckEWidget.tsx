@@ -147,7 +147,7 @@ export function ChuckEWidget({ brand, researchMode = 'lite' }: ChuckEWidgetProps
               <textarea
                 ref={inputRef}
                 className="chuck-e-composer__input"
-                rows={2}
+                rows={4}
                 placeholder={
                   listening
                     ? 'Listening… tap the mic when done'
@@ -168,29 +168,31 @@ export function ChuckEWidget({ brand, researchMode = 'lite' }: ChuckEWidgetProps
                 disabled={loading}
                 aria-label="Message Chuck-E"
               />
-              {voiceSupported ? (
-                <button
-                  type="button"
-                  className={[
-                    'chuck-e-composer__mic',
-                    listening ? 'chuck-e-composer__mic--listening' : '',
-                  ]
-                    .filter(Boolean)
-                    .join(' ')}
-                  onClick={() => toggleVoice()}
-                  disabled={loading}
-                  aria-pressed={listening}
-                  aria-label={listening ? 'Stop dictation' : 'Dictate with microphone'}
-                  title={listening ? 'Stop dictation' : 'Dictate (Chrome / Edge)'}
-                >
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-                    <path d="M12 14a3 3 0 0 0 3-3V6a3 3 0 1 0-6 0v5a3 3 0 0 0 3 3zm5-3a5 5 0 0 1-10 0H5a7 7 0 0 0 6 6.92V21h2v-3.08A7 7 0 0 0 19 11h-2z" />
-                  </svg>
+              <div className="chuck-e-composer__actions">
+                {voiceSupported ? (
+                  <button
+                    type="button"
+                    className={[
+                      'chuck-e-composer__mic',
+                      listening ? 'chuck-e-composer__mic--listening' : '',
+                    ]
+                      .filter(Boolean)
+                      .join(' ')}
+                    onClick={() => toggleVoice()}
+                    disabled={loading}
+                    aria-pressed={listening}
+                    aria-label={listening ? 'Stop dictation' : 'Dictate with microphone'}
+                    title={listening ? 'Stop dictation' : 'Dictate (Chrome / Edge)'}
+                  >
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                      <path d="M12 14a3 3 0 0 0 3-3V6a3 3 0 1 0-6 0v5a3 3 0 0 0 3 3zm5-3a5 5 0 0 1-10 0H5a7 7 0 0 0 6 6.92V21h2v-3.08A7 7 0 0 0 19 11h-2z" />
+                    </svg>
+                  </button>
+                ) : null}
+                <button type="submit" className="btn-primary chuck-e-composer__send" disabled={loading || !draft.trim()}>
+                  Send
                 </button>
-              ) : null}
-              <button type="submit" className="btn-primary chuck-e-composer__send" disabled={loading || !draft.trim()}>
-                Send
-              </button>
+              </div>
             </form>
           </footer>
         </section>

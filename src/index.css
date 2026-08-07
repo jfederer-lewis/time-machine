@@ -676,25 +676,33 @@ a {
 
 .chuck-e-composer {
   display: flex;
-  gap: 0.45rem;
-  align-items: flex-end;
+  flex-direction: column;
+  gap: 0.5rem;
 }
 
 .chuck-e-composer__input {
-  flex: 1;
-  resize: none;
+  width: 100%;
+  box-sizing: border-box;
+  resize: vertical;
   border: 1px solid var(--rule);
   background: #fff;
-  padding: 0.55rem 0.7rem;
-  font-size: 0.88rem;
-  line-height: 1.35;
-  min-height: 2.6rem;
-  max-height: 6rem;
+  padding: 0.65rem 0.75rem;
+  font-size: 0.9rem;
+  line-height: 1.4;
+  min-height: 5.5rem;
+  max-height: 12rem;
 }
 
 .chuck-e-composer__input:focus {
   outline: 1px solid var(--ink);
   border-color: var(--ink);
+}
+
+.chuck-e-composer__actions {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 0.45rem;
 }
 
 .chuck-e-composer__mic {
