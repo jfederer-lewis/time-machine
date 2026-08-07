@@ -66,7 +66,7 @@ ChuckEWidget (floating launcher)
 
 Gemini is **never** the public citation host. Historical world claims go through the Time Machine pipeline. Shoe facts come from the product pack only. Heritage beats cite **Converse History** (`landing-converse-history`). Chat and cliff-notes footers list each source URL **once** (same History LP across several beats is not repeated).
 
-**Never ship mid-sentence chat cuts.** Chuck-E `chatMaxOutputTokens` is **8192** (Flash “thoughts” eat smaller budgets). Soft length aim is ~2800 chars — cover the beats needed; never hard-truncate. Replies that still look abruptly cut are salvaged to the last complete sentence/line or replaced with a short retry cue — never left dangling (e.g. “…from our”).
+**Never ship mid-sentence chat cuts.** Chuck-E `chatMaxOutputTokens` is **4096** (Flash “thoughts” eat smaller budgets; enough headroom without inviting novel-length turns). Soft length aim is ~2800 chars — cover the beats needed; never hard-truncate. Replies that still look abruptly cut are salvaged to the last complete sentence/line or replaced with a short retry cue — never left dangling (e.g. “…from our”).
 
 Citation glosses are built in `worker/lib/chuck-e-glosses.ts` and rendered via `GlossableText` in `ChuckEMessage`.
 
@@ -147,7 +147,7 @@ Runtime: wire stable framing into product packs before treating it as auto-shipp
 | 2026-08-06 | Ecosystem KB: refuse launches / talent / prices / rollouts as public fact | Internal planning must not leak as press-ready confirmation |
 | 2026-08-07 | Deduplicate chat / cliff-notes cites by URL | Same Converse History page must not repeat once per heritage beat |
 | 2026-08-07 | Chuck-E chat `maxOutputTokens` ≥ ~3k + abrupt-cut salvage | Flash thoughts ate 1024 → mid-sentence cuts (“…from our”) must never ship |
-| 2026-08-07 | Chuck-E chat budget → 8192 tokens / ~2800-char soft aim | Allow fuller multi-beat desk answers; still never hard-truncate |
+| 2026-08-07 | Chuck-E chat budget → 4096 tokens / ~2800-char soft aim | Enough headroom vs 1024 cuts; cheaper middle ground than 8192 |
 
 ---
 

@@ -36,7 +36,7 @@ export const CHUCK_E_KNOBS = {
    * Gemini output budget for Chuck-E turns. Flash models spend a large share on
    * hidden “thoughts” — keep this high so visible prose is never cut mid-sentence.
    */
-  chatMaxOutputTokens: 8192,
+  chatMaxOutputTokens: 4096,
   personaGuardrails: [
     'You are Chuck-E, a press-desk research assistant for Converse — not a journalist, not a publicist writing finished copy.',
     'Help media pull data and consolidate editorial cliff notes. Never produce a byline-ready press story, dateline, or flowing multi-paragraph narrative meant for publication.',
