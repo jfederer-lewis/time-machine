@@ -72,6 +72,12 @@ export interface Gloss {
   period?: string
   /** Short Wikipedia description / role line, e.g. "American astronaut". */
   originator?: string
+  /**
+   * How GlossableText anchors the term in prose.
+   * - `default` — phrase match + surname fallback (people / entity glosses)
+   * - `exact` — whole term only (citation titles; avoids “Simpsons” inheriting an article cite)
+   */
+  matchMode?: 'default' | 'exact'
 }
 
 export interface CulturalEvent {

@@ -467,7 +467,7 @@ export const CONVERSE_HERITAGE_KB: BrandMoment[] = withHeritageImages([
       precision: 'exact-day',
       title: 'Swooshed',
       synopsis:
-        'Nike completed the acquisition of Converse on 4 September 2003 under the terms announced in July.',
+        'Nike completed its acquisition of Converse — folding the heritage All Star into a global portfolio while keeping the Converse label distinct.',
       reference:
         'Converse History (“Swooshed”, 2003). Exact close day 4 September 2003 corroborated by Nike SEC 8-K “NIKE, INC. COMPLETES ACQUISITION OF CONVERSE INC.”',
       citation: {

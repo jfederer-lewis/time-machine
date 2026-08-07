@@ -680,6 +680,60 @@ export async function chatWithChuckE(opts: {
   }
 }
 
+/**
+ * Converse-framed date significance: grounded research colour on the queried day only.
+ * Gemini may search; it is never the public citation host — callers attach allowlisted URLs.
+ */
+export async function enrichChuckEDateSignificance(opts: {
+  apiKey: string
+  queryDate: string
+  displayDate: string
+  userQuestion: string
+  beat: { title: string; synopsis: string; whyItMatters?: string }
+}): Promise<{ content: string; groundedSources: ClaimCandidate[] } | null> {
+  const { apiKey, queryDate, displayDate, userQuestion, beat } = opts
+
+  const prompt = [
+    ...CHUCK_E_KNOBS.personaGuardrails,
+    '',
+    'Task: enrich a Converse History date beat for a press desk — desk notes, not a finished story.',
+    'Use Google Search grounding for interesting, claim-relevant colour (deal context, why it mattered, what changed for the brand).',
+    'Stay on the queried calendar day only. Do not introduce sibling milestone dates for the same deal',
+    '(e.g. do not mention an announcement day when the query is the close day, or vice versa) unless the user explicitly asked about that other date.',
+    'Do not invent strategy, quotations, or post-History outcomes. If search does not support a detail, omit it.',
+    'Lead with the beat title and what happened — do NOT open with the calendar date, a date list, or “On [date]…”.',
+    'The user already asked about this day; weave the date into prose only if needed for clarity, never as a heading or bullet list of years.',
+    'Do not mention other years or related deal dates unless the user asked about them.',
+    'Past tense. Never cite yourself, Gemini, or AI as a source.',
+    `Aim for complete desk notes (soft ~${Math.min(CHUCK_E_KNOBS.chatReplySoftMaxChars, 1600)} chars).`,
+    '',
+    `Queried date (context only — do not lead with it): ${displayDate} (ISO ${queryDate})`,
+    `User question: ${userQuestion}`,
+    `Anchor title: ${beat.title}`,
+    `Anchor synopsis: ${beat.synopsis}`,
+    beat.whyItMatters ? `Anchor context: ${beat.whyItMatters}` : '',
+  ]
+    .filter(Boolean)
+    .join('\n')
+
+  try {
+    const { text, groundedSources } = await generateGeminiGrounded({
+      apiKey,
+      prompt,
+      temperature: 0.4,
+      maxOutputTokens: CHUCK_E_KNOBS.chatMaxOutputTokens,
+      json: false,
+      useSearch: true,
+    })
+    const content = text?.trim()
+    if (!content) return null
+    return { content, groundedSources }
+  } catch (err) {
+    console.error('[chuck-e] date significance enrich failed', err)
+    return null
+  }
+}
+
 async function generateGeminiText(opts: {
   apiKey: string
   prompt: string

@@ -113,7 +113,12 @@ function wordsMatch(w1: string, w2: string) {
   return allowedEndings.has(r1) && allowedEndings.has(r2)
 }
 
-export type GlossLike = { term: string; gloss: string }
+export type GlossLike = {
+  term: string
+  gloss: string
+  /** When `exact`, only the full term matches — no surname fallback. */
+  matchMode?: 'default' | 'exact'
+}
 
 export type GlossRange<T extends GlossLike = GlossLike> = {
   start: number
@@ -154,6 +159,8 @@ export function buildGlossRanges<T extends GlossLike>(
 
   const candidates = glosses
     .filter((gloss) => gloss?.term && gloss?.gloss)
+    .filter((gloss) => !/^\d{4}$/.test(String(gloss.term).trim()))
+    .filter((gloss) => !/^\d{4}-\d{2}(-\d{2})?$/.test(String(gloss.term).trim()))
     .sort((left, right) => String(right.term).length - String(left.term).length)
 
   for (const gloss of candidates) {
@@ -182,6 +189,7 @@ export function buildGlossRanges<T extends GlossLike>(
 
   for (const gloss of candidates) {
     const glossWords = String(gloss.term).split(/\s+/).filter(Boolean)
+    const exactOnly = gloss.matchMode === 'exact'
 
     if (glossWords.length === 1) {
       const needle = glossWords[0]
@@ -191,9 +199,12 @@ export function buildGlossRanges<T extends GlossLike>(
           ranges.push({ start: word.start, end: word.end, gloss })
         }
       }
-    } else {
+    } else if (!exactOnly) {
+      // Surname / last-token fallback for people and entity phrases — not citation titles
       const isProperNounPhrase = glossWords.every((w) => /^[A-Z]/.test(w))
-      if (isProperNounPhrase && glossWords.length >= 2) {
+      // Skip "The Simpsons"-style phrases: last token alone would steal an entity/cite gloss
+      const leadingThe = /^the$/i.test(glossWords[0] || '')
+      if (isProperNounPhrase && glossWords.length >= 2 && !leadingThe) {
         const surname = glossWords[glossWords.length - 1]
         if (surname && surname.length >= 3 && !PERSON_NAME_STOP_WORDS.has(surname)) {
           for (const word of words) {

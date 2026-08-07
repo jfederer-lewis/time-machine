@@ -148,7 +148,7 @@ export const converseBrand: BrandConfig = {
       precision: 'exact-day',
       title: 'Nike acquires Converse',
       synopsis:
-        'Nike completes the acquisition of Converse, folding the heritage silhouette into a global brand portfolio while keeping Converse as a distinct label.',
+        'Nike completed its acquisition of Converse — folding the heritage silhouette into a global brand portfolio while keeping Converse as a distinct label.',
       reference:
         'Converse History (“Swooshed”, 2003). Exact close day 4 September 2003 corroborated by Nike SEC 8-K.',
       citation: {

@@ -5,19 +5,16 @@ import type { Gloss } from '../../shared/provenance'
 const OPEN_DELAY_MS = 160
 const CLOSE_DELAY_MS = 180
 
-/** Compact source link — publication / short article name, not a Harvard dump. */
-function certifiedFooter(gloss: Gloss): { href: string; label: string } | null {
+/** Quiet source label — publication name only, never a Harvard dump. */
+function sourceLink(gloss: Gloss): { href: string; label: string } | null {
   if (!gloss.url || gloss.source === 'ai') return null
-  const pub =
-    gloss.sourceLabel?.replace(/\s*\(\d{4}\)\s*$/, '').trim() ||
-    (gloss.source === 'wikipedia' ? 'Wikipedia' : 'Source')
-  const title = gloss.originator?.trim()
-  const shortTitle =
-    title && title.length <= 40 && !/^converse history$/i.test(title) ? title : null
-  return {
-    href: gloss.url,
-    label: shortTitle ? `Read more — ${shortTitle}` : `Read more — ${pub}`,
-  }
+  const fromLabel = gloss.sourceLabel?.replace(/\s*\(\d{4}\)\s*$/, '').trim()
+  const label =
+    (fromLabel && !/^source$/i.test(fromLabel) ? fromLabel : null) ||
+    (gloss.source === 'wikipedia' ? 'Wikipedia' : null) ||
+    gloss.originator?.trim() ||
+    'Source'
+  return { href: gloss.url, label }
 }
 
 /** Bloom-inspired dotted term + fixed popover (hover preview, click to pin). */
@@ -98,7 +95,7 @@ export function GlossTerm({ gloss, children }: { gloss: Gloss; children: ReactNo
     }
   }, [close, id, open, refreshRect])
 
-  const footer = certifiedFooter(gloss)
+  const footer = sourceLink(gloss)
   const sourceClass =
     gloss.source === 'wikipedia'
       ? 'gloss-popover--wiki'
@@ -108,7 +105,7 @@ export function GlossTerm({ gloss, children }: { gloss: Gloss; children: ReactNo
 
   const popoverStyle = (() => {
     if (!rect) return undefined
-    const width = Math.min(280, window.innerWidth - 28)
+    const width = Math.min(260, window.innerWidth - 28)
     const left = Math.max(14, Math.min(rect.left + rect.width / 2 - width / 2, window.innerWidth - width - 14))
     const top = Math.min(rect.bottom + 8, window.innerHeight - 16)
     return { top, left, width }
@@ -177,8 +174,7 @@ export function GlossTerm({ gloss, children }: { gloss: Gloss; children: ReactNo
                   </button>
                 ) : null}
               </div>
-              {gloss.period ? <p className="gloss-period">{gloss.period}</p> : null}
-              <p className={`gloss-body${pinned ? ' is-selectable' : ''}`}>{gloss.gloss}</p>
+              <p className="gloss-body">{gloss.gloss}</p>
               {footer ? (
                 <a
                   href={footer.href}

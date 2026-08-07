@@ -6,7 +6,7 @@ import type {
 } from '../../shared/provenance'
 import { withHarvard } from '../../shared/provenance'
 import { getBrand } from '../../shared/brands'
-import { heritageMoments } from '../../shared/brand'
+import { brandMomentsForQueryDate } from '../../shared/brand'
 import { toDisplayDate, toOnThisDayPath } from '../../shared/source-registry'
 import { sanitizeEventCitations } from '../lib/verify'
 
@@ -238,8 +238,7 @@ export function buildFallbackResult(
   const brand = getBrand(brandId)
   const rawEvents = lookupFallbackEvents(queryDate)
   const events = rawEvents.map((e) => sanitizeEventCitations(e))
-  const brandMoments: CulturalEvent[] = heritageMoments(brand)
-    .filter((m) => momentTouchesDate(m.date, queryDate))
+  const brandMoments: CulturalEvent[] = brandMomentsForQueryDate(brand, queryDate)
     .map((m) =>
       sanitizeEventCitations({
         id: m.id,
@@ -308,12 +307,6 @@ function lookupFallbackEvents(queryDate: string): CulturalEvent[] {
     if (FALLBACK_EVENTS_BY_DATE[yearKey]) return FALLBACK_EVENTS_BY_DATE[yearKey]
   }
   return synthesizeGenericFallback(queryDate)
-}
-
-function momentTouchesDate(momentDate: string, queryDate: string): boolean {
-  if (momentDate.length === 4) return momentDate === queryDate.slice(0, 4)
-  if (momentDate.length === 7) return momentDate === queryDate.slice(0, 7)
-  return momentDate === queryDate || momentDate.slice(0, 4) === queryDate.slice(0, 4)
 }
 
 function synthesizeGenericFallback(_queryDate: string): CulturalEvent[] {

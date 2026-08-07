@@ -165,9 +165,27 @@ const TOO_OBVIOUS = new Set([
   'government',
   'president',
   'prime minister',
+  // Household brands / product words — desks already know; don't litter the reply.
+  // Obscure fashion / streetwear houses still get Wikipedia glosses when named.
+  'nike',
+  'adidas',
+  'converse',
+  'vans',
+  'puma',
+  'reebok',
+  'new balance',
+  'chucks',
+  'chuck',
+  'all star',
+  'all stars',
+  'sneakers',
+  'sneaker',
+  'basketball',
+  'olympics',
+  'olympic games',
 ])
 
-/** Cap resolved glosses — keep the claim readable. */
+/** Cap resolved glosses — keep the claim readable (quiet underlines). */
 const MAX_GLOSSES = 2
 
 type GlossCandidate = { term: string; wikipediaTitle: string }
@@ -199,6 +217,97 @@ function isTooObvious(term: string, wikiDescription?: string): boolean {
   return false
 }
 
+/**
+ * Wikipedia entity glosses should help without noise:
+ * people, venues, iconic events, and obscure brands someone may have heard of but not place —
+ * not household brands, countries, or everyday concepts.
+ */
+export function isGlossWorthyEntity(term: string, wikiDescription?: string): boolean {
+  if (isYearLikeTerm(term) || isTooObvious(term, wikiDescription)) return false
+
+  const words = term.trim().split(/\s+/).filter(Boolean)
+  const desc = String(wikiDescription || '')
+    .toLowerCase()
+    .replace(/\s+/g, ' ')
+    .trim()
+
+  // People — Wikipedia short description or Firstname Lastname shape
+  if (
+    /\b(basketball player|athlete|coach|salesperson|musician|singer|rapper|designer|fashion designer|artist|painter|photographer|entrepreneur|businessman|businesswoman|executive|founder|politician|statesman|activist|author|writer|actor|actress|filmmaker|director|olympian|hall of fame)\b/.test(
+      desc,
+    ) ||
+    /^(american|british|canadian|australian|french|german|italian|japanese|chinese|brazilian|mexican|irish|scottish|welsh|dutch|swedish|norwegian|danish|russian|indian|south african|new zealand)\b/.test(
+      desc,
+    )
+  ) {
+    // Nationality-only descriptions can also be brands (“Japanese fashion brand”) — fall through to brand check
+    if (
+      /\b(player|coach|athlete|musician|singer|rapper|designer|artist|salesperson|entrepreneur|executive|founder|politician|activist|author|writer|actor|actress|filmmaker|director|olympian)\b/.test(
+        desc,
+      ) ||
+      (words.length >= 2 &&
+        words.every((w) => /^[A-Z]/.test(w) || /^(de|van|von|da|di|la|le|of)$/i.test(w)) &&
+        !/\b(company|corporation|brand|label|house)\b/.test(desc))
+    ) {
+      return true
+    }
+  }
+  if (
+    words.length >= 2 &&
+    words.length <= 4 &&
+    words.every((w) => /^[A-Z]/.test(w) || /^(de|van|von|da|di|la|le|of)$/i.test(w))
+  ) {
+    if (!desc || !/\b(company|corporation|brand|album|film|song|novel)\b/.test(desc)) return true
+  }
+
+  // Obscure brands / houses / labels — helpful; household names are already in TOO_OBVIOUS
+  if (
+    /\b(fashion house|fashion brand|fashion label|clothing brand|streetwear|luxury brand|designer brand|apparel brand|footwear brand|shoe brand|sneaker brand)\b/.test(
+      desc,
+    ) ||
+    (/\b(brand|label|house)\b/.test(desc) &&
+      !/\b(multinational|fortune 500|public company|social network|website|search engine)\b/.test(desc))
+  ) {
+    return true
+  }
+  // Smaller companies that aren't household megabrands
+  if (
+    /\b(company|manufacturer|retailer)\b/.test(desc) &&
+    !/\b(multinational|fortune 500|conglomerate|social network|website|search engine|technology company|airline)\b/.test(
+      desc,
+    )
+  ) {
+    return true
+  }
+
+  // Skip remaining mass media / web platforms as brand noise
+  if (/\b(website|social network|search engine|television series|american animated|newspaper|magazine)\b/.test(desc)) {
+    return false
+  }
+
+  // Venues / places people may have heard of
+  if (
+    /\b(stadium|arena|theatre|theater|coliseum|colosseum|pavilion|auditorium|ballpark|amphitheatre|amphitheater|concert hall|museum|gallery|opera house)\b/.test(
+      desc,
+    ) ||
+    /\b(stadium|arena|garden|coliseum|hall|theatre|theater)\b/i.test(term)
+  ) {
+    return true
+  }
+
+  // Iconic events (named wars, games, turning points) — not bare “war”
+  if (
+    words.length >= 2 &&
+    /\b(war|battle|olympics|olympic games|world cup|championship|massacre|treaty|revolution|riot|uprising|invasion|landing|assassination|coup|summit|exposition|world's fair)\b/.test(
+      desc + ' ' + term.toLowerCase(),
+    )
+  ) {
+    return true
+  }
+
+  return false
+}
+
 // Imported firstSentence from clean-text
 
 
@@ -216,12 +325,12 @@ function termAppearsIn(claim: string, term: string): boolean {
   return false
 }
 
-/** Capitalized multi-word phrases + obvious person names from the claim sentence. */
+/** Capitalized multi-word phrases + person / venue / event names from prose. */
 function extractProperNounCandidates(claim: string): GlossCandidate[] {
   const out: GlossCandidate[] = []
   const seen = new Set<string>()
 
-  // Multi-word Capitalized sequences: "World War I", "Neil Armstrong", "United Nations", allowing single-letter initials like "O. J. Simpson"
+  // Multi-word Capitalized sequences: "World War I", "Neil Armstrong", "Madison Square Garden"
   const multi =
     claim.match(/\b([A-Z][\w'’-]*\.?(?:\s+(?:of|the|and|de|van|von|da|di|le|la)?\s*[A-Z][\w'’-]*\.?)+)\b/g) ??
     []
@@ -230,14 +339,12 @@ function extractProperNounCandidates(claim: string): GlossCandidate[] {
     const term = raw.replace(/\s+/g, ' ').trim()
     const key = term.toLowerCase()
     if (seen.has(key) || term.split(/\s+/).length > 5) continue
-    // Skip if mostly stop words
     const content = term.split(/\s+/).filter((w) => !STOP.has(w.toLowerCase()))
     if (content.length === 0) continue
     seen.add(key)
     out.push({ term, wikipediaTitle: term })
   }
 
-  // "Firstname Lastname" already covered by multi; add single significant Caps only sparingly
   return out
 }
 
@@ -248,6 +355,7 @@ function collectCandidates(claim: string, event: CulturalEvent): GlossCandidate[
   const push = (term: string, wikipediaTitle?: string) => {
     const clean = term.replace(/\s+/g, ' ').trim()
     if (!clean || clean.length < 3) return
+    if (isYearLikeTerm(clean)) return
     if (isTooObvious(clean)) return
     if (!termAppearsIn(claim, clean)) return
     const key = normalizeGlossKey(clean)
@@ -271,7 +379,7 @@ function collectCandidates(claim: string, event: CulturalEvent): GlossCandidate[
     if (titleBits) push(titleBits, titleBits)
   }
 
-  return out.slice(0, 4)
+  return out.slice(0, 6)
 }
 
 /**
@@ -290,11 +398,13 @@ export async function attachGlosses(event: CulturalEvent): Promise<CulturalEvent
     if (resolved.length >= MAX_GLOSSES) break
     const hit = await fetchWikipediaSummary(candidate.wikipediaTitle)
     if (!hit) continue
-    // Drop pages that resolve to everyday geography / weather / nations
+    if (isYearLikeTerm(candidate.term) || isYearLikeTerm(hit.title)) continue
     if (isTooObvious(candidate.term, hit.originator) || isTooObvious(hit.title, hit.originator)) {
       continue
     }
-    // Ensure the resolved page title still relates to something we can underline
+    if (!isGlossWorthyEntity(candidate.term, hit.originator) && !isGlossWorthyEntity(hit.title, hit.originator)) {
+      continue
+    }
     if (!termAppearsIn(claim, candidate.term) && !termAppearsIn(claim, hit.title)) continue
     resolved.push({
       term: candidate.term,
@@ -310,4 +420,81 @@ export async function attachGlosses(event: CulturalEvent): Promise<CulturalEvent
     ...event,
     glosses: resolved,
   }
+}
+
+/** Calendar years / ISO dates are never gloss anchors (acknowledge in prose instead). */
+export function isYearLikeTerm(term: string): boolean {
+  const t = String(term || '').trim()
+  if (!t) return true
+  if (/^\d{4}$/.test(t)) return true
+  if (/^\d{4}-\d{2}(-\d{2})?$/.test(t)) return true
+  if (/^\d{1,2}\s+[A-Za-z]+(?:\s+\d{4})?$/.test(t)) return true // 4 September / 4 September 2003
+  if (/^[A-Za-z]+\s+\d{1,2},?\s+\d{4}$/.test(t)) return true // September 4, 2003
+  return false
+}
+
+/**
+ * Wikipedia entity glosses for free prose (Chuck-E replies).
+ * People, venues, iconic events someone may have heard of but not place —
+ * quiet underlines; skip household brands and years.
+ */
+export async function attachWikipediaGlossesForProse(
+  prose: string,
+  opts: { excludeTerms?: string[]; max?: number } = {},
+): Promise<Gloss[]> {
+  const text = String(prose || '').trim()
+  if (!text) return []
+
+  const max = opts.max ?? MAX_GLOSSES
+  const excluded = new Set(
+    (opts.excludeTerms || []).map((t) => normalizeGlossKey(t)).filter(Boolean),
+  )
+
+  // Scan more than the first sentence so people named later still qualify
+  const scanWindow = text.length > 900 ? `${text.slice(0, 900)}…` : text
+
+  const stub: CulturalEvent = {
+    id: 'chuck-e-prose',
+    year: 0,
+    title: '',
+    synopsis: scanWindow,
+    category: 'culture',
+    precision: 'exact-day',
+    citations: [],
+  }
+
+  const candidates = collectCandidates(scanWindow, stub)
+    .filter((c) => !isYearLikeTerm(c.term))
+    .filter((c) => !excluded.has(normalizeGlossKey(c.term)))
+
+  const resolved: Gloss[] = []
+  for (const candidate of candidates) {
+    if (resolved.length >= max) break
+    const hit = await fetchWikipediaSummary(candidate.wikipediaTitle)
+    if (!hit) continue
+    if (isYearLikeTerm(hit.title)) continue
+    if (isTooObvious(candidate.term, hit.originator) || isTooObvious(hit.title, hit.originator)) {
+      continue
+    }
+    if (!isGlossWorthyEntity(candidate.term, hit.originator) && !isGlossWorthyEntity(hit.title, hit.originator)) {
+      continue
+    }
+    if (!termAppearsIn(text, candidate.term) && !termAppearsIn(text, hit.title)) continue
+    resolved.push({
+      term: candidate.term,
+      gloss: cleanWikiGlossBody(hit.extract),
+      url: hit.url,
+      source: 'wikipedia',
+      sourceLabel: 'Wikipedia',
+    })
+  }
+  return resolved
+}
+
+function cleanWikiGlossBody(extract: string): string {
+  const s = firstSentence(extract) || extract
+  if (s.length <= 140) return s
+  const cut = s.slice(0, 140)
+  const at = Math.max(cut.lastIndexOf('. '), cut.lastIndexOf('; '))
+  return (at > 60 ? cut.slice(0, at + 1) : `${cut.trimEnd()}…`).trim()
 }

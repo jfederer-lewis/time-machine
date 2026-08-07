@@ -7,16 +7,16 @@ import { CHUCK_E_KNOBS } from '../../shared/chuck-e-knobs'
 import { getBrand } from '../../shared/brands'
 import { allProductFacts, getProductPack, type ProductFact } from '../../shared/products'
 import type { BrandMoment } from '../../shared/brand'
-import { heritageMoments } from '../../shared/brand'
+import { brandMomentQueryRank, heritageMoments } from '../../shared/brand'
 import {
   universeAnchorsForQueryDate,
   type ConverseUniverseAnchor,
 } from '../../shared/converse-universe'
 import type { Citation, CulturalEvent, Gloss, ResearchMode } from '../../shared/provenance'
 import { withHarvard } from '../../shared/provenance'
-import { citationTier, parseQueryDate, toDisplayDate } from '../../shared/source-registry'
+import { citationTier, parseQueryDate, toDisplayDate, isCitationAllowed, isCitationBlocked, findRegistryEntry } from '../../shared/source-registry'
 import { assembleDateQuery, type Env } from './assemble'
-import { chatWithChuckE } from '../providers/gemini'
+import { chatWithChuckE, enrichChuckEDateSignificance, type ClaimCandidate } from '../providers/gemini'
 import { isLandmarkDefiningEvent } from './interest'
 import {
   buildDisclosureMessage,
@@ -30,7 +30,10 @@ import {
   glossesFromBrandMoments,
   glossesFromCitations,
   glossesFromProductFacts,
+  rejectYearGlosses,
+  cleanGlossSnippet,
 } from './chuck-e-glosses'
+import { attachWikipediaGlossesForProse, isYearLikeTerm } from './gloss-service'
 
 export type ChuckEIntent = 'date' | 'product' | 'heritage' | 'general' | 'cliff_notes'
 
@@ -81,13 +84,17 @@ const MONTH_NAMES =
 const DATE_INTENT_RE = new RegExp(
   [
     '\\b(on\\s+this\\s+day|what\\s+happened|what\\s+else\\s+happened|timeline|that\\s+day|this\\s+date)\\b',
+    // US: September 4, 2003 · UK: 4 September 2003
     `\\b(${MONTH_NAMES})\\s+\\d{1,2}(?:st|nd|rd|th)?(?:,?\\s*\\d{4})?\\b`,
+    `\\b\\d{1,2}(?:st|nd|rd|th)?\\s+(${MONTH_NAMES})(?:,?\\s*\\d{4})?\\b`,
     '\\b\\d{1,2}[\\/.-]\\d{1,2}[\\/.-]\\d{2,4}\\b',
     '\\b\\d{4}-\\d{2}(?:-\\d{2})?\\b',
     '\\bin\\s+(19|20)\\d{2}\\b',
   ].join('|'),
   'i',
 )
+
+const MONTH_TOKEN_RE = new RegExp(`^(${MONTH_NAMES})$`, 'i')
 
 const PRODUCT_INTENT_RE =
   /\b(shoe|sneaker|chuck|all[\s-]?star|feature|features|engineering|sole|canvas|rubber|vulcaniz|material|upper|toe\s*cap|eyelet|launch|silhouette|construction|spec|specs)\b/i
@@ -126,6 +133,7 @@ export function extractDateFromMessage(text: string): string | null {
   const yearOnly = text.match(/\b(?:in|year|during)\s+((?:18|19|20)\d{2})\b/i)
   if (yearOnly) return parseQueryDate(yearOnly[1])
 
+  // US order: September 4, 2003 / September 4th 2003
   const monthDayYear = text.match(
     new RegExp(`\\b(${MONTH_NAMES})\\s+(\\d{1,2})(?:st|nd|rd|th)?,?\\s*((?:18|19|20)\\d{2})\\b`, 'i'),
   )
@@ -135,6 +143,19 @@ export function extractDateFromMessage(text: string): string | null {
       const d = String(Number(monthDayYear[2])).padStart(2, '0')
       const m = String(month + 1).padStart(2, '0')
       return parseQueryDate(`${monthDayYear[3]}-${m}-${d}`)
+    }
+  }
+
+  // UK / intl order: 4 September 2003 / 4th September 2003 (opening hint style)
+  const dayMonthYear = text.match(
+    new RegExp(`\\b(\\d{1,2})(?:st|nd|rd|th)?\\s+(${MONTH_NAMES}),?\\s*((?:18|19|20)\\d{2})\\b`, 'i'),
+  )
+  if (dayMonthYear) {
+    const month = monthIndex(dayMonthYear[2])
+    if (month != null) {
+      const d = String(Number(dayMonthYear[1])).padStart(2, '0')
+      const m = String(month + 1).padStart(2, '0')
+      return parseQueryDate(`${dayMonthYear[3]}-${m}-${d}`)
     }
   }
 
@@ -253,16 +274,26 @@ function matchHeritageMoments(
   const q = query.toLowerCase()
   const sportsTheme = SPORTS_THEME_RE.test(q)
   const cultureTheme = CULTURE_THEME_RE.test(q)
-  const effectiveLimit = sportsTheme || cultureTheme ? Math.max(limit, 5) : limit
+  const queryDate = extractDateFromMessage(query)
+  // Dated asks (e.g. Nike close) stay on that day — don't spray collab colour from month-name tokens.
+  const datedFocus = Boolean(queryDate && queryDate.length >= 10)
+  const effectiveLimit = datedFocus
+    ? Math.min(limit, 2)
+    : sportsTheme || cultureTheme
+      ? Math.max(limit, 5)
+      : limit
   const scored = heritageMoments(brand).map((m) => {
     const hay = `${m.title} ${m.synopsis} ${m.date}`.toLowerCase()
-    let score = 0
+    let score = datedFocus && queryDate ? brandMomentQueryRank(m, queryDate) : 0
+    if (datedFocus && score === 0) return { m, score: 0 }
     for (const token of q.split(/\W+/).filter((t) => t.length > 2)) {
+      // Month names alone pull wrong-year hits (September → Simpsons 2014).
+      if (MONTH_TOKEN_RE.test(token)) continue
       if (hay.includes(token)) score += 1
     }
     // Boost well-known years if mentioned
-    if (q.includes(m.date.slice(0, 4))) score += 2
-    if (sportsTheme) {
+    if (!datedFocus && q.includes(m.date.slice(0, 4))) score += 2
+    if (sportsTheme && !datedFocus) {
       if (/\bolympic/.test(hay)) score += 3
       if (/\bweapon\b/.test(hay)) score += 2
       if (/\bjordan\b|\bpro leather\b/.test(hay)) score += 2
@@ -270,7 +301,7 @@ function matchHeritageMoments(
       if (/\bedmonton|grads\b/.test(hay)) score += 1
       if (/\bbasketball\b|\bnon-skid\b|\ball star\b/.test(hay)) score += 1
     }
-    if (cultureTheme) {
+    if (cultureTheme && !datedFocus) {
       if (/\bpunk|grunge|ramones|cobain|subcultur/.test(hay)) score += 3
       if (/\bcollab|varvatos|comme des gar|cdg|richmond|golf le fleur|tyler|margiela|rick owens|simpsons|warhol/.test(hay))
         score += 3
@@ -281,9 +312,13 @@ function matchHeritageMoments(
     return { m, score }
   })
   const hits = scored.filter((x) => x.score > 0).sort((a, b) => b.score - a.score)
+  if (datedFocus && hits.length && queryDate) {
+    const exact = hits.filter((x) => x.m.date === queryDate)
+    if (exact.length) return exact.slice(0, effectiveLimit).map((x) => x.m)
+  }
   if (hits.length) return hits.slice(0, effectiveLimit).map((x) => x.m)
   // Soft fallback: return a couple of core moments when user asks generally about heritage
-  if (opts.softFallback !== false) return brand.timeline.slice(0, effectiveLimit)
+  if (opts.softFallback !== false && !datedFocus) return brand.timeline.slice(0, effectiveLimit)
   return []
 }
 
@@ -343,11 +378,17 @@ function formatHeritageReply(moments: BrandMoment[]): {
   const citations: Citation[] = []
   for (const m of moments) {
     const flag = m.precision === 'period-estimate' ? ' _(period estimate — contested)_' : ''
-    lines.push(`• **${m.date}: ${m.title}**${flag} — ${m.synopsis}`)
+    // Lead with the beat title — not a date list. Year stays light context when spreading themes.
+    if (moments.length === 1) {
+      lines.push(`**${m.title}**${flag}`, m.synopsis)
+    } else {
+      const when = m.date.length === 4 ? m.date : toDisplayDate(m.date)
+      lines.push(`• **${m.title}**${flag} (${when}) — ${m.synopsis}`)
+    }
     citations.push(citationFromBrandMoment(m))
   }
   return {
-    content: lines.join('\n'),
+    content: lines.join(moments.length === 1 ? '\n\n' : '\n'),
     citations: dedupeCitationsByUrl(citations),
     glosses: glossesFromBrandMoments(moments),
   }
@@ -373,27 +414,24 @@ function formatUniverseAnchor(anchor: ConverseUniverseAnchor): {
     tier: citationTier(anchor.citation.url) === 'unknown' ? 'C' : citationTier(anchor.citation.url),
   })
   const content = [
-    `**In the Converse universe — ${anchor.title} (${toDisplayDate(anchor.date)}):**`,
+    `**${anchor.title}**`,
     anchor.synopsis,
     anchor.converseTie,
   ].join('\n\n')
   return {
     content,
     citations: [cite],
-    glosses: glossesFromCitations([cite], content),
+    glosses: [],
   }
 }
 
-function formatDateSpotlight(event: CulturalEvent, displayDate: string): {
+function formatDateSpotlight(event: CulturalEvent, _displayDate?: string): {
   content: string
   citations: Citation[]
   glosses: Gloss[]
 } {
-  const parts = [
-    `On **${displayDate}** (sourced Time Machine lookup):`,
-    `**${event.title}**`,
-    event.synopsis,
-  ]
+  // Lead with the fact — not “On {date}…” (the user already asked for that day).
+  const parts = [`**${event.title}**`, event.synopsis]
   if (event.whyItMatters) {
     parts.push(`Context: ${event.whyItMatters}`)
   }
@@ -405,11 +443,84 @@ function formatDateSpotlight(event: CulturalEvent, displayDate: string): {
   return {
     content,
     citations,
-    glosses: [
-      ...(event.glosses ?? []),
+    glosses: rejectYearGlosses([
+      ...(event.glosses ?? []).filter((g) => g.source === 'wikipedia'),
       ...glossesFromCitations(citations, content),
-    ],
+    ]),
   }
+}
+
+/**
+ * Source gloss on the beat title + Wikipedia entity glosses on named things in the reply.
+ * Years / calendar dates are never underlined.
+ */
+function sourceGlossFromEvent(event: CulturalEvent): Gloss[] {
+  if (isYearLikeTerm(event.title)) return []
+  const cite = event.citations?.[0]
+  if (!cite?.url) return []
+  return [
+    {
+      term: event.title,
+      gloss: cleanGlossSnippet(event.synopsis, 140),
+      url: cite.url,
+      source: 'curated' as const,
+      sourceLabel: /converse history/i.test(cite.title || '')
+        ? 'Converse History'
+        : cite.publisher || 'Source',
+      matchMode: 'exact' as const,
+    },
+  ]
+}
+
+async function finalizeChuckEGlosses(
+  content: string,
+  sourceGlosses: Gloss[],
+): Promise<Gloss[]> {
+  const sources = rejectYearGlosses(sourceGlosses)
+  // Wikipedia entity glosses: people / venues / iconic events — quiet, helpful, not brand noise
+  const wiki = await attachWikipediaGlossesForProse(content, {
+    excludeTerms: sources.map((g) => g.term),
+    max: 2,
+  })
+  const seen = new Set(sources.map((g) => g.term.toLowerCase()))
+  const merged = [...sources]
+  for (const g of wiki) {
+    const key = g.term.toLowerCase()
+    if (seen.has(key)) continue
+    seen.add(key)
+    merged.push(g)
+  }
+  return rejectYearGlosses(merged)
+}
+
+/** Allowlisted grounding URLs from Gemini search — Gemini itself is never the cite host. */
+function citationsFromGroundedSources(sources: ClaimCandidate[]): Citation[] {
+  const out: Citation[] = []
+  const seen = new Set<string>()
+  for (const s of sources) {
+    const url = s.url?.trim()
+    if (!url || seen.has(url.toLowerCase())) continue
+    if (isCitationBlocked(url) || !isCitationAllowed(url)) continue
+    if (/generativelanguage\.googleapis|gemini\.google/i.test(url)) continue
+    seen.add(url.toLowerCase())
+    const entry = findRegistryEntry(url)
+    out.push(
+      withHarvard({
+        title: s.title || entry?.label || 'Source',
+        url,
+        publisher: s.publisher || entry?.label || 'Source',
+        accessedAt: new Date().toISOString().slice(0, 10),
+        sourceQuality: 'trusted-source-snippet',
+        evidenceKind: 'paraphrase',
+        reference: s.snippet?.trim() || s.title || 'Grounded press source for the date beat.',
+        provider: 'gemini',
+        isExactQuote: false,
+        tier: citationTier(url) === 'unknown' ? 'C' : citationTier(url),
+      }),
+    )
+    if (out.length >= 4) break
+  }
+  return out
 }
 
 function buildSystemContext(brandId: string): string {
@@ -513,14 +624,52 @@ export async function handleChuckEChat(
             : worldSpotlight ?? brandSpotlight
 
         if (spotlight) {
-          const formatted = formatDateSpotlight(spotlight, result.displayDate || toDisplayDate(date))
+          const displayDate = result.displayDate || toDisplayDate(date)
+          const formatted = formatDateSpotlight(spotlight)
           let content = formatted.content
           const citations = [...formatted.citations]
-          const glosses = [...formatted.glosses]
+          let sourceGlosses: Gloss[] = [
+            ...sourceGlossFromEvent(spotlight),
+            ...glossesFromCitations(citations, content),
+          ]
           const allowConverseTie = !worldIsLandmark && !isLandmarkDefiningEvent(spotlight)
 
-          // Converse-framed date asks: lead with History beat, then cultural backdrop if different
-          // — but never on landmark casualty / world-memory days.
+          // Converse-framed date asks: lead with History beat + Gemini-researched colour on that day only
+          if (allowConverseTie && preferBrand && brandSpotlight && env.GEMINI_API_KEY) {
+            const enriched = await enrichChuckEDateSignificance({
+              apiKey: env.GEMINI_API_KEY,
+              queryDate: date,
+              displayDate,
+              userQuestion: lastUser.content,
+              beat: {
+                title: brandSpotlight.title,
+                synopsis: brandSpotlight.synopsis,
+                whyItMatters: brandSpotlight.whyItMatters,
+              },
+            })
+            if (enriched?.content) {
+              content = ensureCompleteChatReply(
+                coerceChatAwayFromStory(enriched.content),
+              )
+              citations.length = 0
+              citations.push(...(brandSpotlight.citations ?? []))
+              citations.push(...citationsFromGroundedSources(enriched.groundedSources))
+              sourceGlosses = [
+                ...sourceGlossFromEvent(brandSpotlight),
+                ...glossesFromCitations(citations, content),
+              ]
+            } else {
+              content = formatDateSpotlight(brandSpotlight).content
+              citations.length = 0
+              citations.push(...(brandSpotlight.citations ?? []))
+              sourceGlosses = [
+                ...sourceGlossFromEvent(brandSpotlight),
+                ...glossesFromCitations(citations, content),
+              ]
+            }
+          }
+
+          // Cultural backdrop that day (world news) — still only when Converse-framed and not a landmark
           if (
             allowConverseTie &&
             preferBrand &&
@@ -529,7 +678,7 @@ export async function handleChuckEChat(
             worldSpotlight.id !== brandSpotlight.id
           ) {
             content = [
-              formatted.content,
+              content,
               '',
               'Cultural backdrop that day:',
               `**${worldSpotlight.title}**`,
@@ -538,12 +687,8 @@ export async function handleChuckEChat(
             ]
               .filter(Boolean)
               .join('\n\n')
-            const backdrop = formatDateSpotlight(
-              worldSpotlight,
-              result.displayDate || toDisplayDate(date),
-            )
-            citations.push(...backdrop.citations)
-            glosses.push(...backdrop.glosses)
+            citations.push(...(worldSpotlight.citations ?? []))
+            sourceGlosses.push(...glossesFromCitations(worldSpotlight.citations ?? [], content))
           } else if (
             // Broad on-this-day: optional Converse-universe bridge only when it does not feel forced
             allowConverseTie &&
@@ -553,19 +698,15 @@ export async function handleChuckEChat(
           ) {
             const tieParts: string[] = []
             if (brandSpotlight && brandSpotlight.id !== spotlight.id) {
-              tieParts.push(
-                `**In the Converse universe — ${brandSpotlight.title}:**`,
-                brandSpotlight.synopsis,
-              )
+              tieParts.push(`**${brandSpotlight.title}**`, brandSpotlight.synopsis)
               citations.push(...(brandSpotlight.citations ?? []))
-              glosses.push(...(brandSpotlight.glosses ?? []))
+              sourceGlosses.push(...sourceGlossFromEvent(brandSpotlight))
             }
             for (const anchor of universeAnchors.slice(0, 1)) {
               if (brandSpotlight?.id === anchor.id) continue
               const formattedAnchor = formatUniverseAnchor(anchor)
               tieParts.push(formattedAnchor.content)
               citations.push(...formattedAnchor.citations)
-              glosses.push(...formattedAnchor.glosses)
             }
             if (tieParts.length) {
               content = [content, '', ...tieParts].join('\n\n')
@@ -580,8 +721,9 @@ export async function handleChuckEChat(
             const formattedAnchor = formatUniverseAnchor(universeAnchors[0])
             content = [formattedAnchor.content, '', content].join('\n\n')
             citations.unshift(...formattedAnchor.citations)
-            glosses.push(...formattedAnchor.glosses)
           }
+
+          const glosses = await finalizeChuckEGlosses(content, sourceGlosses)
 
           return {
             sessionId,
@@ -624,16 +766,17 @@ export async function handleChuckEChat(
       if (!facts.length && HERITAGE_INTENT_RE.test(lastUser.content)) {
         const moments = matchHeritageMoments(lastUser.content, brandId)
         const heritage = formatHeritageReply(moments)
+        const content = coerceChatAwayFromStory(
+          `${formatted.content}\n\nMeanwhile, from the heritage timeline:\n${heritage.content}`,
+        )
         return {
           sessionId,
           intent: 'heritage',
           message: {
             role: 'assistant',
-            content: coerceChatAwayFromStory(
-              `${formatted.content}\n\nMeanwhile, from the heritage timeline:\n${heritage.content}`,
-            ),
+            content,
             citations: heritage.citations,
-            glosses: heritage.glosses,
+            glosses: await finalizeChuckEGlosses(content, heritage.glosses),
             intent: 'heritage',
           },
         }
@@ -645,7 +788,7 @@ export async function handleChuckEChat(
           role: 'assistant',
           content: coerceChatAwayFromStory(formatted.content),
           citations: formatted.citations,
-          glosses: formatted.glosses,
+          glosses: await finalizeChuckEGlosses(formatted.content, formatted.glosses),
           intent,
         },
       }
@@ -655,14 +798,15 @@ export async function handleChuckEChat(
   if (intent === 'heritage') {
     const moments = matchHeritageMoments(lastUser.content, brandId)
     const formatted = formatHeritageReply(moments)
+    const content = coerceChatAwayFromStory(formatted.content)
     return {
       sessionId,
       intent,
       message: {
         role: 'assistant',
-        content: coerceChatAwayFromStory(formatted.content),
+        content,
         citations: formatted.citations,
-        glosses: formatted.glosses,
+        glosses: await finalizeChuckEGlosses(content, formatted.glosses),
         intent,
       },
     }
@@ -702,7 +846,10 @@ export async function handleChuckEChat(
   const replyLooksHeritage = groundedMoments.length > 0
 
   const citations = replyLooksHeritage ? grounded.citations : []
-  const glosses = replyLooksHeritage ? grounded.glosses : []
+  const glosses = await finalizeChuckEGlosses(
+    content,
+    replyLooksHeritage ? grounded.glosses : [],
+  )
 
   return {
     sessionId,

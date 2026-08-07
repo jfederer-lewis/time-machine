@@ -2,7 +2,7 @@
 
 > Living document. Agents: read this before changing Chuck-E persona, disclosure, cliff notes, or routing.  
 > Companion docs: `VISION.md`, `PIPELINE.md`, **`EDITORIAL_SCHEMA.md`** (ranking / landmarks / universe), `COPY_CONTRACT.md`, `SOURCES_AND_LANDSCAPE.md`, **`CHUCK_ECOSYSTEM_KB.md`** (Chuck franchise product / strategy KB).  
-> **Last updated:** 2026-08-07 (Chuck-E panel height / gloss-first cites)  
+> **Last updated:** 2026-08-07 (beat-first answers / wiki glosses)  
 
 ---
 
@@ -58,7 +58,7 @@ Shown after disclosure until the first user turn (`CHUCK_E_KNOBS.promptHints`):
 | Door | Prompt (knobs) | Answer should still cover |
 |------|----------------|---------------------------|
 | Theme / sport | How did basketball shape the Converse story? | Court lineage **plus** iconic sports beats (see below) — not Non-Skid alone |
-| Date entry point | What’s the cultural significance of 4 September 2003 within Converse? | Door stays light (no “Nike acquired…” spoiler). Reply: Chuck-tied beat (acquisition close), zeitgeist that day, and how the hinge mattered for the brand afterward — without inventing post-History strategy |
+| Date entry point | What’s the cultural significance of 4 September 2003 within Converse? | Door stays light (no “Nike acquired…” spoiler). **Best date = close / “Swooshed”** (not the 9 Jul announce). Reply: that day’s Chuck-tied beat + Gemini-researched colour on how/why it mattered, optional zeitgeist backdrop — never the sibling announce date unless asked |
 | Music / scenes | Where do music, youth culture, and collaborations show up in Converse’s history? | Punk/grunge wear, fashion collabs, One Hund(RED) / (PRODUCT) RED, CDG PLAY — not fashion fluff alone |
 
 ### Broad dates + Converse universe
@@ -124,9 +124,25 @@ When the chat mentions music, scenes, collabs, humanitarian / (PRODUCT) RED, fil
 | — | Broader court → skate → music → fashion arc | [Nike Magazine — Journey of an Icon](https://about.nike.com/en/magazine/converse-chuck-taylor-all-star-iconic-sneaker-true-history) |
 | — | Overview + footnotes / backlinks | [Wikipedia — Chuck Taylor All-Stars](https://en.wikipedia.org/wiki/Chuck_Taylor_All-Stars) (bridge; upgrade to underlying cites) |
 
-**Citation display (Chuck-E chat):** gloss-first for in-text provenance. Under each assistant reply with cites, a **collapsed Sources (N)** control expands to compact publication/article links — not full Harvard. Popovers show clean prose + year + **Read more — {publication/article}**. Full Harvard stays on **cliff notes** / Lookup day cards via `formatHarvardCitation`.
+**Citation display (Chuck-E chat):** gloss-first for in-text provenance. Under each assistant reply with cites, a **collapsed Sources (N)** control expands to compact publication/article links — not full Harvard. Popovers stay **simple**: term + one short readable sentence + quiet publisher link (e.g. Converse History). No stacked year / subtitle chrome. Body text is selectable. Full Harvard stays on **cliff notes** / Lookup day cards via `formatHarvardCitation`.
+
+**Gloss roles (do not conflate):**
+
+| Role | Anchors on | Popover is | Example |
+|------|------------|------------|---------|
+| Citation / provenance | Beat **title** only (exact) | One clear sentence → quiet source link | **Swooshed** → short close-day fact + Converse History |
+| Entity (Wikipedia) | People, venues, iconic events, obscure brands/houses | Short Wikipedia summary — quiet help, not noise | **Chuck Taylor** · **Maison Margiela** (not Nike / Converse) |
+| Publisher establishment | Less-familiar outlet names when they appear in prose | Who they are + homepage | **Footwear News** → US footwear trade title |
+
+Skip household brands (Nike, Converse, …), countries, bare product words, and years — prefer silence over underlines people already understand. Obscure fashion / streetwear houses named in the reply may gloss. Cap entity glosses per reply so the text stays calm.
+
+**Dated answers:** lead with the beat title and what happened — not “On 4 September 2003…” or a list of years.
+
+Never reuse a citation gloss on an entity surname/token in the synopsis (that made “Simpsons” open the collab roundup cite).
 
 **Secondary bookshelf** (allowlisted): Dazed, Vogue, Footwear News / Yahoo, Tatler Asia, Esquire ME, L’Officiel USA, Nike Magazine (`about.nike.com` Tier C), Urban Industry (Tier C). Wikipedia remains gloss-bridge. History LP remains the default brand anchor; never let retail blogs overwrite official signature / join years (1934 / 1922).
+
+**Dated asks stay on that day:** UK/US calendar phrasing (e.g. **4 September 2003** / September 4, 2003) routes to date intent. Do not spray unrelated collab beats from month-name token matches (September → Simpsons). Theme spreads (sports / music / collabs) apply to theme questions, not single-day significance asks.
 
 ### Extended prompt space (not in UI — rotate later or “read more”)
 
@@ -168,7 +184,7 @@ ChuckEWidget (floating launcher)
 
 | Intent | Behaviour |
 |--------|-----------|
-| `date` | Parse date → `assembleDateQuery` (same pipeline as Lookup) → spotlight card prose + cites + glosses |
+| `date` | Parse date → `assembleDateQuery` → for Converse-framed asks, Gemini **grounded enrich** on that day’s History beat (sibling milestones stay out unless queried) → optional cultural backdrop + cites + glosses |
 | `product` | Match `shared/products/new-chuck.ts` facts; if placeholder/empty, refuse to invent |
 | `heritage` | Match full History KB (`brand.heritageKb` via `heritageMoments`) + Converse History cites + citation glosses. Soft general fallback uses curated `timeline` beats. |
 | `general` | `chatWithChuckE()` with persona guardrails; when reply/query hits timeline beats, attach History cites + glosses |
@@ -270,6 +286,12 @@ Runtime: wire stable framing into product packs before treating it as auto-shipp
 | 2026-08-07 | Voice: pause ends listen; auto-send when transcript looks like a full query | Hands-free desk flow; incomplete fragments stay in composer for edit |
 | 2026-08-07 | Chuck-E taller panel toggle; settings text size; gloss-first cites + clean snippets | Desk reading comfort; Harvard stays on cliff notes / Lookup, not chat clutter |
 | 2026-08-07 | Chat sources = collapsed expandable under bot replies (not always-on strip) | Inventory on demand; glosses remain the in-text cite |
+| 2026-08-07 | Parse UK day-month-year (4 September 2003); dated heritage stays on that day | Opening hint was falling through to heritage + September→Simpsons noise |
+| 2026-08-07 | Gloss roles: citation=title exact; entity=what-it-is; publisher=establishment | Citation gloss on “Simpsons” in synopsis was the wrong kind of hover |
+| 2026-08-07 | Exact-day brand attach excludes same-year siblings; Converse date asks get Gemini grounded enrich | 4 Sep close was pulling 9 Jul announce; desks want researched colour on the queried day |
+| 2026-08-07 | Gloss popovers: term + short body + quiet source; always selectable | Drop year/subtitle stack and loud “Read more”; desks need digestible copyable notes |
+| 2026-08-07 | Date replies lead with beat title; years never gloss; Wikipedia entity glosses via API | Don’t open with the queried date or underline 2003; wiki-style entity links + source on the fact title |
+| 2026-08-07 | Wikipedia glosses = people / venues / iconic events only; keep underlines sparse | Help understanding without visual noise for desks who already know |
 
 ---
 

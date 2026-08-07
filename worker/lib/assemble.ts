@@ -1,9 +1,8 @@
 import type { CulturalEvent, DateQueryResult, ProviderId, ResearchMode } from '../../shared/provenance'
 import { withHarvard } from '../../shared/provenance'
-import { heritageMoments } from '../../shared/brand'
+import { brandMomentsForQueryDate } from '../../shared/brand'
 import { getBrand } from '../../shared/brands'
 import {
-  calendarDayKey,
   universeAnchorsForQueryDate,
 } from '../../shared/converse-universe'
 import { queryDatePrecision, toDisplayDate, toOnThisDayPath } from '../../shared/source-registry'
@@ -175,16 +174,7 @@ export async function assembleDateQuery(
       ? sameYearRanked
       : rankByInterest(merged, targetYear)
 
-  const brandMoments: CulturalEvent[] = heritageMoments(brand)
-    .filter((m) => {
-      if (m.date.length === 4) return m.date === queryDate.slice(0, 4)
-      if (m.date.length === 7) return m.date === queryDate.slice(0, 7)
-      // Exact ISO match, same year, or same calendar day (MM-DD) for hinge dates
-      if (m.date === queryDate || m.date.slice(0, 4) === queryDate.slice(0, 4)) return true
-      const qDay = calendarDayKey(queryDate)
-      const mDay = calendarDayKey(m.date)
-      return Boolean(qDay && mDay && qDay === mDay && m.precision === 'exact-day')
-    })
+  const brandMoments: CulturalEvent[] = brandMomentsForQueryDate(brand, queryDate)
     .map((m) =>
       sanitizeEventCitations({
         id: m.id,

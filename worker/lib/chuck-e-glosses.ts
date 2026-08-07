@@ -1,20 +1,25 @@
 import type { BrandMoment } from '../../shared/brand'
 import type { Citation, Gloss } from '../../shared/provenance'
 import type { ProductFact } from '../../shared/products'
+import { isYearLikeTerm } from './gloss-service'
+
+/** Soft ceiling for popover body — desks skim, not read essays. */
+const GLOSS_BODY_MAX = 140
 
 /**
- * Clean source snippets for gloss popovers: no curly quotes, page refs,
- * or “Converse History: …” wrappers — short readable prose only.
+ * Clean source snippets for gloss popovers: short readable prose only.
+ * Strip bibliographic wrappers, title echoes, and History-meta asides.
  */
-export function cleanGlossSnippet(raw: string, max = 200): string {
+export function cleanGlossSnippet(raw: string, max = GLOSS_BODY_MAX): string {
   let s = String(raw || '')
     .replace(/\u00a0/g, ' ')
     .replace(/^Converse History:\s*/i, '')
     .replace(/^Converse History entry for[^.]*\.?\s*/i, '')
+    .replace(/\bConverse History marks[^.]*[.!]?\s*/gi, '')
     .replace(/\(\s*pp?\.\s*\d+[^)]*\)/gi, '')
     .replace(/\bpp?\.\s*\d+([-–—]\d+)?\b/gi, '')
     .replace(/[“”«»„]/g, '')
-    .replace(/[‘’‚‛]/g, "'")
+    .replace(/[‘’‚‛']/g, "'")
     .replace(/\s+/g, ' ')
     .trim()
 
@@ -25,59 +30,119 @@ export function cleanGlossSnippet(raw: string, max = 200): string {
     s = s.slice(1, -1).trim()
   }
 
-  // Drop leftover bibliographic noise that isn't prose
   s = s.replace(/\s*Available at:\s*\S+/gi, '').trim()
+  s = s.replace(/\s+per\s+[A-Z][^.]{2,40}\.\s*$/g, '').trim()
 
   if (s.length <= max) return s
   const cut = s.slice(0, max)
   const at = Math.max(cut.lastIndexOf('. '), cut.lastIndexOf('; '), cut.lastIndexOf(', '))
-  return (at > max * 0.45 ? cut.slice(0, at + 1) : `${cut.trimEnd()}…`).trim()
+  return (at > max * 0.4 ? cut.slice(0, at + 1) : `${cut.trimEnd()}…`).trim()
 }
 
-function publisherLabel(publisher: string, year?: string): string {
-  const pub = publisher.trim() || 'Source'
-  return year ? `${pub} (${year})` : pub
+/** Avoid “Swooshed. Swooshed was…” — drop a leading title echo. */
+function stripTitleEcho(body: string, title: string): string {
+  const t = title.trim()
+  if (!t || t.length < 3) return body
+  const escaped = t.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+  return body
+    .replace(new RegExp(`^(${escaped})\\s*[—–\\-:.]\\s*`, 'i'), '')
+    .replace(new RegExp(`^(${escaped})\\s+`, 'i'), '')
+    .trim()
+}
+
+function publisherLabel(publisher: string): string {
+  return publisher.trim() || 'Source'
 }
 
 /**
- * Build dotted citation glosses so Chuck-E facts stay traceable to the
- * original source (typically Converse History) on hover.
- * Gloss body = clean prose; link + publisher/year live in the popover footer.
+ * Trade / culture publishers that desks may not instantly place —
+ * short establishment gloss + official site (not the article cite).
+ */
+const PUBLISHER_ESTABLISHMENT: Record<string, { gloss: string; url: string }> = {
+  'footwear news': {
+    gloss: 'US trade title for footwear design, retail and collaborations.',
+    url: 'https://footwearnews.com/',
+  },
+  'tatler asia': {
+    gloss: 'Asia-Pacific luxury and society magazine (Tatler group).',
+    url: 'https://www.tatlerasia.com/',
+  },
+  "l'officiel usa": {
+    gloss: 'US edition of the French fashion magazine L’Officiel.',
+    url: 'https://www.lofficielusa.com/',
+  },
+  'urban industry': {
+    gloss: 'UK streetwear retailer and editorial site.',
+    url: 'https://www.urbanindustry.co.uk/',
+  },
+  'esquire middle east': {
+    gloss: 'Middle East edition of Esquire — style and culture.',
+    url: 'https://www.esquireme.com/',
+  },
+  dazed: {
+    gloss: 'London youth-culture and fashion magazine (Dazed Digital).',
+    url: 'https://www.dazeddigital.com/',
+  },
+}
+
+/** One clear sentence for a History / brand beat — not a second title stack. */
+function brandCitationGlossBody(m: BrandMoment): string {
+  const fromSynopsis = stripTitleEcho(cleanGlossSnippet(m.synopsis, GLOSS_BODY_MAX), m.title)
+  if (fromSynopsis.length >= 24) return fromSynopsis
+
+  const fromRef = cleanGlossSnippet(m.reference, GLOSS_BODY_MAX)
+  const looksMeta =
+    !fromRef ||
+    fromRef.length < 28 ||
+    /^(see |cf\.|ibid|converse history)/i.test(fromRef)
+  if (!looksMeta) return stripTitleEcho(fromRef, m.title)
+
+  return cleanGlossSnippet(m.synopsis || m.title, GLOSS_BODY_MAX)
+}
+
+/**
+ * Source / provenance glosses for Chuck-E.
+ *
+ * - Citation gloss → the beat **title** only (e.g. Swooshed → Converse History)
+ * - Publisher establishment → lesser-known outlets named in prose
+ * - Years / calendar dates are never gloss terms
+ * - Entity “what is this?” glosses come from Wikipedia API (gloss-service), not here
  */
 export function glossesFromBrandMoments(moments: BrandMoment[]): Gloss[] {
   const glosses: Gloss[] = []
   const seen = new Set<string>()
 
-  for (const m of moments) {
-    const year = m.citation.publishedAt?.slice(0, 4) || m.date.slice(0, 4)
-    const fromSynopsis = cleanGlossSnippet(m.synopsis, 220)
-    const fromRef = cleanGlossSnippet(m.reference, 220)
-    const looksMeta =
-      !fromRef ||
-      fromRef.length < 28 ||
-      /^(see |cf\.|ibid|converse history entry)/i.test(fromRef)
-    const glossBody =
-      fromSynopsis ||
-      (looksMeta ? cleanGlossSnippet(`${m.title}. ${m.synopsis}`, 220) : fromRef)
+  const push = (g: Gloss) => {
+    if (isYearLikeTerm(g.term)) return
+    const key = g.term.toLowerCase()
+    if (seen.has(key) || g.term.length < 3) return
+    seen.add(key)
+    glosses.push(g)
+  }
 
-    const candidates = [
-      ...titleTokens(m.title),
-      m.title,
-      year,
-      m.date.length > 4 ? m.date : '',
-    ].filter(Boolean)
-    for (const term of candidates) {
-      const key = term.toLowerCase()
-      if (seen.has(key) || term.length < 3) continue
-      seen.add(key)
-      glosses.push({
-        term,
-        gloss: glossBody,
-        url: m.citation.url,
+  for (const m of moments) {
+    push({
+      term: m.title,
+      gloss: brandCitationGlossBody(m),
+      url: m.citation.url,
+      source: 'curated',
+      sourceLabel: /converse history/i.test(m.citation.title)
+        ? 'Converse History'
+        : publisherLabel(m.citation.publisher),
+      matchMode: 'exact',
+    })
+
+    const hay = `${m.title} ${m.synopsis}`.toLowerCase()
+    const pubKey = (m.citation.publisher || '').trim().toLowerCase()
+    const establishment = PUBLISHER_ESTABLISHMENT[pubKey]
+    if (establishment && hay.includes(pubKey)) {
+      push({
+        term: m.citation.publisher,
+        gloss: establishment.gloss,
+        url: establishment.url,
         source: 'curated',
-        sourceLabel: publisherLabel(m.citation.publisher, year),
-        period: year,
-        originator: m.citation.title,
+        sourceLabel: m.citation.publisher,
+        matchMode: 'exact',
       })
     }
   }
@@ -85,35 +150,31 @@ export function glossesFromBrandMoments(moments: BrandMoment[]): Gloss[] {
   return glosses
 }
 
+/**
+ * Publisher establishment only when the outlet name appears in the reply.
+ * Do not turn every citation title into a gloss (that stacked meta / years).
+ */
 export function glossesFromCitations(citations: Citation[], content?: string): Gloss[] {
   const glosses: Gloss[] = []
   const seen = new Set<string>()
   const hay = (content || '').toLowerCase()
+  if (!hay) return glosses
 
   for (const c of citations) {
-    const year = c.publishedAt?.slice(0, 4)
-    const yearBit = year && year !== 'n.d.' ? year : undefined
-    const note = cleanGlossSnippet(c.reference || '', 160)
-    const glossBody =
-      note ||
-      cleanGlossSnippet(c.title, 120) ||
-      'Open the original source for the full cite.'
-    const terms = [c.title, yearBit, c.publisher].filter(Boolean) as string[]
-    for (const term of terms) {
-      const key = term.toLowerCase()
-      if (seen.has(key) || term.length < 3) continue
-      if (hay && !hay.includes(key) && term !== c.title) continue
-      seen.add(key)
-      glosses.push({
-        term,
-        gloss: glossBody,
-        url: c.url,
-        source: c.tier === 'bridge' || /wikipedia\.org/i.test(c.url) ? 'wikipedia' : 'curated',
-        sourceLabel: publisherLabel(c.publisher, yearBit),
-        period: yearBit,
-        originator: c.title,
-      })
-    }
+    const pub = (c.publisher || '').trim()
+    const pubKey = pub.toLowerCase()
+    const establishment = PUBLISHER_ESTABLISHMENT[pubKey]
+    if (!establishment || !pub || seen.has(pubKey) || !hay.includes(pubKey)) continue
+    if (isYearLikeTerm(pub)) continue
+    seen.add(pubKey)
+    glosses.push({
+      term: pub,
+      gloss: establishment.gloss,
+      url: establishment.url,
+      source: 'curated',
+      sourceLabel: pub,
+      matchMode: 'exact',
+    })
   }
 
   return glosses
@@ -124,46 +185,23 @@ export function glossesFromProductFacts(facts: ProductFact[]): Gloss[] {
   const seen = new Set<string>()
   for (const f of facts) {
     if (!f.citation) continue
+    if (isYearLikeTerm(f.label)) continue
     const key = f.label.toLowerCase()
     if (seen.has(key)) continue
     seen.add(key)
-    const year = f.citation.publishedAt?.slice(0, 4)
     glosses.push({
       term: f.label,
-      gloss: cleanGlossSnippet(f.body, 200),
+      gloss: cleanGlossSnippet(f.body, GLOSS_BODY_MAX),
       url: f.citation.url,
       source: 'curated',
-      sourceLabel: publisherLabel(f.citation.publisher, year),
-      period: year,
-      originator: f.citation.title,
+      sourceLabel: publisherLabel(f.citation.publisher),
+      matchMode: 'exact',
     })
   }
   return glosses
 }
 
-function titleTokens(title: string): string[] {
-  const out: string[] = []
-  const known = [
-    'All Star',
-    'Non-Skid',
-    'Chuck Taylor',
-    'Jack Purcell',
-    'One Star',
-    'Pro Leather',
-    'Chuck 70',
-    'GOLF le FLEUR',
-    'Comme des Garçons',
-    'CDG PLAY',
-    'Maison Margiela',
-    'Rick Owens',
-    'The Simpsons',
-    'Kurt Cobain',
-    'AS-1 Pro',
-    'Billie Eilish',
-  ]
-  const lower = title.toLowerCase()
-  for (const k of known) {
-    if (lower.includes(k.toLowerCase())) out.push(k)
-  }
-  return out
+/** Drop year-like terms that should never be underlined. */
+export function rejectYearGlosses(glosses: Gloss[]): Gloss[] {
+  return glosses.filter((g) => !isYearLikeTerm(g.term))
 }

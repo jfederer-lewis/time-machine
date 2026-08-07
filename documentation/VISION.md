@@ -2,7 +2,7 @@
 
 > Living document. Update this as the idea develops. Agents: read this before making product or architecture decisions.
 
-**Last updated:** 2026-08-07 (`needsHumanReview` optional / prototype)  
+**Last updated:** 2026-08-07 (Chuck-E date focus / gloss roles)  
 **Client (current):** Converse  
 **Working title:** Good News, Chuck  
 **Live:** https://time-machine.jasminefederer.workers.dev  
@@ -313,6 +313,8 @@ Record material product/architecture choices here as we go.
 | 2026-08-07 | Never Converse-bridge landmark defining days; soft universe lift only; hard news still ships | 9/11-class respect; brand activation ≠ sugar-coat or force Chuck |
 | 2026-08-07 | Canonical `EDITORIAL_SCHEMA.md` for ranking / tone / universe / landmarks | One place for agents; keep knobs + prompts aligned |
 | 2026-08-07 | `needsHumanReview` optional on `CulturalEvent` — soft flag, not ship gate | Prototype: don’t block builds/ship on missing review labels; UI badge still later |
+| 2026-08-07 | Chuck-E: UK dates parse; citation vs entity vs publisher gloss roles | Date hint was heritage-noisy; “Simpsons” cite gloss was wrong kind |
+| 2026-08-07 | Exact-day brand moments; Chuck-E Gemini enrich on Converse date significance | Don’t mix announce/close; researched colour on the queried day |
 
 ---
 
