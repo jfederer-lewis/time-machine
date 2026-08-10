@@ -372,6 +372,79 @@ function looksLikeCollabRoundup(url: string, title = ''): boolean {
 }
 
 /**
+ * Which named partnership a desk question is digging into — used to keep Read more
+ * on that story (not Abloh / Simpsons cites after a Tyler ask).
+ */
+function specificCollabFocus(query: string): string | null {
+  const q = query.toLowerCase()
+  if (/abloh|virgil|off[\s-]?white|(?:^|\b)the\s+ten\b/.test(q)) return 'abloh'
+  if (/golf\s+le\s+fleur|le\s*fleur|tyler|1908\s+program|naut-?1|coach\s+jogger/.test(q))
+    return 'tyler'
+  if (/margiela|maison\s+martin\s+margiela/.test(q)) return 'margiela'
+  if (/\b(cdg|comme\s+des\s+gar)/.test(q)) return 'cdg'
+  if (/rick\s+owens|drkshdw|turbodrk/.test(q)) return 'owens'
+  if (/vaquera/.test(q)) return 'vaquera'
+  if (/kurt\s+cobain|\bcobain\b/.test(q)) return 'cobain'
+  if (/simpsons/.test(q)) return 'simpsons'
+  if (/stranger\s+things/.test(q)) return 'stranger-things'
+  if (/billie|eilish|by\s+you/.test(q)) return 'billie'
+  if (/\bweapon\b|choose\s+your\s+weapon|turbowpn/.test(q)) return 'weapon'
+  if (/chuck\s*(ii|2|two)|lunarlon/.test(q)) return 'chuck-ii'
+  // Bare “one star” is ambiguous (Cobain wear vs Tyler Golf) — don’t lock focus.
+  return null
+}
+
+const COLLAB_FOCUS_HAY: Record<string, RegExp> = {
+  abloh: /abloh|virgil|ghosting|the\s+ten|off[\s-]?white/,
+  tyler: /tyler|golf|le\s*fleur|1908|gianno|flower\s*boy|naut-?1|coach\s+jogger/,
+  margiela: /margiela/,
+  cdg: /cdg|comme\s+des\s+gar|play\s+comme/,
+  owens: /rick\s+owens|drkshdw|turbodrk|turbowpn/,
+  vaquera: /vaquera|slouch\s+wedge/,
+  cobain: /cobain|kurt/,
+  simpsons: /simpsons/,
+  'stranger-things': /stranger\s+things/,
+  billie: /billie|eilish|by\s+you|hit\s+me\s+hard/,
+  weapon: /weapon|bird|magic|turbowpn|choose\s+your\s+weapon/,
+  'chuck-ii': /chuck\s*ii|all\s+star\s+ii|lunarlon|feel\s+like\s+nikes/,
+}
+
+/** Tight Perplexity query for a named partnership (allowlisted press discovery). */
+const COLLAB_FOCUS_SEARCH: Record<string, string> = {
+  abloh: 'Virgil Abloh Converse Chuck 70 The Ten Ghosting collaboration',
+  tyler: 'Tyler the Creator Converse GOLF le FLEUR collaboration',
+  margiela: 'Maison Margiela Converse Chuck Taylor collaboration',
+  cdg: 'Comme des Garçons PLAY Converse Chuck collaboration',
+  owens: 'Rick Owens DRKSHDW Converse TURBODRK Chuck 70',
+  vaquera: 'Vaquera Converse Chuck Taylor collaboration',
+  cobain: 'Kurt Cobain Converse One Star collaboration',
+  simpsons: 'The Simpsons Converse Chuck Taylor collaboration',
+  'stranger-things': 'Stranger Things Converse Nike collaboration',
+  billie: 'Billie Eilish Converse By You Chuck Taylor',
+  weapon: 'Converse Weapon Larry Bird Magic Johnson Choose Your Weapon',
+  'chuck-ii': 'Chuck Taylor All Star II Lunarlon Nike Converse',
+}
+
+function citationMatchesCollabFocus(c: Citation, focus: string): boolean {
+  const re = COLLAB_FOCUS_HAY[focus]
+  if (!re) return true
+  const hay = `${c.title || ''} ${c.publisher || ''} ${c.reference || ''} ${c.url || ''}`.toLowerCase()
+  // Generic History LP alone is not enough for a named-partner dig
+  if (/converse\.com.*landing-converse-history|converse history/i.test(hay) && !re.test(hay)) {
+    return false
+  }
+  return re.test(hay)
+}
+
+/** Drop Read more rows that belong to a different collab than the one asked about. */
+function filterCitationsToCollabFocus(query: string, citations: Citation[]): Citation[] {
+  const focus = specificCollabFocus(query)
+  if (!focus || !citations.length) return citations
+  const kept = citations.filter((c) => citationMatchesCollabFocus(c, focus))
+  return kept.length ? kept : citations
+}
+
+/**
  * Prefer dedicated collab / model features (GQ, Forbes, Vogue…) over roundups.
  * History wins for brand-only beats; on culture themes, allowlisted press outranks
  * History stubs so Abloh / Tyler / Margiela are not crowded out by “First fashion collab”.
@@ -1092,6 +1165,7 @@ function citationsFromGroundedSources(
 /**
  * Live allowlisted press cites via Perplexity.
  * Perplexity is never the public citation host — only discovery.
+ * Named-collab digs search that partnership specifically, then keep only on-topic hits.
  */
 async function citationsFromPerplexityClaimSearch(opts: {
   apiKey?: string
@@ -1100,14 +1174,23 @@ async function citationsFromPerplexityClaimSearch(opts: {
   max?: number
   /** URLs already attached — skip duplicates. */
   excludeUrls?: Set<string>
+  /** When set, search + keep hits for this partnership only. */
+  collabFocus?: string | null
 }): Promise<Citation[]> {
-  const { apiKey, userQuestion, replyContent, max = 3, excludeUrls } = opts
+  const { apiKey, userQuestion, replyContent, max = 3, excludeUrls, collabFocus } = opts
   if (!apiKey || max <= 0) return []
 
   const yearMatch = userQuestion.match(/\b(19\d{2}|20[0-2]\d)\b/)
   const year = yearMatch ? Number(yearMatch[1]) : new Date().getUTCFullYear()
-  const title = userQuestion.trim().slice(0, 160) || 'Converse cultural claim'
-  const synopsis = replyContent.trim().slice(0, 400)
+  const focusQuery =
+    collabFocus && COLLAB_FOCUS_SEARCH[collabFocus] ? COLLAB_FOCUS_SEARCH[collabFocus] : null
+  const title = focusQuery || userQuestion.trim().slice(0, 160) || 'Converse cultural claim'
+  const synopsis = focusQuery
+    ? `${userQuestion.trim()}. Dedicated Converse collaboration press — not other fashion houses. ${replyContent.trim()}`.slice(
+        0,
+        360,
+      )
+    : replyContent.trim().slice(0, 400)
 
   const hits = await searchAllowlistedCiteForClaim({
     apiKey,
@@ -1118,38 +1201,52 @@ async function citationsFromPerplexityClaimSearch(opts: {
   })
   if (!hits.length) return []
 
-  const claimText = `${year} ${title} ${synopsis}`
+  const focusRe = collabFocus ? COLLAB_FOCUS_HAY[collabFocus] : null
+  const claimText = `${year} ${title} ${synopsis} ${userQuestion}`
   const scored = hits
     .filter((h) => {
       if (!h.url || isCitationBlocked(h.url) || !isCitationAllowed(h.url)) return false
       if (excludeUrls?.has(h.url.trim().toLowerCase())) return false
       const tier = citationTier(h.url)
-      return tier === 'A' || tier === 'B'
+      if (!(tier === 'A' || tier === 'B')) return false
+      if (focusRe) {
+        const hay = `${h.title} ${h.snippet} ${h.url}`.toLowerCase()
+        if (!focusRe.test(hay)) return false
+      }
+      return true
     })
-    .map((h) => ({
-      hit: h,
-      relevance: claimCiteRelevance(claimText, {
+    .map((h) => {
+      let relevance = claimCiteRelevance(claimText, {
         title: h.title,
         snippet: h.snippet,
         url: h.url,
-      }),
-      tier: citationTier(h.url) === 'A' ? 2 : 1,
-    }))
+      })
+      if (focusRe && focusRe.test(`${h.title} ${h.snippet} ${h.url}`.toLowerCase())) {
+        relevance += 4
+      }
+      return {
+        hit: h,
+        relevance,
+        tier: citationTier(h.url) === 'A' ? 2 : 1,
+      }
+    })
     .filter((row) => row.relevance > 0)
     .sort((a, b) => {
       if (b.relevance !== a.relevance) return b.relevance - a.relevance
       return b.tier - a.tier
     })
 
-  // If relevance scoring wipes everything (short / abstract asks), keep top Tier A/B hits.
+  // Focused digs: never fall back to unfocused Tier A/B filler.
   const pool = scored.length
     ? scored.map((s) => s.hit)
-    : hits.filter((h) => {
-        if (!h.url || isCitationBlocked(h.url) || !isCitationAllowed(h.url)) return false
-        if (excludeUrls?.has(h.url.trim().toLowerCase())) return false
-        const tier = citationTier(h.url)
-        return tier === 'A' || tier === 'B'
-      })
+    : focusRe
+      ? []
+      : hits.filter((h) => {
+          if (!h.url || isCitationBlocked(h.url) || !isCitationAllowed(h.url)) return false
+          if (excludeUrls?.has(h.url.trim().toLowerCase())) return false
+          const tier = citationTier(h.url)
+          return tier === 'A' || tier === 'B'
+        })
 
   const out: Citation[] = []
   const seen = new Set<string>(excludeUrls ? [...excludeUrls] : [])
@@ -1316,23 +1413,31 @@ async function citationsFromWikipediaBridge(opts: {
 /**
  * Merge Sources for heritage/general: keep all curated pack cites, add Gemini grounding,
  * fill with Perplexity when empty/thin, then Wikipedia footnotes / page when still sparse.
+ * Named-collab digs stay on that partnership — don’t pad with other houses’ articles.
  */
 async function mergeChatCitations(
   citations: Citation[],
-  opts: { apiKey?: string; userQuestion: string; replyContent: string; intent?: ChuckEIntent },
+  opts: {
+    apiKey?: string
+    userQuestion: string
+    replyContent: string
+    intent?: ChuckEIntent
+  },
 ): Promise<Citation[]> {
   // Product facts stay pack-only — never invent launch specs from live web search.
   if (opts.intent === 'product') return citations
 
-  const curated = citations.filter((c) => c.provider === 'brand-timeline')
-  const others = citations.filter((c) => c.provider !== 'brand-timeline')
+  const focus = specificCollabFocus(opts.userQuestion)
+  const scoped = focus ? filterCitationsToCollabFocus(opts.userQuestion, citations) : citations
+
+  const curated = scoped.filter((c) => c.provider === 'brand-timeline')
+  const others = scoped.filter((c) => c.provider !== 'brand-timeline')
   let merged = dedupeCitationsByUrl([...curated, ...others])
 
   const excludeOf = () =>
     new Set(merged.map((c) => (c.url || '').trim().toLowerCase()).filter(Boolean))
 
   let slots = CHUCK_E_MAX_CHAT_SOURCES - merged.length
-  // Empty, or only one cite: look for additional allowlisted press that backs the claim.
   const wantsLive =
     Boolean(opts.apiKey) && slots > 0 && (merged.length === 0 || merged.length < 3)
   if (wantsLive) {
@@ -1342,13 +1447,16 @@ async function mergeChatCitations(
       replyContent: opts.replyContent,
       max: Math.min(slots, 3),
       excludeUrls: excludeOf(),
+      collabFocus: focus,
     })
-    if (live.length) merged = dedupeCitationsByUrl([...merged, ...live])
+    const liveScoped = focus ? filterCitationsToCollabFocus(opts.userQuestion, live) : live
+    if (liveScoped.length) merged = dedupeCitationsByUrl([...merged, ...liveScoped])
   }
 
   slots = CHUCK_E_MAX_CHAT_SOURCES - merged.length
   // Really sparse after curated + press search → Wikipedia footnotes, then Wiki page.
-  if (slots > 0 && merged.length < 2) {
+  // Skip the generic Chuck History bridge when a named collab already has a press cite.
+  if (slots > 0 && merged.length < 2 && !focus) {
     const wikiCites = await citationsFromWikipediaBridge({
       userQuestion: opts.userQuestion,
       replyContent: opts.replyContent,
@@ -1358,7 +1466,8 @@ async function mergeChatCitations(
     if (wikiCites.length) merged = dedupeCitationsByUrl([...merged, ...wikiCites])
   }
 
-  return orderCitationsCuratedFirst(merged).slice(0, CHUCK_E_MAX_CHAT_SOURCES)
+  const ordered = orderCitationsCuratedFirst(merged).slice(0, CHUCK_E_MAX_CHAT_SOURCES)
+  return focus ? filterCitationsToCollabFocus(opts.userQuestion, ordered) : ordered
 }
 
 function buildSystemContext(brandId: string): string {
@@ -1661,12 +1770,15 @@ export async function handleChuckEChat(
           coerceChatAwayFromStory(researched.content),
         )
         const citations = await mergeChatCitations(
-          dedupeCitationsByUrl([
-            ...moments.map((m) => citationFromBrandMoment(m)),
-            ...citationsFromGroundedSources(researched.groundedSources, {
-              demoteCollabRoundups: specificCollab,
-            }),
-          ]),
+          filterCitationsToCollabFocus(
+            lastUser.content,
+            dedupeCitationsByUrl([
+              ...moments.map((m) => citationFromBrandMoment(m)),
+              ...citationsFromGroundedSources(researched.groundedSources, {
+                demoteCollabRoundups: specificCollab,
+              }),
+            ]),
+          ),
           {
             apiKey: env.PERPLEXITY_API_KEY,
             userQuestion: lastUser.content,
@@ -1763,18 +1875,29 @@ export async function handleChuckEChat(
   )
   if (!streamedChat) await onDelta?.(content)
 
-  // Attach Converse History cites for any heritage beats the reply (or query) touches
-  const groundedMoments = matchHeritageMoments(`${lastUser.content}\n${content}`, brandId, 5, {
-    softFallback: false,
-  })
+  // Attach Converse History cites for any heritage beats the reply (or query) touches.
+  // Named-collab digs: match on the user question only — don’t import Abloh/Simpsons
+  // cites just because Gemini mentioned them as colour.
+  const specificCollab = SPECIFIC_COLLAB_RE.test(lastUser.content)
+  const groundedMoments = matchHeritageMoments(
+    specificCollab ? lastUser.content : `${lastUser.content}\n${content}`,
+    brandId,
+    specificCollab ? 4 : 5,
+    {
+      softFallback: false,
+    },
+  )
   const grounded = formatHeritageReply(groundedMoments, { query: lastUser.content })
   const replyLooksHeritage = groundedMoments.length > 0
 
   const citations = await mergeChatCitations(
-    dedupeCitationsByUrl([
-      ...(replyLooksHeritage ? grounded.citations : []),
-      ...citationsFromGroundedSources(chatGrounded),
-    ]),
+    filterCitationsToCollabFocus(
+      lastUser.content,
+      dedupeCitationsByUrl([
+        ...(replyLooksHeritage ? grounded.citations : []),
+        ...citationsFromGroundedSources(chatGrounded),
+      ]),
+    ),
     {
       apiKey: env.PERPLEXITY_API_KEY,
       userQuestion: lastUser.content,

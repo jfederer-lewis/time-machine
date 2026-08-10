@@ -371,6 +371,8 @@ Runtime: wire stable framing into product packs before treating it as auto-shipp
 | 2026-08-10 | Collab/culture themes: ~4 press-led landmark beats (Abloh, Tyler/Golf…); soft lane labels; entity gloss anchors on people/houses | History stubs were crowding out dedicated cites; desks prefer depth + glosses over long thin lists |
 | 2026-08-10 | Citation glosses also on people, releases, and outlet names in reply text → article URL | Desks should open the source from the sentence, not only Read more |
 | 2026-08-10 | Split gloss roles: partner/house → Wikipedia; collab title / drop / outlet → article | Avoid both “Virgil Abloh” and “The Ten” opening the same Forbes cite |
+| 2026-08-10 | Named-collab Read more: filter cites to that partner; don’t import other houses from reply/Gemini | Tyler digs were shipping Abloh / Simpsons / bare History in the footer |
+| 2026-08-10 | Named-collab digs: Perplexity searches that partnership on allowlisted press, then focus-filters hits | Live discovery should find Tyler/Abloh articles — not pad with unrelated houses |
 
 ---
 
