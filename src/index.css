@@ -26,7 +26,7 @@
   --font-display: 'Druk Wide', 'Arial Black', Impact, sans-serif;
   --font-ui: 'Proxima Nova', 'Helvetica Neue', Helvetica, Arial, sans-serif;
   --font-editorial: 'Proxima Nova', 'Helvetica Neue', Helvetica, Arial, sans-serif;
-  --chuck-e-font-size: 1.05rem;
+  --chuck-e-font-size: 1.15rem;
   --chuck-e-gloss-scale: 0.88;
   color: var(--ink);
   background: var(--paper);
@@ -38,15 +38,15 @@
 }
 
 html[data-chuck-font='md'] {
-  --chuck-e-font-size: 0.95rem;
-}
-
-html[data-chuck-font='lg'] {
   --chuck-e-font-size: 1.05rem;
 }
 
-html[data-chuck-font='xl'] {
+html[data-chuck-font='lg'] {
   --chuck-e-font-size: 1.15rem;
+}
+
+html[data-chuck-font='xl'] {
+  --chuck-e-font-size: 1.25rem;
 }
 
 *,
@@ -615,12 +615,40 @@ a {
   border: 1px solid var(--rule);
   box-shadow: 0 18px 48px color-mix(in srgb, var(--ink) 16%, transparent);
   animation: rise 280ms ease both;
-  transition: height 220ms ease;
+  transition: height 220ms ease, width 220ms ease;
 }
 
 /* Near full viewport height — still leaves margin; not a full-bleed takeover */
 .chuck-e-panel--tall {
   height: min(860px, calc(100dvh - 5.25rem));
+}
+
+/* Full-page takeover — fills the viewport; size button cycles default → tall → full */
+.chuck-e--full {
+  inset: 0;
+  right: auto;
+  bottom: auto;
+  width: 100%;
+  height: 100%;
+  align-items: stretch;
+  gap: 0;
+  padding: 0;
+}
+
+.chuck-e-panel--full {
+  width: 100%;
+  height: 100%;
+  max-width: none;
+  border: 0;
+  box-shadow: none;
+  animation: none;
+}
+
+.chuck-e--full .chuck-e-launcher {
+  position: absolute;
+  right: 1.25rem;
+  bottom: 1.25rem;
+  z-index: 1;
 }
 
 .chuck-e-panel__head {
@@ -1151,6 +1179,16 @@ a {
 
   .chuck-e-panel--tall {
     height: min(88dvh, calc(100dvh - 4.25rem));
+  }
+
+  .chuck-e-panel--full {
+    width: 100%;
+    height: 100%;
+  }
+
+  .chuck-e--full .chuck-e-launcher {
+    right: 0.75rem;
+    bottom: 0.75rem;
   }
 }
 

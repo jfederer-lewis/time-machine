@@ -664,6 +664,7 @@ export async function chatWithChuckE(opts: {
     'Do not write a finished press story, dateline, or byline-ready narrative.',
     'Finish every sentence. Never trail off mid-clause or end on a dangling word (of / the / our / from…).',
     `Keep it concise (soft ~${CHUCK_E_KNOBS.chatReplySoftMaxChars} chars): sharp, no jargon, no padding or repetition. Finish cleanly — never truncate mid-thought.`,
+    CHUCK_E_KNOBS.replyLanguageRule,
     useSearch
       ? 'You may use Google Search for claim-relevant colour beyond the supplied pack — prefer pack / History facts when they answer the question; search when the pack is thin, off-topic, or needs corroboration. Never invent shoe launch specs. Prefer premium press and Converse History over blogs. For a named collab or model, prefer a dedicated feature on that release over “best collaborations” roundups.'
       : 'If the knowledge context does not contain a product detail, say you do not have that detail yet. Do not invent from the web.',
@@ -741,6 +742,7 @@ export async function researchChuckETopic(opts: {
     'Shape: one short grounding sentence, then optional plain bullets for distinct sourced moments — not a bare dump and not a research memo.',
     'No ### headings, no Pointers to Cite / sources block in the body.',
     'Past tense. Never cite yourself, Gemini, or AI as a source.',
+    CHUCK_E_KNOBS.replyLanguageRule,
     `Soft length ~${Math.min(CHUCK_E_KNOBS.chatReplySoftMaxChars, 1100)} chars.`,
     '',
     `User question: ${userQuestion}`,
@@ -787,7 +789,8 @@ export async function enrichChuckEDateSignificance(opts: {
     'Do not invent strategy, quotations, or post-History outcomes. If search does not support a detail, omit it.',
     'Shape: 1 short paragraph (optionally 2–4 plain bullets for distinct facts). Weave the beat title into the opening — do NOT open with the calendar date, “On [date]…”, or a titled report header.',
     'Never use ### headings or labelled sections. Never add Pointers to Cite / Source Anchor / Desk Guidance — the UI handles cites.',
-    'Plain English only. Skip corporate jargon and repeated themes (identity preserved / global reach / cultural pillar said three ways).',
+    'Sharp plain prose only (plain English when the reply language is English). Skip corporate jargon and repeated themes (identity preserved / global reach / cultural pillar said three ways).',
+    CHUCK_E_KNOBS.replyLanguageRule,
     'The user already asked about this day; weave the date into prose only if needed for clarity.',
     'Do not mention other years or related deal dates unless the user asked about them.',
     'Past tense. Never cite yourself, Gemini, or AI as a source.',

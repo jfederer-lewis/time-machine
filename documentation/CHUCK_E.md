@@ -2,7 +2,7 @@
 
 > Living document. Agents: read this before changing Chuck-E persona, disclosure, cliff notes, or routing.  
 > Companion docs: `VISION.md`, `PIPELINE.md`, **`EDITORIAL_SCHEMA.md`** (ranking / landmarks / universe), `COPY_CONTRACT.md`, `SOURCES_AND_LANDSCAPE.md`, **`CHUCK_ECOSYSTEM_KB.md`** (Chuck franchise product / strategy KB).  
-> **Last updated:** 2026-08-07 (basketball press: Weapon Highsnobiety + All Star Pro BB Forbes)  
+> **Last updated:** 2026-08-10 (panel size cycles default → tall → full page)  
 
 ---
 
@@ -29,11 +29,11 @@ Chuck-E helps media **pull data** and, when asked, **extract editorial cliff not
 
 | Surface | Shape |
 |---------|--------|
-| **Chuck-E chat** | Conversational: 1–2 short paragraphs and optional plain bullets — like a sharp ChatGPT reply. Theme answers open with a short grounding line, then examples — not a bare list dump. No `###` headings, no “Beat Summary / Pointers to Cite”, no jargon padding. Cites live in glosses / Sources, not in the body. |
+| **Chuck-E chat** | Conversational: 1–2 short paragraphs and optional plain bullets — like a sharp ChatGPT reply. Theme answers open with a short grounding line, then examples — not a bare list dump. No `###` headings, no “Beat Summary / Pointers to Cite”, no jargon padding. Cites live in glosses / Sources, not in the body. **Language:** English prompts → sharp plain English; other-language prompts → that language; English prompts that ask for another language → honour the request (`replyLanguageRule`). Latest user turn only. Keep brand proper nouns in usual forms. |
 | **Cliff notes export** | Separate action — bullets + Harvard + AI banner. |
 | **Lookup day cards** | Curated title / synopsis / Context / Source — different product surface. |
 
-Soft length aim for chat: ~900 chars (`chatReplySoftMaxChars`). Theme spreads may run a little longer; never hard-truncate mid-sentence.
+Soft length aim for chat: ~900 chars (`chatReplySoftMaxChars`). Theme spreads may run a little longer; never hard-truncate mid-sentence. Art. 50 disclosure stays English (hardcoded). Deterministic pack/date templates stay English when Gemini is unavailable; model paths must follow `replyLanguageRule`.
 
 ### Provenance line (non-negotiable)
 
@@ -145,7 +145,7 @@ When the chat mentions music, scenes, collabs, humanitarian / (PRODUCT) RED, fil
 | — | Broader court → skate → music → fashion arc | [Nike Magazine — Journey of an Icon](https://about.nike.com/en/magazine/converse-chuck-taylor-all-star-iconic-sneaker-true-history) |
 | — | Overview + footnotes / backlinks | [Wikipedia — Chuck Taylor All-Stars](https://en.wikipedia.org/wiki/Chuck_Taylor_All-Stars) (bridge; upgrade to underlying cites) |
 
-**Citation display (Chuck-E chat):** gloss-first for in-text provenance. Under each assistant reply with cites, a **collapsed Sources (N)** control expands to compact publication/article links — not full Harvard. Popovers stay **simple**: term + one short readable sentence + quiet publisher link (e.g. Converse History). No stacked year / subtitle chrome. Body text is selectable. Full Harvard stays on **cliff notes** / Lookup day cards via `formatHarvardCitation`.
+**Citation display (Chuck-E chat):** gloss-first for in-text provenance. Under each assistant reply with cites, a **collapsed Sources (N)** control expands to linked inventory lines: **article title · publisher · year** (no raw URL text — the row is the link). Popovers stay **simple**: term + one short readable sentence + quiet publisher link (e.g. Converse History). No stacked year / subtitle chrome. Body text is selectable. Full Harvard (`formatHarvardCitation` / `CitationLine`) stays on **cliff notes** / Lookup day cards.
 
 **Gloss roles (do not conflate):**
 
@@ -269,7 +269,7 @@ Runtime: wire stable framing into product packs before treating it as auto-shipp
 | `worker/lib/chuck-e-glosses.ts` | Citation gloss builders (History / pack / cites) |
 | `worker/providers/gemini.ts` | `chatWithChuckE()` |
 | `worker/index.ts` | `/api/chuck-e/chat`, `/api/chuck-e/cliff-notes` |
-| `src/components/ChuckEWidget.tsx` | Floating launcher + panel |
+| `src/components/ChuckEWidget.tsx` | Floating launcher + panel (size cycles default → tall → full page) |
 | `src/components/ChuckEMessage.tsx` | Message bubbles + cites + glosses |
 | `shared/brands/converse.ts` | Curated Timeline surface + `heritageKb` pointer |
 | `shared/brands/converse-heritage-kb.ts` | Full Converse History landing text for Chuck-E / date attach |
@@ -307,8 +307,9 @@ Runtime: wire stable framing into product packs before treating it as auto-shipp
 | 2026-08-07 | No Converse tie on landmark defining days; don’t force Chuck; significance > positive lean | Tasteless to pair brand with 9/11-class casualties; hard history still ships |
 | 2026-08-07 | Documented in `EDITORIAL_SCHEMA.md` (canonical) | Agents + knobs stay aligned on brand activation vs hard history |
 | 2026-08-07 | Voice: pause ends listen; auto-send when transcript looks like a full query | Hands-free desk flow; incomplete fragments stay in composer for edit |
-| 2026-08-07 | Chuck-E taller panel toggle; settings text size; gloss-first cites + clean snippets | Desk reading comfort; Harvard stays on cliff notes / Lookup, not chat clutter |
+| 2026-08-07 | Chuck-E taller panel toggle; settings text size; gloss-first cites + clean snippets | Desk reading comfort; expanded Sources stay collapsed by default |
 | 2026-08-07 | Chat sources = collapsed expandable under bot replies (not always-on strip) | Inventory on demand; glosses remain the in-text cite |
+| 2026-08-10 | Chat Sources dropdown = title · publisher · year (linked, no URL text) | Desks need article names without full Harvard / raw URL clutter; cliff notes keep Harvard |
 | 2026-08-07 | Parse UK day-month-year (4 September 2003); dated heritage stays on that day | Opening hint was falling through to heritage + September→Simpsons noise |
 | 2026-08-07 | Gloss roles: citation=title exact; entity=what-it-is; publisher=establishment | Citation gloss on “Simpsons” in synopsis was the wrong kind of hover |
 | 2026-08-07 | Exact-day brand attach excludes same-year siblings; Converse date asks get Gemini grounded enrich | 4 Sep close was pulling 9 Jul announce; desks want researched colour on the queried day |
@@ -330,6 +331,8 @@ Runtime: wire stable framing into product packs before treating it as auto-shipp
 | 2026-08-07 | Billie Eilish By You → SI / Verge / HIGHXTAR; wiki aliases + refuse OpenSearch first-name expansions | “Billie By You” was glossing Billie Burke; collab needs dedicated press |
 | 2026-08-07 | Tyler / GOLF le FLEUR* → GQ One Star (2017) + British Vogue + Highsnobiety 1908 Program | Long partnership needs dedicated press, not History-only “Tyler team-up” |
 | 2026-08-07 | Basketball / Weapon / Pro BB → Highsnobiety Weapon history + Forbes All Star Pro BB (2019) | Court theme needs ambassador + performance-return press beside History beats |
+| 2026-08-10 | Chuck-E: English → plain English; other-language prompt → that language; English “reply in X” requests honoured (`replyLanguageRule`) | Usual desk path stays plain English; multilingual + explicit language asks still work |
+| 2026-08-10 | Chuck-E panel size button cycles default → tall → full page (same control) | Desks sometimes want a full-viewport research surface without a second control |
 
 ---
 

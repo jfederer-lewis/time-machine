@@ -7,13 +7,37 @@ import { ChuckEMessage } from './ChuckEMessage'
 import { CliffNotesPanel } from './CliffNotesPanel'
 import { LoadingIndicator } from './LoadingIndicator'
 
-const TALL_STORAGE_KEY = 'tm-chuck-e-tall'
+type PanelSize = 'default' | 'tall' | 'full'
 
-function readTallPref(): boolean {
+const SIZE_STORAGE_KEY = 'tm-chuck-e-size'
+const LEGACY_TALL_STORAGE_KEY = 'tm-chuck-e-tall'
+const PANEL_SIZES: PanelSize[] = ['default', 'tall', 'full']
+
+function readSizePref(): PanelSize {
   try {
-    return localStorage.getItem(TALL_STORAGE_KEY) === '1'
+    const stored = localStorage.getItem(SIZE_STORAGE_KEY)
+    if (stored === 'default' || stored === 'tall' || stored === 'full') return stored
+    // Migrate the old boolean tall toggle
+    if (localStorage.getItem(LEGACY_TALL_STORAGE_KEY) === '1') return 'tall'
   } catch {
-    return false
+    /* ignore */
+  }
+  return 'default'
+}
+
+function nextPanelSize(current: PanelSize): PanelSize {
+  const i = PANEL_SIZES.indexOf(current)
+  return PANEL_SIZES[(i + 1) % PANEL_SIZES.length]!
+}
+
+function sizeControlCopy(size: PanelSize): { label: string; title: string } {
+  switch (size) {
+    case 'default':
+      return { label: 'Taller chat panel', title: 'Taller panel' }
+    case 'tall':
+      return { label: 'Full page chat', title: 'Full page' }
+    case 'full':
+      return { label: 'Default chat panel size', title: 'Default size' }
   }
 }
 
@@ -23,18 +47,18 @@ interface ChuckEWidgetProps {
 
 export function ChuckEWidget({ brand }: ChuckEWidgetProps) {
   const [open, setOpen] = useState(false)
-  const [tall, setTall] = useState(readTallPref)
+  const [size, setSize] = useState<PanelSize>(readSizePref)
   const [draft, setDraft] = useState('')
   const listRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLTextAreaElement>(null)
   const draftRef = useRef(draft)
   draftRef.current = draft
 
-  const toggleTall = () => {
-    setTall((prev) => {
-      const next = !prev
+  const cycleSize = () => {
+    setSize((prev) => {
+      const next = nextPanelSize(prev)
       try {
-        localStorage.setItem(TALL_STORAGE_KEY, next ? '1' : '0')
+        localStorage.setItem(SIZE_STORAGE_KEY, next)
       } catch {
         /* ignore */
       }
@@ -108,6 +132,15 @@ export function ChuckEWidget({ brand }: ChuckEWidgetProps) {
     if (loading) abortVoice()
   }, [loading, abortVoice])
 
+  useEffect(() => {
+    if (!open || size !== 'full') return
+    const prev = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+    return () => {
+      document.body.style.overflow = prev
+    }
+  }, [open, size])
+
   const syncComposerHeight = useCallback(() => {
     const el = inputRef.current
     if (!el) return
@@ -131,6 +164,7 @@ export function ChuckEWidget({ brand }: ChuckEWidgetProps) {
   }
 
   const showPromptHints = !loading && !messages.some((m) => m.role === 'user')
+  const sizeCopy = sizeControlCopy(size)
 
   const sendHint = (text: string) => {
     abortVoice()
@@ -139,13 +173,27 @@ export function ChuckEWidget({ brand }: ChuckEWidgetProps) {
   }
 
   return (
-    <div className={['chuck-e', open ? 'chuck-e--open' : ''].filter(Boolean).join(' ')}>
+    <div
+      className={[
+        'chuck-e',
+        open ? 'chuck-e--open' : '',
+        size === 'full' && open ? 'chuck-e--full' : '',
+      ]
+        .filter(Boolean)
+        .join(' ')}
+    >
       {open ? (
         <section
-          className={['chuck-e-panel', tall ? 'chuck-e-panel--tall' : ''].filter(Boolean).join(' ')}
+          className={[
+            'chuck-e-panel',
+            size === 'tall' ? 'chuck-e-panel--tall' : '',
+            size === 'full' ? 'chuck-e-panel--full' : '',
+          ]
+            .filter(Boolean)
+            .join(' ')}
           aria-label={`${CHUCK_E_KNOBS.agentName} chat`}
           role="dialog"
-          aria-modal="false"
+          aria-modal={size === 'full'}
         >
           <header className="chuck-e-panel__head">
             <div>
@@ -154,16 +202,27 @@ export function ChuckEWidget({ brand }: ChuckEWidgetProps) {
             <div className="chuck-e-panel__head-actions">
               <button
                 type="button"
-                className={['chuck-e-icon-btn', tall ? 'is-active' : ''].filter(Boolean).join(' ')}
-                onClick={toggleTall}
-                aria-pressed={tall}
-                aria-label={tall ? 'Shorter chat panel' : 'Taller chat panel'}
-                title={tall ? 'Shorter panel' : 'Taller panel'}
+                className={[
+                  'chuck-e-icon-btn',
+                  size !== 'default' ? 'is-active' : '',
+                ]
+                  .filter(Boolean)
+                  .join(' ')}
+                onClick={cycleSize}
+                aria-label={sizeCopy.label}
+                title={sizeCopy.title}
               >
-                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true">
-                  <path d="M8 4H4v4M16 4h4v4M8 20H4v-4M16 20h4v-4" strokeLinecap="round" strokeLinejoin="round" />
-                  <path d="M12 7v10M9 9.5 12 7l3 2.5M9 14.5 12 17l3-2.5" strokeLinecap="round" strokeLinejoin="round" />
-                </svg>
+                {size === 'full' ? (
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true">
+                    <path d="M9 3H5v4M15 3h4v4M9 21H5v-4M15 21h4v-4" strokeLinecap="round" strokeLinejoin="round" />
+                    <path d="M8 8h8v8H8z" strokeLinecap="round" strokeLinejoin="round" />
+                  </svg>
+                ) : (
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true">
+                    <path d="M8 4H4v4M16 4h4v4M8 20H4v-4M16 20h4v-4" strokeLinecap="round" strokeLinejoin="round" />
+                    <path d="M12 7v10M9 9.5 12 7l3 2.5M9 14.5 12 17l3-2.5" strokeLinecap="round" strokeLinejoin="round" />
+                  </svg>
+                )}
               </button>
               <button
                 type="button"

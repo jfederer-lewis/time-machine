@@ -2,7 +2,7 @@
 
 > Living document. Update this as the idea develops. Agents: read this before making product or architecture decisions.
 
-**Last updated:** 2026-08-07 (Converse typography)  
+**Last updated:** 2026-08-10 (Chuck-E panel size: default → tall → full page)  
 **Client (current):** Converse  
 **Working title:** Good News, Chuck  
 **Live:** https://time-machine.jasminefederer.workers.dev  
@@ -180,7 +180,7 @@ Keys go in `.dev.vars` locally and `wrangler secret` in prod. Never commit secre
 - [x] Cite upgrade with claim relevance
 - [x] Aggregator chart labels removed from day-index discovery
 - [x] Assemble never ships failing copy-contract cards
-- [x] Chuck-E floating chat widget (request/response) with Art. 50 first-message disclosure
+- [x] Chuck-E floating chat widget (request/response) with Art. 50 first-message disclosure; panel size cycles default → tall → full page
 - [x] Chuck-E opening “Try asking” hints + extended entry-point doc (`CHUCK_E.md`)
 - [x] Chuck-E intent routing: date → assemble; product → launch pack; heritage → brand timeline
 - [x] Cliff notes extract (bullets + Harvard + AI-origin banner) — not finished press copy
@@ -319,6 +319,8 @@ Record material product/architecture choices here as we go.
 | 2026-08-07 | Exact-day brand moments; Chuck-E Gemini enrich on Converse date significance | Don’t mix announce/close; researched colour on the queried day |
 | 2026-08-07 | Chuck-E heritage / general may web-search beyond the pack | Pack first when on-topic; search fills gaps — Gemini never public cite |
 | 2026-08-07 | Lookup Converse day-card addon (exact / curated yearly anniversary / month) beside world news | Iconic Converse dates surface without replacing on-this-day; collabs aren’t annualised |
+| 2026-08-10 | Chuck-E: English prompts → plain English; other languages / explicit “reply in X” honoured (`CHUCK_E_REPLY_LANGUAGE_RULE`) | Default desk path stays English; don’t force English on non-English or requested-language turns |
+| 2026-08-10 | Chuck-E panel size cycles default → tall → full page on one button | Full-viewport desk surface without a second control |
 
 ---
 

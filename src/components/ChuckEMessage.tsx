@@ -16,14 +16,13 @@ function dedupeCitationsForDisplay(citations: Citation[]): Citation[] {
   return out
 }
 
-function compactSourceLabel(c: Citation): string {
-  const year = c.publishedAt?.slice(0, 4)
+/** Article title · publisher · year — linkable, no raw URL text. */
+function sourceInventoryLabel(c: Citation): string {
+  const title = c.title?.trim() || 'Untitled'
   const pub = c.publisher?.trim() || 'Source'
-  const title = c.title?.trim()
-  if (title && title.length <= 36 && !/^converse history$/i.test(title)) {
-    return year ? `${title} · ${year}` : title
-  }
-  return year ? `${pub} · ${year}` : pub
+  const year = c.publishedAt?.match(/\b(1[0-9]{3}|20[0-9]{2})\b/)?.[1]
+  if (year) return `${title} · ${pub} · ${year}`
+  return `${title} · ${pub}`
 }
 
 /** Render light markdown-ish bold + newlines without a full markdown parser. */
@@ -108,7 +107,7 @@ function MessageSources({ citations }: { citations: Citation[] }) {
                 target="_blank"
                 rel="noreferrer"
               >
-                {compactSourceLabel(c)}
+                {sourceInventoryLabel(c)}
               </a>
             </li>
           ))}
