@@ -2,7 +2,7 @@
 
 > Living document. Agents: read this before changing Chuck-E persona, disclosure, cliff notes, or routing.  
 > Companion docs: `VISION.md`, `PIPELINE.md`, **`EDITORIAL_SCHEMA.md`** (ranking / landmarks / universe), `COPY_CONTRACT.md`, `SOURCES_AND_LANDSCAPE.md`, **`CHUCK_ECOSYSTEM_KB.md`** (Chuck franchise product / strategy KB).  
-> **Last updated:** 2026-08-10 (Read more: drop dig-into hint)  
+> **Last updated:** 2026-08-10 (Perplexity live press always)  
 
 ---
 
@@ -29,7 +29,7 @@ Chuck-E helps media **pull data** and, when asked, **extract editorial cliff not
 
 | Surface | Shape |
 |---------|--------|
-| **Chuck-E chat** | Conversational: 1–2 short paragraphs and optional plain bullets — like a sharp ChatGPT reply. Theme answers open with a short grounding line, then **~4 well-sourced** named examples (soft bold lane labels OK for category asks: Fashion houses / Music partners) — not a bare 6–8 History-stub dump. No `###` headings, no “Beat Summary / Pointers to Cite”, no jargon padding. Cites live in glosses / **Read more**, not in the body. Invite follow-up by name. **Language:** English prompts → sharp plain English; other-language prompts → that language; English prompts that ask for another language → honour the request (`replyLanguageRule`). Latest user turn only. Keep brand proper nouns in usual forms. |
+| **Chuck-E chat** | Conversational: 1–2 short paragraphs and optional plain bullets — like a sharp ChatGPT reply. Theme answers open with a short grounding line, then **~4 well-sourced** named examples (soft bold lane labels OK for category asks: Fashion houses / Music partners) — not a bare 6–8 History-stub dump. No `###` headings, no “Beat Summary / Pointers to Cite”, no jargon padding. Cites live in glosses / **Read more**, not in the body. Prefer **multiple Read more cites** when the pack has them; when a reply names several partnerships / beats, attach **at least one source per named topic**. Invite follow-up by name. **Language:** English prompts → sharp plain English; other-language prompts → that language; English prompts that ask for another language → honour the request (`replyLanguageRule`). Latest user turn only. Keep brand proper nouns in usual forms. |
 | **Cliff notes export** | Separate action — bullets with **[n]** markers + numbered Harvard **Notes** + AI banner. |
 | **Lookup day cards** | Curated title / synopsis / Context / Source — different product surface. |
 
@@ -114,7 +114,7 @@ When the chat mentions sports, basketball, Olympics, NCAA, etc., prefer a **spre
 | **2019-04-18** | All Star Pro BB — return to performance basketball | [Forbes](https://www.forbes.com/sites/timnewcomb/2019/04/18/converse-returns-to-performance-basketball-with-history-reimagined/) (Tim Newcomb) — Non-Skid → Pro BB lineage; Kelly Oubre Jr.; Nike tech under the vintage silhouette (+ History “Back to basketball”) |
 | 2021 | Weapon CX return; Draymond Green / Tokyo Olympic gold | Converse History (+ Highsnobiety Weapon history for CX / ambassadors arc) |
 
-Enrich replies from the History LP first; pull the Forbes / Highsnobiety basketball features when the ask is about court lineage, Weapon, Bird–Magic, or the performance return. **Web search** may add claim-relevant colour or fill gaps when the pack is thin / off-topic. When curated + Gemini grounding still leave Sources empty, **Perplexity** searches allowlisted press hosts and attaches Tier A/B cites. Prefer allowlisted premium press when those URLs surface; Gemini and Perplexity are never the public citation host. Never let blogs overwrite official signature / join years (1934 / 1922).
+Enrich replies from the History LP first; pull the Forbes / Highsnobiety basketball features when the ask is about court lineage, Weapon, Bird–Magic, or the performance return. **Web search** may add claim-relevant colour or fill gaps when the pack is thin / off-topic. **Perplexity** searches allowlisted press hosts and attaches Tier A/B cites whenever keyed (alongside curated Sources — not only when the footer is empty); multi-topic replies search per named partnership. Prefer allowlisted premium press when those URLs surface; Gemini and Perplexity are never the public citation host. Never let blogs overwrite official signature / join years (1934 / 1922).
 
 ### Music / collabs / humanitarian / global influence (go deeper)
 
@@ -233,8 +233,8 @@ ChuckEWidget (floating launcher)
 |--------|-----------|
 | `date` | Parse date → `assembleDateQuery` → Converse-framed + History beat → Gemini **grounded enrich** on that day only (no world backdrop). World-only days → optional light Converse bridge if sourced |
 | `product` | Match `shared/products/new-chuck.ts` facts; if placeholder/empty, refuse to invent |
-| `heritage` | Match History KB beats as anchors → Gemini **web search** for more colour / when pack is thin → cites + glosses. Prefer **multiple** curated / allowlisted Sources when they back the claim (pack first). If Sources empty or thin, Perplexity claim-search on press hosts fills Tier A/B cites. If still **sparse**, pull allowlisted **Wikipedia footnotes** then the Wikipedia page as a bridge. Pack-only fallback if offline. |
-| `general` | `chatWithChuckE()` with persona guardrails + web search (not for inventing product specs); attach History cites when reply touches pack beats; same multi-Source + Perplexity + Wikipedia-bridge fill as heritage |
+| `heritage` | Match History KB beats as anchors → Gemini **web search** for more colour / when pack is thin → cites + glosses. Prefer **multiple** curated / allowlisted Sources when they back the claim (pack first). **Perplexity** always claim-searches allowlisted press when keyed (per named topic on multi-topic asks; partnership-specific on named digs) and attaches Tier A/B cites alongside the pack — not only when Sources are empty. If still **sparse**, pull allowlisted **Wikipedia footnotes** then the Wikipedia page as a bridge. Pack-only fallback if offline. |
+| `general` | `chatWithChuckE()` with persona guardrails + web search (not for inventing product specs); attach History cites when reply touches pack beats; same multi-Source + Perplexity live press + Wikipedia-bridge fill as heritage |
 | cliff notes action | Separate endpoint; extracts bullets from the conversation + cites |
 
 Gemini is **never** the public citation host. Perplexity is **never** the public citation host — only discovery (`provider: 'perplexity-search'`). Historical world claims go through the Time Machine pipeline. Shoe facts come from the product pack only. Heritage beats cite **Converse History** (`landing-converse-history`). Chat and cliff-notes footers list each source URL **once** (same History LP across several beats is not repeated). Reddit, LinkedIn, and similar UGC stay blocked.
@@ -374,7 +374,9 @@ Runtime: wire stable framing into product packs before treating it as auto-shipp
 | 2026-08-10 | Split gloss roles: partner/house → Wikipedia; collab title / drop / outlet → article | Avoid both “Virgil Abloh” and “The Ten” opening the same Forbes cite |
 | 2026-08-10 | Named-collab Read more: filter cites to that partner; don’t import other houses from reply/Gemini | Tyler digs were shipping Abloh / Simpsons / bare History in the footer |
 | 2026-08-10 | Named-collab digs: Perplexity searches that partnership on allowlisted press, then focus-filters hits | Live discovery should find Tyler/Abloh articles — not pad with unrelated houses |
-| 2026-08-10 | Nike acquisition Read more: always multi-cite NYT + WSJ + WWD (+ Swooshed); Perplexity may add more deal press | Desks were only seeing Converse History on purchase / 4 Sep close asks |
+| 2026-08-10 | Nike acquisition Read more: always force-merge NYT + WSJ + WWD (+ Swooshed) — including dated / 4 Sep close paths (don’t collapse `nike-announce-2003` to one cite; don’t require preferBrand) | Desks were still only seeing Converse History on purchase / close-day asks |
+| 2026-08-10 | Read more: same topic-coverage logic for all named beats — ≥1 pack cite per topic in multi-topic replies; named digs keep 2 press cites when available; cap 8 | One-cite footers when answers named several houses / drops |
+| 2026-08-10 | Perplexity live press: always run when keyed (per-topic on multi-topic; partnership search on digs); pack minimum → live → pack depth; date path uses same merge | Live news was gated to “thin Sources only” so pack-heavy answers never got fresh allowlisted press |
 
 ---
 

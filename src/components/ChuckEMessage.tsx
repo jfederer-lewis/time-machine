@@ -78,7 +78,7 @@ function renderContent(text: string, glosses: ChuckEChatMessage['glosses']) {
 function MessageReadMore({ citations }: { citations: Citation[] }) {
   const [open, setOpen] = useState(false)
   const panelId = useId()
-  const list = citations.slice(0, 6)
+  const list = citations.slice(0, 8)
   const count = list.length
   if (count === 0) return null
 
