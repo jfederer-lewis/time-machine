@@ -2,7 +2,7 @@
 
 > Living document. Agents: read this before changing Chuck-E persona, disclosure, cliff notes, or routing.  
 > Companion docs: `VISION.md`, `PIPELINE.md`, **`EDITORIAL_SCHEMA.md`** (ranking / landmarks / universe), `COPY_CONTRACT.md`, `SOURCES_AND_LANDSCAPE.md`, **`CHUCK_ECOSYSTEM_KB.md`** (Chuck franchise product / strategy KB).  
-> **Last updated:** 2026-08-10 (opening hints: wild styles + music/pop collabs)  
+> **Last updated:** 2026-08-10 (Read more: drop dig-into hint)  
 
 ---
 
@@ -146,7 +146,7 @@ When the chat mentions music, scenes, collabs, humanitarian / (PRODUCT) RED, fil
 | — | Broader court → skate → music → fashion arc | [Nike Magazine — Journey of an Icon](https://about.nike.com/en/magazine/converse-chuck-taylor-all-star-iconic-sneaker-true-history) |
 | — | Overview + footnotes / backlinks | [Wikipedia — Chuck Taylor All-Stars](https://en.wikipedia.org/wiki/Chuck_Taylor_All-Stars) (bridge; upgrade to underlying cites) |
 
-**Citation display (Chuck-E chat):** gloss-first for in-text provenance. Under each assistant reply with cites, a **collapsed Read more (N)** control expands to linked inventory lines: **article title · publisher · year** (no raw URL text — the row is the link). Framing is optional deeper reading on the queried topic — not a bibliography dump. Popovers stay **simple**: term + one short readable sentence + quiet publisher link (e.g. Converse History). No stacked year / subtitle chrome. Body text is selectable.
+**Citation display (Chuck-E chat):** gloss-first for in-text provenance. Under each assistant reply with cites, a **collapsed Read more (N)** control expands straight to linked inventory lines: **article title · publisher · year** (no raw URL text — the row is the link; no intro hint above the list). Popovers stay **simple**: term + one short readable sentence + quiet publisher link (e.g. Converse History). No stacked year / subtitle chrome. Body text is selectable.
 
 **Cliff notes export:** bullets carry superscript **[n]** markers for cites from the same assistant turn; a **Notes** block lists numbered Harvard lines (`CitationLine` / `formatHarvardCitation`). Copy / `.txt` mirrors the same numbering. Lookup day cards keep a single **Source** line (unchanged).
 
@@ -357,7 +357,8 @@ Runtime: wire stable framing into product packs before treating it as auto-shipp
 | 2026-08-07 | Nike purchase → NYT “Legend on the Blacktop” (10 Jul 2003); Swooshed stays History close day | Paper-of-record cite for the deal; don’t conflate announce vs close |
 | 2026-08-07 | Nike purchase also → WSJ “Nike to Buy Converse…”; Chuck II Nike tech → Ad Age + BoF; Vaquera beside Owens | Deal desk + ownership/engineering story + experimental fashion lane |
 | 2026-08-10 | Nike purchase also → [WWD “Nike Acquires Converse”](https://wwd.com/fashion-news/fashion-features/nike-acquires-converse-726154/) (10 Jul 2003) beside NYT + WSJ | Trade press corroboration for the ~$305m deal; still don’t conflate announce vs close |
-| 2026-08-10 | Chat footer cites → **Read more (N)** + short “dig into articles…” hint; cliff notes use numbered **Notes** footnotes | Chat = optional depth; cliff notes = desk brief with [n] markers + Harvard |
+| 2026-08-10 | Chat footer cites → **Read more (N)**; cliff notes use numbered **Notes** footnotes | Chat = optional depth; cliff notes = desk brief with [n] markers + Harvard |
+| 2026-08-10 | Dropped “Dig into articles…” hint under Read more | List alone is enough; intro line was noise |
 | 2026-08-10 | Cliff-notes bullets pair to message-scoped cites; shared URLs reuse one footnote number | No LLM re-attribution — co-occurrence on the same assistant turn only |
 | 2026-08-07 | Billie Eilish By You → SI / Verge / HIGHXTAR; wiki aliases + refuse OpenSearch first-name expansions | “Billie By You” was glossing Billie Burke; collab needs dedicated press |
 | 2026-08-07 | Tyler / GOLF le FLEUR* → GQ One Star (2017) + British Vogue + Highsnobiety 1908 Program | Long partnership needs dedicated press, not History-only “Tyler team-up” |

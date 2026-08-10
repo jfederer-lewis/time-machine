@@ -101,9 +101,6 @@ function MessageReadMore({ citations }: { citations: Citation[] }) {
       </button>
       {open ? (
         <div id={panelId} className="chuck-e-msg__sources-panel">
-          <p className="chuck-e-msg__sources-hint">
-            Dig into articles that go deeper on this topic.
-          </p>
           <ul className="chuck-e-msg__sources-list">
             {list.map((c) => (
               <li key={c.url}>
