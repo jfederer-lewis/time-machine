@@ -41,6 +41,36 @@ function sizeControlCopy(size: PanelSize): { label: string; title: string } {
   }
 }
 
+function statusPhrasesFor(
+  phase: 'researching' | 'writing' | null,
+): readonly string[] {
+  if (phase === 'writing') return CHUCK_E_KNOBS.streamStatusWriting
+  return CHUCK_E_KNOBS.streamStatusResearching
+}
+
+/** Rotate calm desk-side status lines while waiting for the first token. */
+function useRotatingStreamStatus(
+  active: boolean,
+  phase: 'researching' | 'writing' | null,
+): string {
+  const phrases = statusPhrasesFor(phase)
+  const [index, setIndex] = useState(0)
+
+  useEffect(() => {
+    setIndex(0)
+  }, [phase, active])
+
+  useEffect(() => {
+    if (!active || phrases.length <= 1) return
+    const id = window.setInterval(() => {
+      setIndex((i) => (i + 1) % phrases.length)
+    }, CHUCK_E_KNOBS.streamStatusRotateMs)
+    return () => window.clearInterval(id)
+  }, [active, phase, phrases.length])
+
+  return phrases[index % phrases.length] ?? phrases[0]!
+}
+
 interface ChuckEWidgetProps {
   brand: BrandConfig
 }
@@ -166,12 +196,11 @@ export function ChuckEWidget({ brand }: ChuckEWidgetProps) {
 
   const showPromptHints = !loading && !messages.some((m) => m.role === 'user')
   const sizeCopy = sizeControlCopy(size)
-  const statusLabel =
-    streamStatus === 'writing'
-      ? 'Writing'
-      : streamStatus === 'researching'
-        ? 'Looking that up'
-        : 'Looking that up'
+  const waitingForTokens =
+    loading &&
+    Boolean(messages[messages.length - 1]?.streaming) &&
+    !messages[messages.length - 1]?.content?.trim()
+  const statusLabel = useRotatingStreamStatus(waitingForTokens, streamStatus)
 
   const sendHint = (text: string) => {
     abortVoice()

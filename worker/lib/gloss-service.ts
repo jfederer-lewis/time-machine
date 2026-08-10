@@ -340,6 +340,23 @@ function extractProperNounCandidates(claim: string): GlossCandidate[] {
   const out: GlossCandidate[] = []
   const seen = new Set<string>()
 
+  const push = (term: string, wikipediaTitle?: string) => {
+    const clean = term.replace(/\s+/g, ' ').trim()
+    const key = clean.toLowerCase()
+    if (!clean || seen.has(key) || clean.split(/\s+/).length > 6) return
+    seen.add(key)
+    out.push({ term: clean, wikipediaTitle: (wikipediaTitle || clean).trim() })
+  }
+
+  // “Tyler, the Creator” / “Billie, something” — comma breaks the plain multi-cap regex
+  const commaNames =
+    claim.match(
+      /\b([A-Z][\w'’-]+),\s+((?:the|The)\s+[A-Z][\w'’-]+(?:\s+[A-Z][\w'’-]+)*)\b/g,
+    ) ?? []
+  for (const raw of commaNames) {
+    push(raw.replace(/\s+/g, ' ').trim())
+  }
+
   // Multi-word Capitalized sequences: "World War I", "Neil Armstrong", "Madison Square Garden"
   const multi =
     claim.match(/\b([A-Z][\w'’-]*\.?(?:\s+(?:of|the|and|de|van|von|da|di|le|la)?\s*[A-Z][\w'’-]*\.?)+)\b/g) ??
@@ -347,12 +364,15 @@ function extractProperNounCandidates(claim: string): GlossCandidate[] {
 
   for (const raw of multi) {
     const term = raw.replace(/\s+/g, ' ').trim()
-    const key = term.toLowerCase()
-    if (seen.has(key) || term.split(/\s+/).length > 5) continue
     const content = term.split(/\s+/).filter((w) => !STOP.has(w.toLowerCase()))
     if (content.length === 0) continue
-    seen.add(key)
-    out.push({ term, wikipediaTitle: term })
+    push(term)
+  }
+
+  // All-caps fashion labels: GOLF le FLEUR / CDG PLAY (mixed case already handled above)
+  const golf = claim.match(/\bGOLF\s+le\s+FLEUR\*?\b/gi)
+  if (golf) {
+    for (const g of golf) push(g.replace(/\*/g, '').replace(/\s+/g, ' ').trim(), 'Golf le Fleur')
   }
 
   return out

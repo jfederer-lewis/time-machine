@@ -718,7 +718,7 @@ export async function researchChuckETopic(opts: {
     packBeats.length > 0
       ? [
           'Supplied Converse History / pack beats (prefer these when they answer the question):',
-          ...packBeats.slice(0, 8).map((b) => {
+          ...packBeats.slice(0, 5).map((b) => {
             const cite = b.citeUrl ? ` [prefer cite: ${b.citeUrl}]` : ''
             return `- ${b.date}: ${b.title} — ${b.synopsis}${cite}`
           }),
@@ -730,8 +730,9 @@ export async function researchChuckETopic(opts: {
         'This question names a specific collaboration, house, or model.',
         'Prefer dedicated coverage of that release (feature, exclusive, history of that partnership) over roundup listicles (“most iconic collaborations”, “best Converse collabs”).',
         'Roundups are only a map — dig for the underlying article with interesting detail (materials, paint/wear story, silhouette variants, retail moment). Prefer the supplied prefer-cite URLs when they match.',
+        'Name people and houses clearly (e.g. Virgil Abloh, Tyler the Creator, GOLF le FLEUR*) so source glosses can attach.',
       ].join(' ')
-    : 'For named collabs or models, prefer dedicated features over “best collaborations” roundups when search surfaces both.'
+    : 'For named collabs or models, prefer dedicated features over “best collaborations” roundups when search surfaces both. On broad collab / music / fashion themes: write a short prose overview, then at most ~4 well-sourced examples (prefer Virgil Abloh / The Ten, Tyler / GOLF le FLEUR*, Margiela, CDG PLAY, Cobain One Star, Rick Owens when relevant) — not an 8-item History stub list. Soft bold lane labels (Fashion houses / Music partners) are OK; never ### headings. Invite the desk to ask for more on any name.'
 
   const prompt = [
     ...CHUCK_E_KNOBS.personaGuardrails,
@@ -744,7 +745,8 @@ export async function researchChuckETopic(opts: {
     'Prefer the supplied pack beats when they are on-topic. Use Google Search to find additional claim-relevant colour, corroboration, or answers when the pack is thin or off-topic.',
     collabGuidance,
     'Do not invent partnerships, launch specs, or quotations. If search does not support a detail, omit it.',
-    'Shape: one short grounding sentence, then optional plain bullets for distinct sourced moments — not a bare dump and not a research memo.',
+    'Shape: one short grounding paragraph, then a handful of named sourced moments (optional soft bold lane labels for categories) — never a bare dump of 6–8 thin bullets, and not a research memo. Four well-cited examples beat eight without cites.',
+    'Use exact beat titles from the pack when you lean on them (so citation glosses attach), spell person / house / release names in full (Virgil Abloh, GOLF le FLEUR*, The Ten, One Star…), and when you lean on a press piece you may name the outlet once (GQ, Forbes…) so a source gloss can attach — still no sources block in the body.',
     'No ### headings, no Pointers to Cite / sources block in the body.',
     'Past tense. Never cite yourself, Gemini, or AI as a source.',
     CHUCK_E_KNOBS.replyLanguageRule,

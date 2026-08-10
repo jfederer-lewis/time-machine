@@ -2,7 +2,7 @@
 
 > Living document. Agents: read this before changing Chuck-E persona, disclosure, cliff notes, or routing.  
 > Companion docs: `VISION.md`, `PIPELINE.md`, **`EDITORIAL_SCHEMA.md`** (ranking / landmarks / universe), `COPY_CONTRACT.md`, `SOURCES_AND_LANDSCAPE.md`, **`CHUCK_ECOSYSTEM_KB.md`** (Chuck franchise product / strategy KB).  
-> **Last updated:** 2026-08-10 (cliff notes = numbered Notes footnotes)  
+> **Last updated:** 2026-08-10 (opening hints: wild styles + music/pop collabs)  
 
 ---
 
@@ -29,7 +29,7 @@ Chuck-E helps media **pull data** and, when asked, **extract editorial cliff not
 
 | Surface | Shape |
 |---------|--------|
-| **Chuck-E chat** | Conversational: 1–2 short paragraphs and optional plain bullets — like a sharp ChatGPT reply. Theme answers open with a short grounding line, then examples — not a bare list dump. No `###` headings, no “Beat Summary / Pointers to Cite”, no jargon padding. Cites live in glosses / **Read more**, not in the body. **Language:** English prompts → sharp plain English; other-language prompts → that language; English prompts that ask for another language → honour the request (`replyLanguageRule`). Latest user turn only. Keep brand proper nouns in usual forms. |
+| **Chuck-E chat** | Conversational: 1–2 short paragraphs and optional plain bullets — like a sharp ChatGPT reply. Theme answers open with a short grounding line, then **~4 well-sourced** named examples (soft bold lane labels OK for category asks: Fashion houses / Music partners) — not a bare 6–8 History-stub dump. No `###` headings, no “Beat Summary / Pointers to Cite”, no jargon padding. Cites live in glosses / **Read more**, not in the body. Invite follow-up by name. **Language:** English prompts → sharp plain English; other-language prompts → that language; English prompts that ask for another language → honour the request (`replyLanguageRule`). Latest user turn only. Keep brand proper nouns in usual forms. |
 | **Cliff notes export** | Separate action — bullets with **[n]** markers + numbered Harvard **Notes** + AI banner. |
 | **Lookup day cards** | Curated title / synopsis / Context / Source — different product surface. |
 
@@ -61,7 +61,7 @@ Chuck-E is a **heritage play**: UI prompts are **doors in** — short, curious, 
 
 Primary public source for brand beats: [Converse History](https://www.converse.com/uk/en/landing-converse-history) (`heritageKb`). Desks can ask Chuck-E to dig past the first hit; thematic questions should pull **several** citable moments, not a single origin story.
 
-### UI (three clickable hints)
+### UI (four clickable hints)
 
 Shown after disclosure until the first user turn (`CHUCK_E_KNOBS.promptHints`):
 
@@ -69,7 +69,8 @@ Shown after disclosure until the first user turn (`CHUCK_E_KNOBS.promptHints`):
 |------|----------------|---------------------------|
 | Theme / sport | How did basketball shape the Converse story? | Court lineage **plus** iconic sports beats (see below) — not Non-Skid alone |
 | Date entry point | What’s the cultural significance of 4 September 2003 within Converse? | Door stays light (no “Nike acquired…” spoiler). **Best date = close / “Swooshed”** (not the 9 Jul announce). Reply: that day’s Chuck-tied beat + Gemini-researched colour on how/why it mattered, optional zeitgeist backdrop — never the sibling announce date unless asked |
-| Music / scenes | Where do music, youth culture, and collaborations show up in Converse’s history? | Punk/grunge wear, fashion collabs, One Hund(RED) / (PRODUCT) RED, CDG PLAY — not fashion fluff alone |
+| Wild styles | What are some of the wildest Converse styles released over the years? | Landmark silhouette distortions / house drops with dedicated press (e.g. Margiela paint, Rick Owens TURBODRK, CDG PLAY, Cobain One Star) — ~4 cited examples, invite follow-up by name |
+| Music / pop collabs | Which music artists and pop-culture collaborations have shaped Converse? | Artist + screen/culture partners with real cites (Cobain, Tyler / GOLF le FLEUR*, Abloh, Billie, Simpsons…) — not a thin History-stub dump |
 
 ### Broad dates + Converse universe
 
@@ -153,11 +154,15 @@ When the chat mentions music, scenes, collabs, humanitarian / (PRODUCT) RED, fil
 
 | Role | Anchors on | Popover is | Example |
 |------|------------|------------|---------|
-| Citation / provenance | Beat **title** only (exact) | One clear sentence → quiet source link | **Swooshed** → short close-day fact + Converse History |
-| Entity (Wikipedia) | People, venues, iconic events, obscure brands/houses | Short Wikipedia summary — quiet help, not noise | **Chuck Taylor** · **Maison Margiela** (not Nike / Converse) |
-| Publisher establishment | Less-familiar outlet names when they appear in prose | Who they are + homepage | **Footwear News** → US footwear trade title |
+| Citation / provenance | Beat **title** (+ short aliases), people/houses, named drops, outlet names in the reply | One clear sentence → quiet source link (article / History) | **Swooshed** · **Virgil Abloh** · **The Ten** · **GQ** → Forbes / GQ / History |
+| Entity (Wikipedia) | People, venues, iconic events, obscure brands/houses **not** already covered by a cite gloss | Short Wikipedia summary — quiet help, not noise | **Chuck Taylor** when no pack cite is attached |
+| Publisher establishment | Lesser-known outlets with no article cite this turn | Who they are + homepage | **Footwear News** → trade title homepage |
 
-Skip household brands (Nike, Converse, …), countries, bare product words, and years — prefer silence over underlines people already understand. Obscure fashion / streetwear houses named in the reply may gloss. Person names resolve via Wikipedia summary + OpenSearch when the exact title misses. Cap entity glosses per reply so the text stays calm.
+Skip household brands (Nike, Converse, …), countries, bare product words, and years — prefer silence over underlines people already understand. Obscure fashion / streetwear houses named in the reply may gloss. Person names resolve via Wikipedia summary + OpenSearch when the exact title misses — but curated cite glosses win when the pack already backs that name. Cap entity glosses per reply so the text stays calm.
+
+**In-text sources:** prefer dotted citation glosses on named people, houses, releases, and press outlets so desks can open the source from the sentence — Read more stays the inventory, not the only path to the URL.
+
+**Collab / culture theme spreads:** prefer **~4** landmark beats with dedicated press (Abloh / The Ten, Tyler / GOLF le FLEUR*, Margiela, CDG, Cobain One Star, Owens…) over a long list of History-only stubs. Soft-bold lane labels are OK; `###` is not. Offline pack replies use the same handful + “ask by name” closer.
 
 **Dated answers:** open in prose with the beat title and what happened — not “On 4 September 2003…”, a list of years, or a titled research memo.
 
@@ -177,6 +182,8 @@ Never reuse a citation gloss on an entity surname/token in the synopsis (that ma
 | Silhouette / origin | What’s the Non-Skid story? · How did the Chuck 70 come about? |
 | Model vs model | What’s the difference between the Chuck 70 and the classic Chuck Taylor All Star? · How should I position Chuck Signature vs Chuck 70 Premium? *(ecosystem pack when wired)* |
 | Collabs / cause | What collaborations or humanitarian campaigns has Converse been part of? · Talk me through Margiela, Rick Owens or The Simpsons collabs |
+| Wild styles | What are some of the wildest Converse styles released over the years? |
+| Music / pop | Which music artists and pop-culture collaborations have shaped Converse? · Where do music and youth culture show up in Converse’s history? |
 | Screen culture | Where have Chucks shown up in film and TV? |
 | Culture shift | How did Converse move from the court into everyday style? |
 | Other History dates | What’s the cultural significance of 15 February 2013 within Converse? · What about 14 August 1936? |
@@ -204,7 +211,7 @@ When desks ask about a **person, house, product, campaign, or cultural figure th
 
 ### Synopsis (one paragraph)
 
-Chuck-E is the press-desk companion beside Time Machine Lookup: ask about Converse heritage themes (basketball and wider sport, music/scenes, silhouettes), named models and History dates, collabs and cause campaigns, or the cultural significance of a Chuck-tied day — then pull sourced cliff notes. Opening hints are short entry points; replies dig into History LP facts and allowlisted culture press (Vogue, Dazed, Nike Magazine) for scenes and global influence.
+Chuck-E is the press-desk companion beside Time Machine Lookup: ask about Converse heritage themes (basketball and wider sport, wild silhouettes, music/pop collabs), named models and History dates, or the cultural significance of a Chuck-tied day — then pull sourced cliff notes. Opening hints are short entry points; replies dig into History LP facts and allowlisted culture press (Vogue, Dazed, Nike Magazine) for scenes and global influence.
 
 ---
 
@@ -302,6 +309,7 @@ Runtime: wire stable framing into product packs before treating it as auto-shipp
 | 2026-08-06 | Floating overlay widget (not a third nav tab) | Available on Lookup + Timeline for launch desk use |
 | 2026-08-06 | Request/response (no streaming) | Matches `/api/query`; simpler Worker surface for v1 |
 | 2026-08-10 | Chuck-E chat POST may SSE-stream (`stream: true`): status → delta → done | Desks see Gemini tokens as they arrive; date assemble still waits with “Looking that up”; glosses/cites attach on `done` |
+| 2026-08-10 | Rotating status lines while waiting (archive / sources / thinking) — not “Writing” | Feels more like a desk research companion; knobs in `streamStatusResearching` / `streamStatusWriting` |
 | 2026-08-06 | Hardcoded first-message disclosure; no persistent “AI” input tag | Art. 50 first-interaction disclosure; keep UI calm |
 | 2026-08-06 | Cliff notes = bullets + Harvard + AI banner — never finished story | Editorial line + synthetic-content marking |
 | 2026-08-06 | Product facts only from `new-chuck` pack; dates via `assembleDateQuery` | Same provenance rules as Time Machine |
@@ -317,6 +325,7 @@ Runtime: wire stable framing into product packs before treating it as auto-shipp
 | 2026-08-07 | Gloss popovers z-index above Chuck-E panel; hyphenated gloss tokens | Hover cites were painting behind the chat; Non-Skid-style terms never matched |
 | 2026-08-07 | Optional voice dictation via browser Web Speech (Chrome/Edge); fill composer, do not auto-send | Fast mic path with no new API key; desks can edit before Send; Safari needs cloud STT later if required |
 | 2026-08-07 | Opening hints: basketball / 4 Sep 2003 entry point / music–scenes; sports theme pulls multiple History beats (incl. 1984 Olympics Pro Stars) | Doors stay spoiler-light; answers dig into History LP + zeitgeist; KB 1984 enriched from landing page |
+| 2026-08-10 | Opening hints → four doors: basketball / 4 Sep 2003 / wildest styles / music–pop collabs | Split silhouette weirdness from artist/pop partners so desks hit two distinct culture lanes |
 | 2026-08-07 | Culture bookshelf: Dazed + British Vogue + Nike Magazine; register Vogue/Dazed Tier B; enrich RED / Varvatos / punk–grunge in heritage KB | Collabs, humanitarian, scenes questions need claim-relevant culture cites beyond History LP alone |
 | 2026-08-07 | Footwear News (Yahoo), Tatler Asia, L’Officiel USA, Urban Industry, Esquire ME on bookshelf; glosses carry title + date + publisher Harvard lines | High-fashion + pop collabs (Margiela, Rick Owens, Simpsons); film/TV; Wikipedia stays bridge |
 | 2026-08-07 | Broad date asks → Time Machine assemble + Converse-universe tie when sourced (birthday / heritage / affinity) | Press can explore on-this-day colour and still land a Chuck-relevant bridge without inventing claims |
@@ -334,6 +343,7 @@ Runtime: wire stable framing into product packs before treating it as auto-shipp
 | 2026-08-07 | Wikipedia glosses = people / venues / iconic events only; keep underlines sparse | Help understanding without visual noise for desks who already know |
 | 2026-08-07 | Heritage theme replies dedupe story clusters (e.g. One Hund(RED) vs Vogue RED) | Same (PRODUCT) RED idea was shipping as two bullets |
 | 2026-08-07 | Theme heritage replies: short grounding line before example bullets | Bare list dumps felt abrupt; one calm frame sentence, then examples |
+| 2026-08-10 | Theme collab replies: grounding prose + ≤~4 cited examples; soft bold lanes; invite follow-up by name | Four well-cited moments beat eight History stubs without glosses |
 | 2026-08-07 | Chuck-E heritage / general may web-search beyond the pack | Pack first when on-topic; search fills gaps — Gemini never the public cite host |
 | 2026-08-07 | Chuck-E chat = concise prose (+ optional bullets), not report briefs; soft ~900 chars; strip ### / Pointers to Cite | Chat ≠ Lookup day cards / cliff-notes export; desks want sharp digests without jargon or cite blocks in the body |
 | 2026-08-07 | No world backdrop on Converse-tied date answers; light Converse bridge only for world-only days | Backdrop was forced noise; re-anchor only when the day has no Converse hook |
@@ -356,6 +366,8 @@ Runtime: wire stable framing into product packs before treating it as auto-shipp
 | 2026-08-10 | Sparse Sources → Wikipedia footnotes (allowlisted hosts) then Wiki page as bridge | Last resort when pack + press search are thin; footnotes often beat bare Wiki |
 | 2026-08-10 | Chuck-E panel size button cycles default → tall → full page (same control) | Desks sometimes want a full-viewport research surface without a second control |
 | 2026-08-10 | Converse-affiliated “who is X?” / “what is Y?” → include brand involvement (e.g. Bird → Weapon), never invent ties | Desks asking about ambassadors / collabs / History figures need Converse framing, not generic bios |
+| 2026-08-10 | Collab/culture themes: ~4 press-led landmark beats (Abloh, Tyler/Golf…); soft lane labels; entity gloss anchors on people/houses | History stubs were crowding out dedicated cites; desks prefer depth + glosses over long thin lists |
+| 2026-08-10 | Citation glosses also on people, releases, and outlet names in reply text → article URL | Desks should open the source from the sentence, not only Read more |
 
 ---
 

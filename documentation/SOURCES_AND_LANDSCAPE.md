@@ -3,7 +3,7 @@
 > Companion to `VISION.md`, `PIPELINE.md`, and `EDITORIAL_SCHEMA.md`. Agents must follow the citation rules here.  
 > **Canonical host lists:** `shared/source-registry.ts` (`CITATION_ALLOWLIST` / `CITATION_BLOCKLIST`).  
 > Tables below summarise intent; if a host is missing from the registry, it is **not** allowlisted yet.  
-> **Last updated:** 2026-08-10 (block LinkedIn; Perplexity claim search uses press-first domains)  
+> **Last updated:** 2026-08-10 (block LinkedIn; Perplexity claim search uses press-first domains; Chuck-E collab themes prefer press-led landmark beats)  
 > **Visual note:** Existing “on this day” products are functional references only — **do not copy their UI.**
 
 ---

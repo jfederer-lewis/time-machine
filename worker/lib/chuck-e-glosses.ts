@@ -56,32 +56,69 @@ function publisherLabel(publisher: string): string {
 /**
  * Trade / culture publishers that desks may not instantly place —
  * short establishment gloss + official site (not the article cite).
+ * Used only when we lack a claim cite for that outlet in this turn.
  */
-const PUBLISHER_ESTABLISHMENT: Record<string, { gloss: string; url: string }> = {
+const PUBLISHER_ESTABLISHMENT: Record<string, { gloss: string; url: string; aliases?: string[] }> = {
   'footwear news': {
     gloss: 'US trade title for footwear design, retail and collaborations.',
     url: 'https://footwearnews.com/',
+    aliases: ['Footwear News', 'FN'],
   },
   'tatler asia': {
     gloss: 'Asia-Pacific luxury and society magazine (Tatler group).',
     url: 'https://www.tatlerasia.com/',
+    aliases: ['Tatler Asia'],
   },
   "l'officiel usa": {
     gloss: 'US edition of the French fashion magazine L’Officiel.',
     url: 'https://www.lofficielusa.com/',
+    aliases: ["L'Officiel USA", 'L’Officiel USA'],
   },
   'urban industry': {
     gloss: 'UK streetwear retailer and editorial site.',
     url: 'https://www.urbanindustry.co.uk/',
+    aliases: ['Urban Industry'],
   },
   'esquire middle east': {
     gloss: 'Middle East edition of Esquire — style and culture.',
     url: 'https://www.esquireme.com/',
+    aliases: ['Esquire Middle East'],
   },
   dazed: {
     gloss: 'London youth-culture and fashion magazine (Dazed Digital).',
     url: 'https://www.dazeddigital.com/',
+    aliases: ['Dazed', 'Dazed Digital'],
   },
+}
+
+/**
+ * Well-known outlets — when named in the reply, underline → article cite for this turn
+ * (not a generic “who is this magazine” gloss).
+ */
+const PUBLISHER_PROSE_ALIASES: Record<string, string[]> = {
+  gq: ['GQ'],
+  'british gq': ['British GQ'],
+  forbes: ['Forbes'],
+  hypebeast: ['Hypebeast'],
+  hbx: ['HBX'],
+  highsnobiety: ['Highsnobiety'],
+  complex: ['Complex'],
+  surface: ['Surface'],
+  designboom: ['designboom', 'Designboom'],
+  dazed: ['Dazed', 'Dazed Digital'],
+  'british vogue': ['British Vogue'],
+  vogue: ['Vogue'],
+  'teen vogue': ['Teen Vogue'],
+  wwd: ['WWD', 'Women’s Wear Daily', "Women's Wear Daily"],
+  'footwear news': ['Footwear News', 'FN'],
+  'the business of fashion': ['Business of Fashion', 'BoF'],
+  'business of fashion': ['Business of Fashion', 'BoF'],
+  'ad age': ['Ad Age'],
+  'fast company': ['Fast Company'],
+  'the new york times': ['New York Times', 'NYT'],
+  'the wall street journal': ['Wall Street Journal', 'WSJ'],
+  'sports illustrated': ['Sports Illustrated', 'SI'],
+  converse: ['Converse History'],
 }
 
 /** One clear sentence for a History / brand beat — not a second title stack. */
@@ -99,13 +136,123 @@ function brandCitationGlossBody(m: BrandMoment): string {
   return cleanGlossSnippet(m.synopsis || m.title, GLOSS_BODY_MAX)
 }
 
+function citationProvenanceBody(c: Citation): string {
+  const fromRef = cleanGlossSnippet(c.reference || '', GLOSS_BODY_MAX)
+  if (fromRef.length >= 24 && !/^(see |cf\.|ibid)/i.test(fromRef)) return fromRef
+  const title = (c.title || '').trim()
+  const pub = (c.publisher || '').trim()
+  if (title && pub) return cleanGlossSnippet(`${title} (${pub}).`, GLOSS_BODY_MAX)
+  return cleanGlossSnippet(title || pub || 'Sourced press coverage.', GLOSS_BODY_MAX)
+}
+
+/** Beat title + short aliases so “Virgil Abloh” still hits when Gemini drops “Converse x”. */
+function titleGlossAnchors(title: string): string[] {
+  const t = title.replace(/\s+/g, ' ').trim()
+  if (!t) return []
+  const out: string[] = [t]
+  const stripped = t
+    .replace(/^converse\s*[x×]\s*/i, '')
+    .replace(/\s*[—–-]\s*the\s+ten\s*$/i, '')
+    .trim()
+  if (stripped && stripped.toLowerCase() !== t.toLowerCase() && stripped.length >= 4) {
+    out.push(stripped)
+  }
+  return out
+}
+
+/**
+ * People / houses named in a beat — secondary gloss anchors so “Virgil Abloh” /
+ * “GOLF le FLEUR*” underline even when the reply doesn’t use the exact beat title.
+ */
+function entityGlossAnchors(m: BrandMoment): string[] {
+  const hay = `${m.title} ${m.synopsis}`
+  const out: string[] = []
+  const push = (term: string) => {
+    const t = term.replace(/\s+/g, ' ').trim()
+    if (t.length < 3 || isYearLikeTerm(t)) return
+    if (out.some((x) => x.toLowerCase() === t.toLowerCase())) return
+    out.push(t)
+  }
+
+  if (/virgil\s+abloh|abloh/i.test(hay)) {
+    push('Virgil Abloh')
+    if (/off[\s-]?white/i.test(hay)) push('Off-White')
+  }
+  if (/tyler|golf\s+le\s+fleur|le\s*fleur|1908\s+program/i.test(hay)) {
+    push('Tyler, the Creator')
+    push('Tyler the Creator')
+    push('GOLF le FLEUR')
+    push('Golf Le Fleur')
+  }
+  if (/margiela|maison\s+martin\s+margiela/i.test(hay)) {
+    push('Maison Margiela')
+    push('Maison Martin Margiela')
+  }
+  if (/comme\s+des\s+gar|cdg\s+play|play\s+comme/i.test(hay)) {
+    push('Comme des Garçons')
+    push('CDG PLAY')
+  }
+  if (/rick\s+owens/i.test(hay)) push('Rick Owens')
+  if (/kurt\s+cobain|cobain/i.test(hay)) push('Kurt Cobain')
+  if (/billie\s+eilish|eilish/i.test(hay)) push('Billie Eilish')
+  if (/john\s+richmond/i.test(hay)) push('John Richmond')
+  if (/john\s+varvatos/i.test(hay)) push('John Varvatos')
+  if (/vaquera/i.test(hay)) push('Vaquera')
+  if (/larry\s+bird/i.test(hay)) push('Larry Bird')
+  if (/magic\s+johnson/i.test(hay)) push('Magic Johnson')
+  if (/chuck\s+taylor/i.test(hay) && !/all\s+star/i.test(m.title)) push('Chuck Taylor')
+
+  return out
+}
+
+/**
+ * Release / silhouette phrases — dotted underlines that open the beat’s source.
+ * Exact match so short tokens don’t steal unrelated sentences.
+ */
+function releasePhraseAnchors(m: BrandMoment): string[] {
+  const hay = `${m.title} ${m.synopsis}`
+  const out: string[] = []
+  const push = (term: string) => {
+    const t = term.replace(/\s+/g, ' ').trim()
+    if (t.length < 3 || isYearLikeTerm(t)) return
+    if (out.some((x) => x.toLowerCase() === t.toLowerCase())) return
+    out.push(t)
+  }
+
+  const rules: Array<[RegExp, string]> = [
+    [/\bthe\s+ten\b/i, 'The Ten'],
+    [/\bghosting\b/i, 'Ghosting'],
+    [/\bturbodrk\b/i, 'TURBODRK'],
+    [/\bturbowpn\b/i, 'TURBOWPN'],
+    [/\b1908\s+program\b/i, '1908 Program'],
+    [/\bgolf\s+le\s+fleur\*?\b/i, 'GOLF le FLEUR'],
+    [/\bone\s+star\b/i, 'One Star'],
+    [/\bnon[\s-]?skid\b/i, 'Non-Skid'],
+    [/\bswooshed\b/i, 'Swooshed'],
+    [/\bchoose\s+your\s+weapon\b/i, 'Choose Your Weapon'],
+    [/\ball\s+star\s+pro\s+bb\b/i, 'All Star Pro BB'],
+    [/\bpro\s+stars?\b/i, 'Pro Stars'],
+    [/\bpro\s+leather\b/i, 'Pro Leather'],
+    [/\bjack\s+purcell\b/i, 'Jack Purcell'],
+    [/\b\(product\)\s*red\b|product\s+red|hund\(red\)/i, '(PRODUCT) RED'],
+    [/\bfirst fashion collab\b/i, 'First fashion collab'],
+    [/\bbillie\s+by\s+you\b|\bby\s+you\b/i, 'By You'],
+    [/\bthe\s+simpsons\b/i, 'The Simpsons'],
+    [/\bstranger\s+things\b/i, 'Stranger Things'],
+  ]
+
+  for (const [re, term] of rules) {
+    if (re.test(hay)) push(term)
+  }
+  return out
+}
+
 /**
  * Source / provenance glosses for Chuck-E.
  *
- * - Citation gloss → the beat **title** only (e.g. Swooshed → Converse History)
- * - Publisher establishment → lesser-known outlets named in prose
- * - Years / calendar dates are never gloss terms
- * - Entity “what is this?” glosses come from Wikipedia API (gloss-service), not here
+ * - Citation gloss → beat title (+ short aliases)
+ * - Entity / release anchors → people, houses, named drops (same cite body + URL)
+ * - Publisher establishment → lesser-known outlets when no article cite this turn
  */
 export function glossesFromBrandMoments(moments: BrandMoment[]): Gloss[] {
   const glosses: Gloss[] = []
@@ -120,16 +267,43 @@ export function glossesFromBrandMoments(moments: BrandMoment[]): Gloss[] {
   }
 
   for (const m of moments) {
-    push({
-      term: m.title,
-      gloss: brandCitationGlossBody(m),
-      url: m.citation.url,
-      source: 'curated',
-      sourceLabel: /converse history/i.test(m.citation.title)
-        ? 'Converse History'
-        : publisherLabel(m.citation.publisher),
-      matchMode: 'exact',
-    })
+    const body = brandCitationGlossBody(m)
+    const sourceLabel = /converse history/i.test(m.citation.title)
+      ? 'Converse History'
+      : publisherLabel(m.citation.publisher)
+
+    for (const term of titleGlossAnchors(m.title)) {
+      push({
+        term,
+        gloss: body,
+        url: m.citation.url,
+        source: 'curated',
+        sourceLabel,
+        matchMode: 'exact',
+      })
+    }
+
+    for (const term of entityGlossAnchors(m)) {
+      push({
+        term,
+        gloss: body,
+        url: m.citation.url,
+        source: 'curated',
+        sourceLabel,
+        // Default — surname / short form can still underline
+      })
+    }
+
+    for (const term of releasePhraseAnchors(m)) {
+      push({
+        term,
+        gloss: body,
+        url: m.citation.url,
+        source: 'curated',
+        sourceLabel,
+        matchMode: 'exact',
+      })
+    }
 
     const hay = `${m.title} ${m.synopsis}`.toLowerCase()
     const pubKey = (m.citation.publisher || '').trim().toLowerCase()
@@ -149,9 +323,28 @@ export function glossesFromBrandMoments(moments: BrandMoment[]): Gloss[] {
   return glosses
 }
 
+function publisherKeysForCitation(c: Citation): string[] {
+  const pub = (c.publisher || '').trim().toLowerCase()
+  const title = (c.title || '').trim().toLowerCase()
+  const keys: string[] = []
+  if (pub) keys.push(pub)
+  if (/converse history/i.test(title) || /^converse$/i.test(pub)) keys.push('converse')
+  return keys
+}
+
+/** Short outlet label for in-reply cues (so a source gloss can attach). */
+export function shortOutletLabel(publisher: string): string | null {
+  const key = (publisher || '').trim().toLowerCase()
+  if (!key || key === 'converse') return null
+  const aliases = PUBLISHER_PROSE_ALIASES[key]
+  if (aliases?.length) return aliases[0]
+  const raw = publisher.trim()
+  return raw.length >= 2 && raw.length <= 28 ? raw : null
+}
+
 /**
- * Publisher establishment only when the outlet name appears in the reply.
- * Do not turn every citation title into a gloss (that stacked meta / years).
+ * When the reply names an outlet (or a distinctive cite title), underline → that
+ * article’s provenance — desks see the source on the text, not only in Read more.
  */
 export function glossesFromCitations(citations: Citation[], content?: string): Gloss[] {
   const glosses: Gloss[] = []
@@ -159,24 +352,89 @@ export function glossesFromCitations(citations: Citation[], content?: string): G
   const hay = (content || '').toLowerCase()
   if (!hay) return glosses
 
+  const push = (g: Gloss) => {
+    if (isYearLikeTerm(g.term)) return
+    const key = g.term.toLowerCase()
+    if (seen.has(key) || g.term.length < 2) return
+    // Only attach when the term actually appears in this reply
+    if (!hay.includes(key) && !termAppearsLoosely(hay, g.term)) return
+    seen.add(key)
+    glosses.push(g)
+  }
+
+  for (const c of citations) {
+    if (!c.url?.trim()) continue
+    const body = citationProvenanceBody(c)
+    const label = /converse history/i.test(c.title || '')
+      ? 'Converse History'
+      : publisherLabel(c.publisher || 'Source')
+
+    for (const key of publisherKeysForCitation(c)) {
+      const aliases = PUBLISHER_PROSE_ALIASES[key] || [c.publisher].filter(Boolean)
+      for (const term of aliases) {
+        if (!term) continue
+        push({
+          term,
+          gloss: body,
+          url: c.url,
+          source: 'curated',
+          sourceLabel: label,
+          matchMode: 'exact',
+        })
+      }
+    }
+
+    // Distinctive multi-word article title fragment (when Gemini echoes it)
+    const citeTitle = (c.title || '').replace(/\s+/g, ' ').trim()
+    if (citeTitle.length >= 12 && citeTitle.split(/\s+/).length >= 3) {
+      const short = citeTitle.split(/[—–:]/)[0]?.trim()
+      if (short && short.length >= 12 && short.length <= 48) {
+        push({
+          term: short,
+          gloss: body,
+          url: c.url,
+          source: 'curated',
+          sourceLabel: label,
+          matchMode: 'exact',
+        })
+      }
+    }
+  }
+
+  // Establishment-only for lesser-known outlets named in prose with no article cite above
   for (const c of citations) {
     const pub = (c.publisher || '').trim()
     const pubKey = pub.toLowerCase()
     const establishment = PUBLISHER_ESTABLISHMENT[pubKey]
-    if (!establishment || !pub || seen.has(pubKey) || !hay.includes(pubKey)) continue
-    if (isYearLikeTerm(pub)) continue
-    seen.add(pubKey)
-    glosses.push({
-      term: pub,
-      gloss: establishment.gloss,
-      url: establishment.url,
-      source: 'curated',
-      sourceLabel: pub,
-      matchMode: 'exact',
-    })
+    if (!establishment || !pub) continue
+    for (const term of establishment.aliases || [pub]) {
+      if (seen.has(term.toLowerCase())) continue
+      if (!hay.includes(term.toLowerCase())) continue
+      seen.add(term.toLowerCase())
+      glosses.push({
+        term,
+        gloss: establishment.gloss,
+        url: establishment.url,
+        source: 'curated',
+        sourceLabel: pub,
+        matchMode: 'exact',
+      })
+    }
   }
 
   return glosses
+}
+
+/** Loose appearance check for multi-word terms (punctuation-tolerant). */
+function termAppearsLoosely(hayLower: string, term: string): boolean {
+  const parts = term
+    .toLowerCase()
+    .replace(/[^a-z0-9\s]/g, ' ')
+    .split(/\s+/)
+    .filter((p) => p.length > 1)
+  if (parts.length < 2) return hayLower.includes(parts[0] || '')
+  // All content tokens present near each other is enough for alias attach
+  return parts.every((p) => hayLower.includes(p))
 }
 
 export function glossesFromProductFacts(facts: ProductFact[]): Gloss[] {
@@ -203,4 +461,31 @@ export function glossesFromProductFacts(facts: ProductFact[]): Gloss[] {
 /** Drop year-like terms that should never be underlined. */
 export function rejectYearGlosses(glosses: Gloss[]): Gloss[] {
   return glosses.filter((g) => !isYearLikeTerm(g.term))
+}
+
+/**
+ * Prefer glosses that can actually underline in this reply — keeps popovers honest
+ * and stops unused title aliases crowding the payload.
+ */
+export function preferGlossesPresentInContent(content: string, glosses: Gloss[]): Gloss[] {
+  const hay = String(content || '')
+  if (!hay.trim()) return glosses
+  const hayLower = hay.toLowerCase()
+  const present: Gloss[] = []
+  const rest: Gloss[] = []
+  for (const g of glosses) {
+    const term = g.term || ''
+    const exact = hayLower.includes(term.toLowerCase()) || termAppearsLoosely(hayLower, term)
+    const surname =
+      g.matchMode !== 'exact' &&
+      term.split(/\s+/).length >= 2 &&
+      (() => {
+        const last = term.split(/\s+/).filter(Boolean).pop() || ''
+        return last.length >= 3 && hayLower.includes(last.toLowerCase())
+      })()
+    if (exact || surname) present.push(g)
+    else rest.push(g)
+  }
+  // Keep a few unused title glosses in case of light markdown/punctuation mismatch
+  return [...present, ...rest.slice(0, 4)]
 }

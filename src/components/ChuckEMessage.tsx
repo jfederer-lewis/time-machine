@@ -159,7 +159,7 @@ export function ChuckEMessage({
         <p className="chuck-e-msg__disclosure-label">About this assistant</p>
       ) : null}
       {waitingForTokens ? (
-        <LoadingIndicator compact label={statusLabel || 'Looking that up'} />
+        <LoadingIndicator compact label={statusLabel || CHUCK_E_KNOBS.streamStatusResearching[0]} />
       ) : (
         <div className="chuck-e-msg__body">
           {isUser || isDisclosure

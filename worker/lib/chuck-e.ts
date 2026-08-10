@@ -37,8 +37,10 @@ import {
   glossesFromBrandMoments,
   glossesFromCitations,
   glossesFromProductFacts,
+  preferGlossesPresentInContent,
   rejectYearGlosses,
   cleanGlossSnippet,
+  shortOutletLabel,
 } from './chuck-e-glosses'
 import { attachWikipediaGlossesForProse, isYearLikeTerm } from './gloss-service'
 
@@ -124,7 +126,7 @@ const PRODUCT_INTENT_RE =
   /\b(shoe|sneaker|chuck|all[\s-]?star|feature|features|engineering|sole|canvas|rubber|vulcaniz|material|upper|toe\s*cap|eyelet|launch|silhouette|construction|spec|specs)\b/i
 
 const HERITAGE_INTENT_RE =
-  /\b(heritage|history|founded|founding|non[\s-]?skid|chuck\s+taylor|ankle\s+patch|signature|nike\s+acquir|malden|1917|1922|1934|1932|novel\s+nugget|nugget|basketball|olympic|olympics|ncaa|sport|sports|hoops|weapon|pro\s+leather|pro\s+stars?|cultural\s+significance|collab|collaboration|humanitarian|product\s*red|\(product\)\s*red|music|punk|grunge|subculture|varvatos|margiela|comme\s+des\s+gar[cç]ons|cdg|rick\s+owens|drkshdw|turbodrk|simpsons|stranger\s+things|vaquera|golf\s+le\s+fleur|kurt\s+cobain|cobain|one\s+star|virgil|abloh|off[\s-]?white|chuck\s*(ii|2|two)|lunarlon|comfort|engineering)\b/i
+  /\b(heritage|history|founded|founding|non[\s-]?skid|chuck\s+taylor|ankle\s+patch|signature|nike\s+acquir|malden|1917|1922|1934|1932|novel\s+nugget|nugget|basketball|olympic|olympics|ncaa|sport|sports|hoops|weapon|pro\s+leather|pro\s+stars?|cultural\s+significance|collab|collaboration|humanitarian|product\s*red|\(product\)\s*red|music|punk|grunge|subculture|varvatos|margiela|comme\s+des\s+gar[cç]ons|cdg|rick\s+owens|drkshdw|turbodrk|simpsons|stranger\s+things|vaquera|golf\s+le\s+fleur|le\s*fleur|tyler(?:[,\s]+the\s+creator)?|1908\s+program|kurt\s+cobain|cobain|one\s+star|virgil|abloh|off[\s-]?white|the\s+ten|billie(?:\s+eilish)?|chuck\s*(ii|2|two)|lunarlon|comfort|engineering)\b/i
 
 /** Theme queries that should surface several sports History beats, not only All Star origin. */
 const SPORTS_THEME_RE =
@@ -132,7 +134,65 @@ const SPORTS_THEME_RE =
 
 /** Music / scenes / collabs / cause — pull fashion-press + History collab beats together. */
 const CULTURE_THEME_RE =
-  /\b(music|punk|grunge|subculture|collab|collaboration|fashion|artist|humanitarian|product\s*red|\(product\)\s*red|varvatos|comme\s+des\s+gar[cç]ons|cdg|youth\s+culture|scenes?|margiela|rick\s+owens|drkshdw|turbodrk|vaquera|simpsons|stranger\s+things|cobain|one\s+star|virgil|abloh|off[\s-]?white|the\s+ten|film|movie|television|tv|warhol|experimental|weird)\b/i
+  /\b(music|punk|grunge|subculture|collab|collaboration|fashion|artist|humanitarian|product\s*red|\(product\)\s*red|varvatos|comme\s+des\s+gar[cç]ons|cdg|youth\s+culture|scenes?|margiela|rick\s+owens|drkshdw|turbodrk|vaquera|simpsons|stranger\s+things|cobain|one\s+star|virgil|abloh|off[\s-]?white|the\s+ten|golf\s+le\s+fleur|le\s*fleur|tyler(?:[,\s]+the\s+creator)?|1908\s+program|billie(?:\s+eilish)?|film|movie|television|tv|warhol|experimental|weird)\b/i
+
+/**
+ * Desk-famous collab / scene beats that culture themes must not drown under
+ * History-only stubs (e.g. “First fashion collab” outranking Abloh / Tyler).
+ */
+const LANDMARK_CULTURE_BEAT_RE =
+  /\b(virgil|abloh|off[\s-]?white|the\s+ten|ghosting|golf\s+le\s+fleur|le\s*fleur|tyler|1908\s+program|margiela|comme\s+des\s+gar|cdg\s+play|play\s+comme|cobain|one\s+star|rick\s+owens|turbodrk|vaquera|billie\s+eilish|simpsons|hund\(red\)|\(product\)\s*red|product\s+red|punk|grunge|ramones)\b/i
+
+/** Query tokens too common to score heritage hits (avoid “and/show/converse” noise). */
+const HERITAGE_QUERY_STOP = new Set([
+  'and',
+  'the',
+  'for',
+  'with',
+  'from',
+  'into',
+  'about',
+  'where',
+  'what',
+  'when',
+  'which',
+  'that',
+  'this',
+  'these',
+  'those',
+  'how',
+  'did',
+  'does',
+  'have',
+  'has',
+  'had',
+  'was',
+  'were',
+  'are',
+  'show',
+  'shows',
+  'showed',
+  'showing',
+  'converse',
+  'history',
+  'heritage',
+  'within',
+  'cultural',
+  'significance',
+  'story',
+  'stories',
+])
+
+/** Highest-priority culture partners for broad collab / music / fashion overviews. */
+const PRIORITY_CULTURE_CLUSTER = new Set([
+  'abloh-the-ten',
+  'tyler-golf-le-fleur',
+  'margiela-paint',
+  'cdg-play',
+  'cobain-converse',
+  'rick-owens-turbodrk',
+  'product-red-2008',
+])
 
 export function classifyIntent(text: string): ChuckEIntent {
   const t = text.trim()
@@ -311,21 +371,24 @@ function looksLikeCollabRoundup(url: string, title = ''): boolean {
 }
 
 /**
- * Prefer History, then dedicated collab / model features (GQ, WWD, Teen Vogue…),
- * over “best collaborations” roundups.
+ * Prefer dedicated collab / model features (GQ, Forbes, Vogue…) over roundups.
+ * History wins for brand-only beats; on culture themes, allowlisted press outranks
+ * History stubs so Abloh / Tyler / Margiela are not crowded out by “First fashion collab”.
  */
-function preferCollabCiteQuality(m: BrandMoment): number {
-  if (preferHistoryPublisher(m)) return 4
+function preferCollabCiteQuality(m: BrandMoment, opts: { cultureTheme?: boolean } = {}): number {
   const url = m.citation.url || ''
   const title = m.citation.title || ''
   if (looksLikeCollabRoundup(url, title)) return 0
-  if (
-    /gq\.com|gq-magazine\.co\.uk|nytimes\.com|wsj\.com|wwd\.com|teenvogue\.com|fastcompany\.com|hypebeast\.com|hbx\.com|surfacemag\.com|designboom\.com|complex\.com|forbes\.com|businessoffashion\.com|adage\.com|highsnobiety\.com|vogue\.|dazeddigital\.com|si\.com|vergemagazine\.co\.uk|highxtar\.com/i.test(
-      url,
-    )
-  ) {
-    return 3
+  const dedicated = /gq\.com|gq-magazine\.co\.uk|nytimes\.com|wsj\.com|wwd\.com|teenvogue\.com|fastcompany\.com|hypebeast\.com|hbx\.com|surfacemag\.com|designboom\.com|complex\.com|forbes\.com|businessoffashion\.com|adage\.com|highsnobiety\.com|vogue\.|dazeddigital\.com|si\.com|vergemagazine\.co\.uk|highxtar\.com/i.test(
+    url,
+  )
+  if (opts.cultureTheme) {
+    if (dedicated) return 4
+    if (preferHistoryPublisher(m)) return 2
+    return 1
   }
+  if (preferHistoryPublisher(m)) return 4
+  if (dedicated) return 3
   return 1
 }
 
@@ -337,35 +400,93 @@ const SPECIFIC_COLLAB_RE =
 function pickHeritageHits(
   scored: Array<{ m: BrandMoment; score: number }>,
   limit: number,
-  opts: { spreadClusters?: boolean } = {},
+  opts: {
+    spreadClusters?: boolean
+    cultureTheme?: boolean
+    preferDedicatedPress?: boolean
+    maxPerCluster?: number
+  } = {},
 ): BrandMoment[] {
+  const maxPerCluster = opts.maxPerCluster ?? (opts.spreadClusters ? 2 : 1)
+  const preferPress = Boolean(opts.cultureTheme || opts.preferDedicatedPress)
+  const culturePriority = (m: BrandMoment): number => {
+    const c = heritageStoryCluster(m)
+    if (!c) return 0
+    if (c === 'abloh-the-ten' || c === 'tyler-golf-le-fleur') return 3
+    if (PRIORITY_CULTURE_CLUSTER.has(c)) return 2
+    return 0
+  }
   const sorted = scored
     .filter((x) => x.score > 0)
     .sort((a, b) => {
       if (b.score !== a.score) return b.score - a.score
-      const q = preferCollabCiteQuality(b.m) - preferCollabCiteQuality(a.m)
+      if (opts.cultureTheme) {
+        const p = culturePriority(b.m) - culturePriority(a.m)
+        if (p !== 0) return p
+      }
+      const q =
+        preferCollabCiteQuality(b.m, { cultureTheme: preferPress }) -
+        preferCollabCiteQuality(a.m, { cultureTheme: preferPress })
       if (q !== 0) return q
+      // Prefer dedicated press over History when exploring culture / named collabs.
+      if (preferPress) {
+        return preferHistoryPublisher(a.m) - preferHistoryPublisher(b.m)
+      }
       return preferHistoryPublisher(b.m) - preferHistoryPublisher(a.m)
     })
 
   const out: BrandMoment[] = []
   const seenClusters = new Set<string>()
   const clusterCounts = new Map<string, number>()
-  for (const { m } of sorted) {
+  const seenLanes = new Set<string>()
+
+  const tryPush = (m: BrandMoment, requireNewLane: boolean): boolean => {
     const cluster = heritageStoryCluster(m)
     if (cluster) {
       if (opts.spreadClusters) {
         const n = clusterCounts.get(cluster) || 0
-        if (n >= 3) continue
-        clusterCounts.set(cluster, n + 1)
+        if (n >= maxPerCluster) return false
       } else if (seenClusters.has(cluster)) {
-        continue
+        return false
+      }
+    }
+    const lane = opts.cultureTheme ? cultureBeatLane(m) : null
+    if (requireNewLane && lane && seenLanes.has(lane) && seenLanes.size < limit) {
+      return false
+    }
+    if (cluster) {
+      if (opts.spreadClusters) {
+        clusterCounts.set(cluster, (clusterCounts.get(cluster) || 0) + 1)
       } else {
         seenClusters.add(cluster)
       }
     }
+    if (lane) seenLanes.add(lane)
     out.push(m)
+    return true
+  }
+
+  if (opts.cultureTheme) {
+    // Pass 1: Abloh / Tyler first, then other priority clusters (lane-diverse).
+    const priorityFirst = [...sorted].sort(
+      (a, b) => culturePriority(b.m) - culturePriority(a.m) || b.score - a.score,
+    )
+    for (const { m } of priorityFirst) {
+      if (out.length >= limit) break
+      if (culturePriority(m) <= 0) continue
+      tryPush(m, true)
+    }
+    // Pass 2: fill remaining with new lanes when possible.
+    for (const { m } of sorted) {
+      if (out.length >= limit) break
+      tryPush(m, true)
+    }
+  }
+
+  for (const { m } of sorted) {
     if (out.length >= limit) break
+    if (out.includes(m)) continue
+    tryPush(m, false)
   }
   return out
 }
@@ -393,9 +514,10 @@ function matchHeritageMoments(
   const effectiveLimit = datedFocus
     ? Math.min(limit, 2)
     : specificCollab
-      ? Math.max(limit, 5)
+      ? Math.max(limit, 4)
       : sportsTheme || cultureTheme
-        ? Math.max(limit, 6)
+        ? // Fewer well-sourced beats beat a long History stub dump (desks follow up by name).
+          Math.min(Math.max(limit, 4), 4)
         : limit
   const scored = heritageMoments(brand).map((m) => {
     const hay = `${m.title} ${m.synopsis} ${m.date}`.toLowerCase()
@@ -405,7 +527,10 @@ function matchHeritageMoments(
     for (const token of q.split(/\W+/).filter((t) => t.length > 2)) {
       // Month names alone pull wrong-year hits (September → Simpsons 2014).
       if (MONTH_TOKEN_RE.test(token)) continue
+      if (HERITAGE_QUERY_STOP.has(token)) continue
       if (hay.includes(token)) score += 1
+      // collaboration(s) / collaborate token family
+      if (/^collaborat/.test(token) && /collaborat|collab\b/.test(hay)) score += 1
     }
     // Boost well-known years if mentioned
     if (!datedFocus && q.includes(m.date.slice(0, 4))) score += 2
@@ -428,6 +553,7 @@ function matchHeritageMoments(
         score += 1
     }
     if (cultureTheme && !datedFocus) {
+      const filmTvAsk = /\b(film|movie|television|\btv\b|screen)\b/.test(q)
       if (/\bpunk|grunge|ramones|cobain|subcultur/.test(hay)) score += 3
       if (
         /\bcollab|varvatos|comme des gar|cdg|richmond|golf le fleur|tyler|margiela|rick owens|vaquera|simpsons|abloh|virgil|off-white|the ten|warhol/.test(
@@ -438,8 +564,35 @@ function matchHeritageMoments(
       if (/\b\(product\)\s*red|product red|hund\(red\)|aids|humanitarian|malaria/.test(hay)) score += 3
       if (/\bfilm|movie|television|mcfly|antoinette|simpsons|stranger things/.test(hay)) score += 2
       if (/\bmusic|skate|youth|fashion|artist/.test(hay)) score += 1
+      // Landmark partners / dedicated press must surface in theme spreads.
+      if (LANDMARK_CULTURE_BEAT_RE.test(hay)) score += 3
+      if (
+        /gq\.com|forbes\.com|hypebeast\.com|hbx\.com|wwd\.com|vogue\.|highsnobiety\.com|dazeddigital\.com|surfacemag\.com|complex\.com|teenvogue\.com|si\.com/i.test(
+          citeUrl,
+        ) &&
+        LANDMARK_CULTURE_BEAT_RE.test(hay)
+      ) {
+        score += 2
+      }
+      const cluster = heritageStoryCluster(m)
+      if (cluster && PRIORITY_CULTURE_CLUSTER.has(cluster)) score += 4
+      // Broad music/collab asks: don’t let Weapon press or secondary screen packs crowd the map.
+      if (!filmTvAsk) {
+        if (/stranger things|stranger-things/.test(hay) || cluster === 'stranger-things-converse') {
+          score -= 6
+        }
+        if (
+          cluster === 'weapon-basketball-press' ||
+          (/weapon|bird|magic johnson|larry bird|pro bb|performance basketball/.test(hay) &&
+            !/rick owens|turbodrk|abloh|tyler|golf|margiela|cobain|simpsons|punk|grunge|fashion|collab/.test(
+              hay,
+            ))
+        ) {
+          score -= 5
+        }
+      }
       // Film/TV collab asks: Simpsons + screen-wear colour + later packs like Stranger Things.
-      if (/\b(film|movie|television|\btv\b|screen)/.test(q)) {
+      if (filmTvAsk) {
         if (/simpsons|stranger things|chucks on screen|film and tv|marie antoinette|mcfly/.test(hay))
           score += 2
       }
@@ -461,6 +614,12 @@ function matchHeritageMoments(
       if (/stranger\s+things/.test(q) && /stranger things/.test(hay)) score += 4
       if (/abloh|virgil|off[\s-]?white|the\s+ten/.test(q) && /abloh|virgil|off-white|the ten|ghosting/.test(hay))
         score += 4
+      if (
+        /golf\s+le\s+fleur|le\s*fleur|tyler|1908\s+program|naut-?1|coach\s+jogger/.test(q) &&
+        /golf le fleur|le fleur|tyler|1908|naut-?1|coach jogger|gianno/.test(hay)
+      )
+        score += 4
+      if (/billie|eilish/.test(q) && /billie|eilish|by you|hit me hard/.test(hay)) score += 4
       if (/chuck\s*(ii|2|two)|lunarlon/.test(q) && /chuck ii|chuck taylor all star ii|lunarlon|feel like nikes/.test(hay))
         score += 4
       if (
@@ -504,10 +663,56 @@ function matchHeritageMoments(
     // that back the same story (e.g. NYT + WSJ + WWD; Ad Age + BoF; History + Highsnobiety).
     spreadClusters:
       (specificCollab || nikeTechAsk || nikeDealAsk || sportsTheme || cultureTheme) && !datedFocus,
+    // Lane-diverse overview only for broad culture themes — not named-house digs.
+    cultureTheme: cultureTheme && !specificCollab && !datedFocus,
+    preferDedicatedPress: (specificCollab || cultureTheme) && !datedFocus,
+    // Theme overviews: one beat per cluster. Named asks may keep a couple of dedicated cites.
+    maxPerCluster: specificCollab || nikeDealAsk || nikeTechAsk ? 3 : 1,
   }
   if (datedFocus && hits.length && queryDate) {
     const exact = hits.filter((x) => x.m.date === queryDate)
     if (exact.length) return pickHeritageHits(exact, effectiveLimit, pickOpts)
+  }
+  // Named house / partner: stay on that partnership’s dedicated cites when we have them.
+  if (specificCollab && !datedFocus && hits.length) {
+    const focused = hits.filter(({ m }) => {
+      const hay = `${m.title} ${m.synopsis}`.toLowerCase()
+      if (/margiela/.test(q) && /margiela|martin margiela/.test(hay)) return true
+      if (/\b(cdg|comme)\b/.test(q) && /cdg|comme des gar|play comme/.test(hay)) return true
+      if (/rick\s+owens|drkshdw|turbodrk/.test(q) && /rick owens|drkshdw|turbodrk/.test(hay))
+        return true
+      if (/vaquera/.test(q) && /vaquera|slouch wedge/.test(hay)) return true
+      if (/cobain|one\s+star/.test(q) && /cobain|one star/.test(hay)) return true
+      if (/simpsons/.test(q) && /simpsons/.test(hay)) return true
+      if (/stranger\s+things/.test(q) && /stranger things/.test(hay)) return true
+      if (/abloh|virgil|off[\s-]?white|the\s+ten/.test(q) && /abloh|virgil|off-white|the ten|ghosting/.test(hay))
+        return true
+      if (
+        /golf\s+le\s+fleur|le\s*fleur|tyler|1908\s+program|naut-?1|coach\s+jogger/.test(q) &&
+        /golf le fleur|le fleur|tyler|1908|naut-?1|coach jogger|gianno/.test(hay)
+      )
+        return true
+      if (/billie|eilish/.test(q) && /billie|eilish|by you|hit me hard/.test(hay)) return true
+      if (/chuck\s*(ii|2|two)|lunarlon/.test(q) && /chuck ii|all star ii|lunarlon|feel like nikes/.test(hay))
+        return true
+      if (
+        /\bweapon\b|choose\s+your\s+weapon|turbowpn/.test(q) &&
+        /weapon|choose your weapon|bird|magic|turbowpn/.test(hay)
+      )
+        return true
+      if (
+        /all\s+star\s+(?:bb\s+pro|pro\s+bb)|pro\s+bb|kelly\s+oubre|performance\s+basketball/.test(q) &&
+        /all star pro bb|all star bb pro|performance basketball|kelly oubre|pro bb/.test(hay)
+      )
+        return true
+      return false
+    })
+    if (focused.length) {
+      // Prefer dedicated press rows when we have them — don’t pad with History stubs.
+      const pressFocused = focused.filter((x) => !preferHistoryPublisher(x.m))
+      const use = pressFocused.length >= 1 ? pressFocused : focused
+      return pickHeritageHits(use, Math.min(effectiveLimit, 3), pickOpts)
+    }
   }
   if (hits.length) return pickHeritageHits(hits, effectiveLimit, pickOpts)
   // Soft fallback: return a couple of core moments when user asks generally about heritage
@@ -564,7 +769,7 @@ function themeHeritageLeadIn(query: string): string {
     CULTURE_THEME_RE.test(q) ||
     /\b(music|youth|scene|fashion|culture|collab|collaboration)\b/.test(q)
   ) {
-    return 'The Chuck left the court through music scenes and later fashion and cause collaborations — these are some of the clearest sourced turns.'
+    return 'From punk and grunge wear through fashion houses and long music partnerships, Converse’s archive is full of collaborations desks can dig into — here are a few well-sourced turns.'
   }
   if (/\b(humanitarian|product\s*red|\(product\)\s*red|cause|charity)\b/.test(q)) {
     return 'Converse’s cause partnerships show up most clearly in a handful of History-backed campaigns.'
@@ -572,7 +777,43 @@ function themeHeritageLeadIn(query: string): string {
   if (/\b(silhouette|non[\s-]?skid|chuck\s*70|origin|founded|founding)\b/.test(q)) {
     return 'A few History-backed moments that mark how the silhouette took shape:'
   }
-  return 'Here’s what Converse History backs on that theme:'
+  return 'Here’s what the archive backs on that theme — a handful of sourced moments (ask for any by name for more depth):'
+}
+
+/** Soft category for culture-theme prose (not ### headings). */
+function cultureBeatLane(m: BrandMoment): 'scenes' | 'fashion' | 'music' | 'cause' | 'screen' | 'other' {
+  const hay = `${m.title} ${m.synopsis}`.toLowerCase()
+  // House / designer drops before scene keywords (Owens copy often says “punk”).
+  if (
+    /\bmargiela|comme des gar|cdg|rick owens|turbodrk|vaquera|abloh|virgil|richmond|varvatos/.test(
+      hay,
+    )
+  )
+    return 'fashion'
+  if (/\bgolf le fleur|tyler|cobain|one star|billie|flower boy/.test(hay)) return 'music'
+  if (/\b\(product\)\s*red|product red|hund\(red\)|humanitarian|aids|malaria/.test(hay)) return 'cause'
+  if (/\bsimpsons|stranger things|film|movie|television|mcfly|antoinette/.test(hay)) return 'screen'
+  if (/\bpunk|grunge|ramones|subcultur/.test(hay)) return 'scenes'
+  if (/\bfashion|collab|music|artist/.test(hay)) return 'fashion'
+  return 'other'
+}
+
+const CULTURE_LANE_LABEL: Record<ReturnType<typeof cultureBeatLane>, string> = {
+  scenes: 'Music scenes',
+  music: 'Music partners',
+  fashion: 'Fashion houses',
+  cause: 'Cause campaigns',
+  screen: 'Film & TV',
+  other: 'Also notable',
+}
+
+function heritageMomentLine(m: BrandMoment, when: string, flag: string): string {
+  const base = `**${m.title}**${flag} (${when}) — ${m.synopsis}`
+  const outlet = shortOutletLabel(m.citation.publisher || '')
+  if (!outlet) return base
+  if (base.toLowerCase().includes(outlet.toLowerCase())) return base
+  // Light outlet cue so a dotted source gloss can attach on the publisher name
+  return `${base} (${outlet})`
 }
 
 function formatHeritageReply(
@@ -592,28 +833,83 @@ function formatHeritageReply(
   }
   const lines: string[] = []
   const citations: Citation[] = []
+  const q = opts.query || ''
+  const cultureTheme =
+    CULTURE_THEME_RE.test(q) || /\b(music|youth|scene|fashion|culture|collab|collaboration)\b/i.test(q)
+  const sportsTheme = SPORTS_THEME_RE.test(q)
+  const themeSpread = moments.length > 1 && (cultureTheme || sportsTheme)
 
-  // Theme spreads: short grounding line, then examples — not a raw bullet dump.
-  if (moments.length > 1) {
-    lines.push(themeHeritageLeadIn(opts.query || ''))
-    lines.push('')
-  }
-
-  for (const m of moments) {
+  if (moments.length === 1) {
+    const m = moments[0]
     const flag = m.precision === 'period-estimate' ? ' _(period estimate — contested)_' : ''
-    // Lead with the beat title — not a date list. Year stays light context when spreading themes.
-    if (moments.length === 1) {
-      lines.push(`**${m.title}**${flag}`, m.synopsis)
-    } else {
-      const when = m.date.length === 4 ? m.date : toDisplayDate(m.date)
-      lines.push(`• **${m.title}**${flag} (${when}) — ${m.synopsis}`)
+    lines.push(`**${m.title}**${flag}`, m.synopsis)
+    const outlet = shortOutletLabel(m.citation.publisher || '')
+    if (outlet && !m.synopsis.toLowerCase().includes(outlet.toLowerCase())) {
+      lines.push(`Source colour from ${outlet}.`)
     }
     citations.push(citationFromBrandMoment(m))
+  } else if (themeSpread && cultureTheme) {
+    // Prose overview + soft lane labels — not an 8-bullet History dump.
+    lines.push(themeHeritageLeadIn(q))
+    lines.push('')
+    const byLane = new Map<ReturnType<typeof cultureBeatLane>, BrandMoment[]>()
+    for (const m of moments) {
+      const lane = cultureBeatLane(m)
+      const list = byLane.get(lane) || []
+      list.push(m)
+      byLane.set(lane, list)
+    }
+    const laneOrder: Array<ReturnType<typeof cultureBeatLane>> = [
+      'scenes',
+      'fashion',
+      'music',
+      'cause',
+      'screen',
+      'other',
+    ]
+    const usedLanes = laneOrder.filter((lane) => (byLane.get(lane) || []).length > 0)
+    const useLaneLabels = usedLanes.length >= 2
+
+    for (const lane of usedLanes) {
+      const group = byLane.get(lane) || []
+      if (useLaneLabels) {
+        lines.push(`**${CULTURE_LANE_LABEL[lane]}**`)
+      }
+      for (const m of group) {
+        const flag = m.precision === 'period-estimate' ? ' _(period estimate — contested)_' : ''
+        const when = m.date.length === 4 ? m.date : m.date.slice(0, 4)
+        lines.push(heritageMomentLine(m, when, flag))
+        citations.push(citationFromBrandMoment(m))
+      }
+      lines.push('')
+    }
+    lines.push('Ask about any of these by name for dedicated coverage and cites.')
+  } else if (themeSpread) {
+    lines.push(themeHeritageLeadIn(q))
+    lines.push('')
+    for (const m of moments) {
+      const flag = m.precision === 'period-estimate' ? ' _(period estimate — contested)_' : ''
+      const when = m.date.length === 4 ? m.date : m.date.slice(0, 4)
+      lines.push(heritageMomentLine(m, when, flag))
+      citations.push(citationFromBrandMoment(m))
+    }
+    lines.push('')
+    lines.push('Ask about any of these by name for more depth.')
+  } else {
+    for (const m of moments) {
+      const flag = m.precision === 'period-estimate' ? ' _(period estimate — contested)_' : ''
+      const when = m.date.length === 4 ? m.date : toDisplayDate(m.date)
+      lines.push(`• ${heritageMomentLine(m, when, flag)}`)
+      citations.push(citationFromBrandMoment(m))
+    }
   }
+
+  const content = lines.join('\n').replace(/\n{3,}/g, '\n\n').trim()
+  const cites = dedupeCitationsByUrl(citations)
   return {
-    content: lines.join(moments.length === 1 ? '\n\n' : '\n'),
-    citations: dedupeCitationsByUrl(citations),
-    glosses: glossesFromBrandMoments(moments),
+    content,
+    citations: cites,
+    glosses: [...glossesFromBrandMoments(moments), ...glossesFromCitations(cites, content)],
   }
 }
 
@@ -710,11 +1006,12 @@ async function finalizeChuckEGlosses(
   content: string,
   sourceGlosses: Gloss[],
 ): Promise<Gloss[]> {
-  const sources = rejectYearGlosses(sourceGlosses)
-  // Wikipedia entity glosses: people / venues / iconic events — quiet, helpful, not brand noise
+  const sources = preferGlossesPresentInContent(content, rejectYearGlosses(sourceGlosses))
+  // Wikipedia entity glosses: people / venues / iconic events — quiet, helpful, not brand noise.
+  // Skip terms already covered by curated source glosses (those open the press cite).
   const wiki = await attachWikipediaGlossesForProse(content, {
     excludeTerms: sources.map((g) => g.term),
-    max: 4,
+    max: 3,
   })
   const seen = new Set(sources.map((g) => g.term.toLowerCase()))
   const merged = [...sources]
@@ -724,7 +1021,7 @@ async function finalizeChuckEGlosses(
     seen.add(key)
     merged.push(g)
   }
-  return rejectYearGlosses(merged)
+  return preferGlossesPresentInContent(content, rejectYearGlosses(merged))
 }
 
 /** Soft cap for chat Sources inventory (matches UI). Curated pack cites win first. */
@@ -1318,7 +1615,7 @@ export async function handleChuckEChat(
 
   if (intent === 'heritage') {
     // Prefer scored pack beats (no soft timeline dump). Web search fills gaps / adds colour.
-    const moments = matchHeritageMoments(lastUser.content, brandId, 6, { softFallback: false })
+    const moments = matchHeritageMoments(lastUser.content, brandId, 4, { softFallback: false })
     const systemContext = buildSystemContext(brandId)
     const specificCollab = SPECIFIC_COLLAB_RE.test(lastUser.content)
 
