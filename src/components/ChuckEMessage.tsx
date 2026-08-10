@@ -1,6 +1,7 @@
 import { useId, useState } from 'react'
-import type { ChuckEChatMessage } from '../hooks/chuck-e-types'
+import { CHUCK_E_KNOBS } from '../../shared/chuck-e-knobs'
 import type { Citation } from '../../shared/provenance'
+import type { ChuckEChatMessage } from '../hooks/chuck-e-types'
 import { GlossableText } from './GlossableText'
 import { LoadingIndicator } from './LoadingIndicator'
 
