@@ -73,8 +73,8 @@ function renderContent(text: string, glosses: ChuckEChatMessage['glosses']) {
   })
 }
 
-/** Collapsed-by-default source inventory under assistant replies. */
-function MessageSources({ citations }: { citations: Citation[] }) {
+/** Collapsed-by-default deeper-reading links under assistant replies. */
+function MessageReadMore({ citations }: { citations: Citation[] }) {
   const [open, setOpen] = useState(false)
   const panelId = useId()
   const list = citations.slice(0, 6)
@@ -91,7 +91,7 @@ function MessageSources({ citations }: { citations: Citation[] }) {
         onClick={() => setOpen((v) => !v)}
       >
         <span className="chuck-e-msg__sources-label">
-          {count === 1 ? 'Source' : 'Sources'}
+          Read more
           <span className="chuck-e-msg__sources-count">({count})</span>
         </span>
         <span className="chuck-e-msg__sources-chevron" aria-hidden="true">
@@ -99,20 +99,25 @@ function MessageSources({ citations }: { citations: Citation[] }) {
         </span>
       </button>
       {open ? (
-        <ul id={panelId} className="chuck-e-msg__sources-list">
-          {list.map((c) => (
-            <li key={c.url}>
-              <a
-                className="chuck-e-msg__source-link"
-                href={c.url}
-                target="_blank"
-                rel="noreferrer"
-              >
-                {sourceInventoryLabel(c)}
-              </a>
-            </li>
-          ))}
-        </ul>
+        <div id={panelId} className="chuck-e-msg__sources-panel">
+          <p className="chuck-e-msg__sources-hint">
+            Dig into articles that go deeper on this topic.
+          </p>
+          <ul className="chuck-e-msg__sources-list">
+            {list.map((c) => (
+              <li key={c.url}>
+                <a
+                  className="chuck-e-msg__source-link"
+                  href={c.url}
+                  target="_blank"
+                  rel="noreferrer"
+                >
+                  {sourceInventoryLabel(c)}
+                </a>
+              </li>
+            ))}
+          </ul>
+        </div>
       ) : null}
     </div>
   )
@@ -130,7 +135,7 @@ export function ChuckEMessage({
   const isDisclosure = Boolean(message.isDisclosure)
   const isStreaming = Boolean(message.streaming)
   const cites = message.citations ? dedupeCitationsForDisplay(message.citations) : []
-  const showSources = !isUser && !isDisclosure && !isStreaming && cites.length > 0
+  const showReadMore = !isUser && !isDisclosure && !isStreaming && cites.length > 0
   const waitingForTokens = isStreaming && !message.content.trim()
 
   return (
@@ -165,7 +170,7 @@ export function ChuckEMessage({
           ) : null}
         </div>
       )}
-      {showSources ? <MessageSources citations={cites} /> : null}
+      {showReadMore ? <MessageReadMore citations={cites} /> : null}
     </article>
   )
 }

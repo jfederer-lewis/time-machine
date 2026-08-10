@@ -388,9 +388,9 @@ function matchHeritageMoments(
   const effectiveLimit = datedFocus
     ? Math.min(limit, 2)
     : specificCollab
-      ? Math.max(limit, 4)
+      ? Math.max(limit, 5)
       : sportsTheme || cultureTheme
-        ? Math.max(limit, 5)
+        ? Math.max(limit, 6)
         : limit
   const scored = heritageMoments(brand).map((m) => {
     const hay = `${m.title} ${m.synopsis} ${m.date}`.toLowerCase()
@@ -476,11 +476,15 @@ function matchHeritageMoments(
         score += 2
       }
     }
-    // Nike purchase / acquisition: prefer NYT + WSJ deal coverage.
+    // Nike purchase / acquisition: prefer NYT + WSJ + WWD deal coverage.
     if (!datedFocus && nikeDealAsk) {
-      if (/nytimes\.com|wsj\.com/i.test(citeUrl) && /nike|acquir|purchas|blacktop|to buy converse/.test(hay))
+      if (
+        /nytimes\.com|wsj\.com|wwd\.com/i.test(citeUrl) &&
+        /nike|acquir|purchas|blacktop|to buy converse/.test(hay)
+      )
         score += 5
-      if (/swooshed|nike to acquire|nike completed|nike to buy/.test(hay)) score += 2
+      if (/swooshed|nike to acquire|nike completed|nike to buy|nike acquires converse/.test(hay))
+        score += 2
     }
     // Nike tech / comfort / how ownership changed the shoe.
     if (!datedFocus && nikeTechAsk) {
@@ -491,7 +495,10 @@ function matchHeritageMoments(
   })
   const hits = scored.filter((x) => x.score > 0)
   const pickOpts = {
-    spreadClusters: (specificCollab || nikeTechAsk || nikeDealAsk) && !datedFocus,
+    // Named collabs / Nike deal+tech / theme spreads: keep multiple curated press URLs
+    // that back the same story (e.g. NYT + WSJ + WWD; Ad Age + BoF; History + Highsnobiety).
+    spreadClusters:
+      (specificCollab || nikeTechAsk || nikeDealAsk || sportsTheme || cultureTheme) && !datedFocus,
   }
   if (datedFocus && hits.length && queryDate) {
     const exact = hits.filter((x) => x.m.date === queryDate)
@@ -715,11 +722,15 @@ async function finalizeChuckEGlosses(
   return rejectYearGlosses(merged)
 }
 
+/** Soft cap for chat Sources inventory (matches UI). Curated pack cites win first. */
+const CHUCK_E_MAX_CHAT_SOURCES = 6
+
 /** Allowlisted grounding URLs from Gemini search — Gemini itself is never the cite host. */
 function citationsFromGroundedSources(
   sources: ClaimCandidate[],
-  opts: { demoteCollabRoundups?: boolean } = {},
+  opts: { demoteCollabRoundups?: boolean; max?: number } = {},
 ): Citation[] {
+  const max = opts.max ?? CHUCK_E_MAX_CHAT_SOURCES
   const out: Citation[] = []
   const seen = new Set<string>()
   const ranked = [...sources].sort((a, b) => {
@@ -751,13 +762,13 @@ function citationsFromGroundedSources(
         tier: citationTier(url) === 'unknown' ? 'C' : citationTier(url),
       }),
     )
-    if (out.length >= 4) break
+    if (out.length >= max) break
   }
   return out
 }
 
 /**
- * Live allowlisted press cites via Perplexity when pack + Gemini grounding left Sources empty.
+ * Live allowlisted press cites via Perplexity.
  * Perplexity is never the public citation host — only discovery.
  */
 async function citationsFromPerplexityClaimSearch(opts: {
@@ -765,9 +776,11 @@ async function citationsFromPerplexityClaimSearch(opts: {
   userQuestion: string
   replyContent: string
   max?: number
+  /** URLs already attached — skip duplicates. */
+  excludeUrls?: Set<string>
 }): Promise<Citation[]> {
-  const { apiKey, userQuestion, replyContent, max = 3 } = opts
-  if (!apiKey) return []
+  const { apiKey, userQuestion, replyContent, max = 3, excludeUrls } = opts
+  if (!apiKey || max <= 0) return []
 
   const yearMatch = userQuestion.match(/\b(19\d{2}|20[0-2]\d)\b/)
   const year = yearMatch ? Number(yearMatch[1]) : new Date().getUTCFullYear()
@@ -787,6 +800,7 @@ async function citationsFromPerplexityClaimSearch(opts: {
   const scored = hits
     .filter((h) => {
       if (!h.url || isCitationBlocked(h.url) || !isCitationAllowed(h.url)) return false
+      if (excludeUrls?.has(h.url.trim().toLowerCase())) return false
       const tier = citationTier(h.url)
       return tier === 'A' || tier === 'B'
     })
@@ -810,12 +824,13 @@ async function citationsFromPerplexityClaimSearch(opts: {
     ? scored.map((s) => s.hit)
     : hits.filter((h) => {
         if (!h.url || isCitationBlocked(h.url) || !isCitationAllowed(h.url)) return false
+        if (excludeUrls?.has(h.url.trim().toLowerCase())) return false
         const tier = citationTier(h.url)
         return tier === 'A' || tier === 'B'
       })
 
   const out: Citation[] = []
-  const seen = new Set<string>()
+  const seen = new Set<string>(excludeUrls ? [...excludeUrls] : [])
   const accessedAt = new Date().toISOString().slice(0, 10)
   for (const h of pool) {
     const url = h.url.trim()
@@ -844,20 +859,50 @@ async function citationsFromPerplexityClaimSearch(opts: {
   return out
 }
 
-/** Fill empty Sources via Perplexity press search when curated + Gemini cites are missing. */
-async function withLivePressCitesIfEmpty(
+/** Curated pack / History first, then Tier A/B press, then the rest — never drop curated for live. */
+function orderCitationsCuratedFirst(citations: Citation[]): Citation[] {
+  const rank = (c: Citation): number => {
+    if (c.provider === 'brand-timeline') return 3
+    const tier = c.url ? citationTier(c.url) : 'unknown'
+    if (tier === 'A') return 2
+    if (tier === 'B') return 1
+    return 0
+  }
+  return [...citations].sort((a, b) => rank(b) - rank(a))
+}
+
+/**
+ * Merge Sources for heritage/general: keep all curated pack cites, add Gemini grounding,
+ * and fill with Perplexity press when empty or thin so multiple corroborators can ship.
+ */
+async function mergeChatCitations(
   citations: Citation[],
   opts: { apiKey?: string; userQuestion: string; replyContent: string; intent?: ChuckEIntent },
 ): Promise<Citation[]> {
   // Product facts stay pack-only — never invent launch specs from live web search.
   if (opts.intent === 'product') return citations
-  if (citations.length > 0 || !opts.apiKey) return citations
-  const live = await citationsFromPerplexityClaimSearch({
-    apiKey: opts.apiKey,
-    userQuestion: opts.userQuestion,
-    replyContent: opts.replyContent,
-  })
-  return live.length ? dedupeCitationsByUrl([...citations, ...live]) : citations
+
+  const curated = citations.filter((c) => c.provider === 'brand-timeline')
+  const others = citations.filter((c) => c.provider !== 'brand-timeline')
+  let merged = dedupeCitationsByUrl([...curated, ...others])
+
+  const slots = CHUCK_E_MAX_CHAT_SOURCES - merged.length
+  // Empty, or only one cite: look for additional allowlisted press that backs the claim.
+  const wantsLive =
+    Boolean(opts.apiKey) && slots > 0 && (merged.length === 0 || merged.length < 3)
+  if (wantsLive) {
+    const exclude = new Set(merged.map((c) => (c.url || '').trim().toLowerCase()).filter(Boolean))
+    const live = await citationsFromPerplexityClaimSearch({
+      apiKey: opts.apiKey,
+      userQuestion: opts.userQuestion,
+      replyContent: opts.replyContent,
+      max: Math.min(slots, 3),
+      excludeUrls: exclude,
+    })
+    if (live.length) merged = dedupeCitationsByUrl([...merged, ...live])
+  }
+
+  return orderCitationsCuratedFirst(merged).slice(0, CHUCK_E_MAX_CHAT_SOURCES)
 }
 
 function buildSystemContext(brandId: string): string {
@@ -985,6 +1030,7 @@ export async function handleChuckEChat(
             ...glossesFromCitations(citations, content),
           ]
           const allowConverseTie = !worldIsLandmark && !isLandmarkDefiningEvent(spotlight)
+          let streamedEnrich = false
 
           // Converse-framed date asks: lead with History beat + Gemini-researched colour on that day only
           if (allowConverseTie && preferBrand && brandSpotlight && env.GEMINI_API_KEY) {
@@ -1005,6 +1051,7 @@ export async function handleChuckEChat(
               content = ensureCompleteChatReply(
                 coerceChatAwayFromStory(enriched.content),
               )
+              streamedEnrich = Boolean(onDelta)
               citations.length = 0
               citations.push(...(brandSpotlight.citations ?? []))
               citations.push(...citationsFromGroundedSources(enriched.groundedSources))
@@ -1132,7 +1179,7 @@ export async function handleChuckEChat(
 
   if (intent === 'heritage') {
     // Prefer scored pack beats (no soft timeline dump). Web search fills gaps / adds colour.
-    const moments = matchHeritageMoments(lastUser.content, brandId, 5, { softFallback: false })
+    const moments = matchHeritageMoments(lastUser.content, brandId, 6, { softFallback: false })
     const systemContext = buildSystemContext(brandId)
     const specificCollab = SPECIFIC_COLLAB_RE.test(lastUser.content)
 
@@ -1155,7 +1202,7 @@ export async function handleChuckEChat(
         const content = ensureCompleteChatReply(
           coerceChatAwayFromStory(researched.content),
         )
-        const citations = await withLivePressCitesIfEmpty(
+        const citations = await mergeChatCitations(
           dedupeCitationsByUrl([
             ...moments.map((m) => citationFromBrandMoment(m)),
             ...citationsFromGroundedSources(researched.groundedSources, {
@@ -1195,7 +1242,7 @@ export async function handleChuckEChat(
     )
     const content = coerceChatAwayFromStory(formatted.content)
     await onDelta?.(content)
-    const citations = await withLivePressCitesIfEmpty(formatted.citations, {
+    const citations = await mergeChatCitations(formatted.citations, {
       apiKey: env.PERPLEXITY_API_KEY,
       userQuestion: lastUser.content,
       replyContent: content,
@@ -1256,13 +1303,13 @@ export async function handleChuckEChat(
   if (!streamedChat) await onDelta?.(content)
 
   // Attach Converse History cites for any heritage beats the reply (or query) touches
-  const groundedMoments = matchHeritageMoments(`${lastUser.content}\n${content}`, brandId, 4, {
+  const groundedMoments = matchHeritageMoments(`${lastUser.content}\n${content}`, brandId, 5, {
     softFallback: false,
   })
   const grounded = formatHeritageReply(groundedMoments, { query: lastUser.content })
   const replyLooksHeritage = groundedMoments.length > 0
 
-  const citations = await withLivePressCitesIfEmpty(
+  const citations = await mergeChatCitations(
     dedupeCitationsByUrl([
       ...(replyLooksHeritage ? grounded.citations : []),
       ...citationsFromGroundedSources(chatGrounded),

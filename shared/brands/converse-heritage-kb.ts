@@ -475,7 +475,7 @@ export const CONVERSE_HERITAGE_KB: BrandMoment[] = withHeritageImages([
       synopsis:
         'Nike announced a definitive agreement to acquire Converse for about $305 million — the blacktop legend folding into Nike’s portfolio while keeping the Converse label distinct.',
       reference:
-        'Agreement announced 9 July 2003 (Nike SEC 8-K). Public press: The New York Times (10 July 2003) ‘Nike Purchasing Converse, a Legend on the Blacktop’. Available at: https://www.nytimes.com/2003/07/10/business/nike-purchasing-converse-a-legend-on-the-blacktop.html. Also WSJ same-day deal coverage. Converse History frames the purchase year as “Swooshed.”',
+        'Agreement announced 9 July 2003 (Nike SEC 8-K). Public press: The New York Times (10 July 2003) ‘Nike Purchasing Converse, a Legend on the Blacktop’. Available at: https://www.nytimes.com/2003/07/10/business/nike-purchasing-converse-a-legend-on-the-blacktop.html. Also WSJ same-day deal coverage and WWD (10 July 2003) trade press. Converse History frames the purchase year as “Swooshed.”',
       citation: {
         title: 'Nike Purchasing Converse, a Legend on the Blacktop',
         url: 'https://www.nytimes.com/2003/07/10/business/nike-purchasing-converse-a-legend-on-the-blacktop.html',
@@ -507,6 +507,25 @@ export const CONVERSE_HERITAGE_KB: BrandMoment[] = withHeritageImages([
       anniversaryEligible: true,
     },
     {
+      id: 'cv-2003-announce-wwd',
+      date: '2003-07-09',
+      precision: 'exact-day',
+      title: 'Nike acquires Converse',
+      synopsis:
+        'Women’s Wear Daily reported Nike’s ~$305 million agreement to buy Converse — trade press on the blacktop legend joining Nike’s brand portfolio after Converse’s earlier bankruptcy and revival.',
+      reference:
+        'WWD Staff / Women’s Wear Daily (10 July 2003) ‘Nike Acquires Converse’. Available at: https://wwd.com/fashion-news/fashion-features/nike-acquires-converse-726154/',
+      citation: {
+        title: 'Nike Acquires Converse',
+        url: 'https://wwd.com/fashion-news/fashion-features/nike-acquires-converse-726154/',
+        publisher: "Women's Wear Daily",
+        publishedAt: '2003-07-10',
+      },
+      isExactQuote: false,
+      storyCluster: 'nike-announce-2003',
+      anniversaryEligible: true,
+    },
+    {
       id: 'cv-2003',
       date: '2003-09-04',
       precision: 'exact-day',
@@ -514,7 +533,7 @@ export const CONVERSE_HERITAGE_KB: BrandMoment[] = withHeritageImages([
       synopsis:
         'Nike completed its acquisition of Converse — folding the heritage All Star into a global portfolio while keeping the Converse label distinct.',
       reference:
-        'Converse History (“Swooshed”, 2003). Exact close day 4 September 2003 corroborated by Nike SEC 8-K “NIKE, INC. COMPLETES ACQUISITION OF CONVERSE INC.” For the July announcement / purchase story, prefer The New York Times and The Wall Street Journal deal coverage.',
+        'Converse History (“Swooshed”, 2003). Exact close day 4 September 2003 corroborated by Nike SEC 8-K “NIKE, INC. COMPLETES ACQUISITION OF CONVERSE INC.” For the July announcement / purchase story, prefer The New York Times, The Wall Street Journal, and WWD deal coverage.',
       citation: {
         title: 'Converse History',
         url: HISTORY_URL,
