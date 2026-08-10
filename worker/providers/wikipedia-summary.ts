@@ -1,6 +1,7 @@
 /**
  * Wikipedia REST Summary resolver — Bloom-style gloss bodies.
- * Glosses are context, never the public citation for a claim.
+ * Glosses are context. Chuck-E may also use the page URL + allowlisted
+ * externallinks (footnotes) as a sparse Sources bridge — never over curated / Tier A/B.
  */
 
 import { firstSentence, clipToCompleteSentences } from '../lib/clean-text'
@@ -196,6 +197,39 @@ async function searchWikipediaTitle(query: string): Promise<string | null> {
   if (!Array.isArray(data) || !Array.isArray(data[1]) || data[1].length === 0) return null
 
   return pickOpenSearchTitle(q, data[1] as string[])
+}
+
+const WIKIPEDIA_PARSE =
+  'https://en.wikipedia.org/w/api.php?action=parse&prop=externallinks&format=json&redirects=1&page='
+
+/**
+ * External links from a Wikipedia page (includes reference / footnote hosts).
+ * Callers must filter with the citation registry — many links are not citable.
+ */
+export async function fetchWikipediaExternalLinks(title: string): Promise<string[]> {
+  const normalized = normalizeTitle(title)
+  if (!normalized) return []
+
+  const res = await wikiFetch(`${WIKIPEDIA_PARSE}${encodeURIComponent(normalized.replace(/_/g, ' '))}`)
+  if (!res?.ok) return []
+
+  const payload = (await res.json()) as {
+    parse?: { externallinks?: string[]; title?: string }
+    error?: { code?: string }
+  }
+  if (payload.error || !payload.parse?.externallinks?.length) return []
+
+  const out: string[] = []
+  const seen = new Set<string>()
+  for (const raw of payload.parse.externallinks) {
+    const url = String(raw || '').trim()
+    if (!url || !/^https?:\/\//i.test(url)) continue
+    const key = url.toLowerCase()
+    if (seen.has(key)) continue
+    seen.add(key)
+    out.push(url)
+  }
+  return out
 }
 
 /**

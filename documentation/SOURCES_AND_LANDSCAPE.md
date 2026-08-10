@@ -92,7 +92,7 @@ Registered in `CITATION_BLOCKLIST` (discovery-only or blocked):
 
 Also never: AI chat answers as bibliographic host, unsourced social, SEO farms, forum / UGC dumps; Gemini / Perplexity as the Source **host** (they may retrieve).
 
-Wikipedia: allowlisted as **bridge** (`gloss-bridge`). Provisional public cite OK when best available summary — prefer upgrading in Full. Label quality honestly (`needs-human-review` often set).
+Wikipedia: allowlisted as **bridge** (`gloss-bridge`). Provisional public cite OK when best available summary — prefer upgrading in Full. Label quality honestly (`needs-human-review` often set). Chuck-E sparse path may attach allowlisted **footnote hosts** from the article, then the Wikipedia URL itself.
 
 ---
 

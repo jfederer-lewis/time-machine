@@ -2,7 +2,7 @@
 
 > Living document. Agents: read this before changing Chuck-E persona, disclosure, cliff notes, or routing.  
 > Companion docs: `VISION.md`, `PIPELINE.md`, **`EDITORIAL_SCHEMA.md`** (ranking / landmarks / universe), `COPY_CONTRACT.md`, `SOURCES_AND_LANDSCAPE.md`, **`CHUCK_ECOSYSTEM_KB.md`** (Chuck franchise product / strategy KB).  
-> **Last updated:** 2026-08-10 (chat cites framed as Read more)  
+> **Last updated:** 2026-08-10 (cliff notes = numbered Notes footnotes)  
 
 ---
 
@@ -19,7 +19,7 @@ The Time Machine date lookup answers “what else happened on this day.” Chuck
 - Tell the story / engineering / features of the new Chuck (from a Converse-supplied pack — never invented).
 - Surface heritage and novel nuggets (e.g. Non-Skid era, materials history) with cites.
 - Route date-shaped questions through the same discover → cite → copy-contract pipeline as Lookup.
-- Export **cliff notes** for desks — bullets + Harvard sources — not byline-ready copy.
+- Export **cliff notes** for desks — bullets with footnote markers + numbered Harvard **Notes** — not byline-ready copy.
 
 ### Editorial line (non-negotiable)
 
@@ -30,7 +30,7 @@ Chuck-E helps media **pull data** and, when asked, **extract editorial cliff not
 | Surface | Shape |
 |---------|--------|
 | **Chuck-E chat** | Conversational: 1–2 short paragraphs and optional plain bullets — like a sharp ChatGPT reply. Theme answers open with a short grounding line, then examples — not a bare list dump. No `###` headings, no “Beat Summary / Pointers to Cite”, no jargon padding. Cites live in glosses / **Read more**, not in the body. **Language:** English prompts → sharp plain English; other-language prompts → that language; English prompts that ask for another language → honour the request (`replyLanguageRule`). Latest user turn only. Keep brand proper nouns in usual forms. |
-| **Cliff notes export** | Separate action — bullets + Harvard + AI banner. |
+| **Cliff notes export** | Separate action — bullets with **[n]** markers + numbered Harvard **Notes** + AI banner. |
 | **Lookup day cards** | Curated title / synopsis / Context / Source — different product surface. |
 
 Soft length aim for chat: ~900 chars (`chatReplySoftMaxChars`). Theme spreads may run a little longer; never hard-truncate mid-sentence. Art. 50 disclosure stays English (hardcoded). Deterministic pack/date templates stay English when Gemini is unavailable; model paths must follow `replyLanguageRule`.
@@ -145,7 +145,9 @@ When the chat mentions music, scenes, collabs, humanitarian / (PRODUCT) RED, fil
 | — | Broader court → skate → music → fashion arc | [Nike Magazine — Journey of an Icon](https://about.nike.com/en/magazine/converse-chuck-taylor-all-star-iconic-sneaker-true-history) |
 | — | Overview + footnotes / backlinks | [Wikipedia — Chuck Taylor All-Stars](https://en.wikipedia.org/wiki/Chuck_Taylor_All-Stars) (bridge; upgrade to underlying cites) |
 
-**Citation display (Chuck-E chat):** gloss-first for in-text provenance. Under each assistant reply with cites, a **collapsed Read more (N)** control expands to linked inventory lines: **article title · publisher · year** (no raw URL text — the row is the link). Framing is optional deeper reading on the queried topic — not a bibliography dump. Popovers stay **simple**: term + one short readable sentence + quiet publisher link (e.g. Converse History). No stacked year / subtitle chrome. Body text is selectable. Full Harvard (`formatHarvardCitation` / `CitationLine`) stays on **cliff notes** / Lookup day cards (still labelled **Sources**).
+**Citation display (Chuck-E chat):** gloss-first for in-text provenance. Under each assistant reply with cites, a **collapsed Read more (N)** control expands to linked inventory lines: **article title · publisher · year** (no raw URL text — the row is the link). Framing is optional deeper reading on the queried topic — not a bibliography dump. Popovers stay **simple**: term + one short readable sentence + quiet publisher link (e.g. Converse History). No stacked year / subtitle chrome. Body text is selectable.
+
+**Cliff notes export:** bullets carry superscript **[n]** markers for cites from the same assistant turn; a **Notes** block lists numbered Harvard lines (`CitationLine` / `formatHarvardCitation`). Copy / `.txt` mirrors the same numbering. Lookup day cards keep a single **Source** line (unchanged).
 
 **Gloss roles (do not conflate):**
 
@@ -180,9 +182,22 @@ Never reuse a citation gloss on an entity surname/token in the synopsis (that ma
 | Other History dates | What’s the cultural significance of 15 February 2013 within Converse? · What about 14 August 1936? |
 | Desk workflow | Ask any of the above → **Extract cliff notes** |
 
+### Converse-affiliated “who / what” asks
+
+When desks ask about a **person, house, product, campaign, or cultural figure that already has a sourced Converse affiliation**, frame the reply in that respect — not a generic bio alone.
+
+| Ask shape | Behaviour |
+|-----------|-----------|
+| “Who is Larry Bird?” / Magic Johnson / similar court ambassadors | Who they are **and** Converse involvement (e.g. Weapon + Bird–Magic “Choose Your Weapon”) from History / Highsnobiety — not NBA bio only |
+| Collab partners / wear icons (Cobain, Tyler, Margiela, Abloh, Billie…) | Identity + the Converse partnership / wear story (dedicated press when available) |
+| Silhouettes / named drops / History figures (Chuck Taylor, Non-Skid, Weapon…) | What it is **in the Converse story** — pack / History first |
+
+**Never invent** an affiliation. If there is no honest Converse tie, answer the ask straight — do not force a Chuck angle. Landmark / hard-history people stay respectful and unbranded when the day or topic demands it.
+
 ### What “interesting” answers lean on
 
 - **Anchor in Converse History** (`heritageKb`): years, silhouette names (Non-Skid, All Star, Chuck 70, One Star, Jack Purcell, Pro Leather, Pro Stars, Weapon), people, named campaigns/collabs already in the pack.
+- **Affiliated framing:** for Converse-tied people / houses / products, include brand involvement alongside who/what they are (see above).
 - **Theme depth:** sports / music / collabs / cause → several beats across decades, not one paragraph of generalities.
 - **Date / zeitgeist + culture press** can pull Lookup discovery / cite upgrade — prefer claim-relevant cites from premium press, museums, and culture titles when grounded search surfaces them (Guardian, NYT, BBC, **Vogue / Teen Vogue / global Vogues**, **Dazed**, **i-D**, System, Highsnobiety, Hypebeast, BoF, WWD, Tate / Met / MoMA / V&A, music press, etc.). Gemini still **never** appears as the public citation host. Registry is canonical (`shared/source-registry.ts`); Reddit and similar UGC stay blocked.
 - Prefer answers that feel like **briefing colour** (scenes, turning points, named objects) over generic brand adjectives or corporate strategy speak.
@@ -209,8 +224,8 @@ ChuckEWidget (floating launcher)
 |--------|-----------|
 | `date` | Parse date → `assembleDateQuery` → Converse-framed + History beat → Gemini **grounded enrich** on that day only (no world backdrop). World-only days → optional light Converse bridge if sourced |
 | `product` | Match `shared/products/new-chuck.ts` facts; if placeholder/empty, refuse to invent |
-| `heritage` | Match History KB beats as anchors → Gemini **web search** for more colour / when pack is thin → cites + glosses. Prefer **multiple** curated / allowlisted Sources when they back the claim (pack first). If Sources empty or thin, Perplexity claim-search on press hosts fills Tier A/B cites. Pack-only fallback if offline. |
-| `general` | `chatWithChuckE()` with persona guardrails + web search (not for inventing product specs); attach History cites when reply touches pack beats; same multi-Source + Perplexity fill as heritage |
+| `heritage` | Match History KB beats as anchors → Gemini **web search** for more colour / when pack is thin → cites + glosses. Prefer **multiple** curated / allowlisted Sources when they back the claim (pack first). If Sources empty or thin, Perplexity claim-search on press hosts fills Tier A/B cites. If still **sparse**, pull allowlisted **Wikipedia footnotes** then the Wikipedia page as a bridge. Pack-only fallback if offline. |
+| `general` | `chatWithChuckE()` with persona guardrails + web search (not for inventing product specs); attach History cites when reply touches pack beats; same multi-Source + Perplexity + Wikipedia-bridge fill as heritage |
 | cliff notes action | Separate endpoint; extracts bullets from the conversation + cites |
 
 Gemini is **never** the public citation host. Perplexity is **never** the public citation host — only discovery (`provider: 'perplexity-search'`). Historical world claims go through the Time Machine pipeline. Shoe facts come from the product pack only. Heritage beats cite **Converse History** (`landing-converse-history`). Chat and cliff-notes footers list each source URL **once** (same History LP across several beats is not repeated). Reddit, LinkedIn, and similar UGC stay blocked.
@@ -330,14 +345,17 @@ Runtime: wire stable framing into product packs before treating it as auto-shipp
 | 2026-08-07 | Nike purchase → NYT “Legend on the Blacktop” (10 Jul 2003); Swooshed stays History close day | Paper-of-record cite for the deal; don’t conflate announce vs close |
 | 2026-08-07 | Nike purchase also → WSJ “Nike to Buy Converse…”; Chuck II Nike tech → Ad Age + BoF; Vaquera beside Owens | Deal desk + ownership/engineering story + experimental fashion lane |
 | 2026-08-10 | Nike purchase also → [WWD “Nike Acquires Converse”](https://wwd.com/fashion-news/fashion-features/nike-acquires-converse-726154/) (10 Jul 2003) beside NYT + WSJ | Trade press corroboration for the ~$305m deal; still don’t conflate announce vs close |
-| 2026-08-10 | Chat footer cites → **Read more (N)** + short “dig into articles…” hint; cliff notes stay **Sources** / Harvard | Desks may want depth on the topic without a bibliography feel in chat |
+| 2026-08-10 | Chat footer cites → **Read more (N)** + short “dig into articles…” hint; cliff notes use numbered **Notes** footnotes | Chat = optional depth; cliff notes = desk brief with [n] markers + Harvard |
+| 2026-08-10 | Cliff-notes bullets pair to message-scoped cites; shared URLs reuse one footnote number | No LLM re-attribution — co-occurrence on the same assistant turn only |
 | 2026-08-07 | Billie Eilish By You → SI / Verge / HIGHXTAR; wiki aliases + refuse OpenSearch first-name expansions | “Billie By You” was glossing Billie Burke; collab needs dedicated press |
 | 2026-08-07 | Tyler / GOLF le FLEUR* → GQ One Star (2017) + British Vogue + Highsnobiety 1908 Program | Long partnership needs dedicated press, not History-only “Tyler team-up” |
 | 2026-08-07 | Basketball / Weapon / Pro BB → Highsnobiety Weapon history + Forbes All Star Pro BB (2019) | Court theme needs ambassador + performance-return press beside History beats |
 | 2026-08-10 | Chuck-E: English → plain English; other-language prompt → that language; English “reply in X” requests honoured (`replyLanguageRule`) | Usual desk path stays plain English; multilingual + explicit language asks still work |
 | 2026-08-10 | Heritage/general empty Sources → Perplexity allowlisted press search (`domainProfile: press`); LinkedIn blocked | Asks without a curated bookshelf cite (e.g. running × Converse) can still ship a credible news Source; UGC stays out |
 | 2026-08-10 | Multi-Source chat: curated pack first; theme spreads keep several press URLs; Perplexity fills when empty/thin (cap 6) | Desks often need NYT+WSJ / Ad Age+BoF style corroboration, not a single footer link |
+| 2026-08-10 | Sparse Sources → Wikipedia footnotes (allowlisted hosts) then Wiki page as bridge | Last resort when pack + press search are thin; footnotes often beat bare Wiki |
 | 2026-08-10 | Chuck-E panel size button cycles default → tall → full page (same control) | Desks sometimes want a full-viewport research surface without a second control |
+| 2026-08-10 | Converse-affiliated “who is X?” / “what is Y?” → include brand involvement (e.g. Bird → Weapon), never invent ties | Desks asking about ambassadors / collabs / History figures need Converse framing, not generic bios |
 
 ---
 

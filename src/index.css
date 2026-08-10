@@ -1166,6 +1166,29 @@ a {
   margin-top: 0.35rem;
 }
 
+.cliff-notes__marks {
+  display: inline;
+  margin-left: 0.15rem;
+  white-space: nowrap;
+}
+
+.cliff-notes__mark {
+  font-size: 0.68em;
+  font-family: var(--font-ui, inherit);
+  font-variant-numeric: tabular-nums;
+  vertical-align: super;
+  line-height: 0;
+  color: var(--muted);
+  text-decoration: none;
+  margin-left: 0.05rem;
+}
+
+.cliff-notes__mark:hover {
+  color: var(--ink);
+  text-decoration: underline;
+  text-underline-offset: 0.12em;
+}
+
 .cliff-notes__sources {
   margin-top: 0.85rem;
   padding-top: 0.65rem;
@@ -1178,6 +1201,45 @@ a {
   letter-spacing: 0.08em;
   text-transform: uppercase;
   color: var(--muted);
+}
+
+.cliff-notes__notes-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+}
+
+.cliff-notes__note {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 0.35rem 0.45rem;
+  align-items: start;
+  scroll-margin-top: 0.5rem;
+}
+
+.cliff-notes__note-num {
+  font-size: 0.72rem;
+  font-variant-numeric: tabular-nums;
+  color: var(--muted);
+  line-height: 1.45;
+  padding-top: 0.05rem;
+}
+
+.cliff-notes__note-body {
+  min-width: 0;
+}
+
+.cliff-notes__note-body .citation-line {
+  margin: 0;
+}
+
+.cliff-notes__note-body .citation-harvard {
+  margin: 0;
+  font-size: 0.72rem;
+  line-height: 1.4;
 }
 
 .cliff-notes__footer {

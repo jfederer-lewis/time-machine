@@ -7,6 +7,24 @@ interface CliffNotesPanelProps {
   onClose: () => void
 }
 
+function FootnoteMarks({ noteIds }: { noteIds: number[] }) {
+  if (!noteIds.length) return null
+  return (
+    <span className="cliff-notes__marks">
+      {noteIds.map((n) => (
+        <a
+          key={n}
+          className="cliff-notes__mark"
+          href={`#cliff-note-${n}`}
+          aria-label={`Note ${n}`}
+        >
+          [{n}]
+        </a>
+      ))}
+    </span>
+  )
+}
+
 export function CliffNotesPanel({ notes, onClose }: CliffNotesPanelProps) {
   const [copied, setCopied] = useState(false)
 
@@ -47,16 +65,31 @@ export function CliffNotesPanel({ notes, onClose }: CliffNotesPanelProps) {
 
       <ul className="cliff-notes__bullets">
         {notes.bullets.map((b, i) => (
-          <li key={i}>{b}</li>
+          <li key={i}>
+            {b.text}
+            <FootnoteMarks noteIds={b.noteIds} />
+          </li>
         ))}
       </ul>
 
       {notes.citations.length > 0 ? (
         <div className="cliff-notes__sources">
-          <p className="cliff-notes__sources-label">Sources</p>
-          {notes.citations.map((c) => (
-            <CitationLine key={c.url + c.title} citation={c} />
-          ))}
+          <p className="cliff-notes__sources-label">Notes</p>
+          <ol className="cliff-notes__notes-list">
+            {notes.citations.map((c, i) => {
+              const n = i + 1
+              return (
+                <li key={c.url + c.title} id={`cliff-note-${n}`} className="cliff-notes__note">
+                  <span className="cliff-notes__note-num" aria-hidden="true">
+                    [{n}]
+                  </span>
+                  <div className="cliff-notes__note-body">
+                    <CitationLine citation={c} />
+                  </div>
+                </li>
+              )
+            })}
+          </ol>
         </div>
       ) : null}
 

@@ -28,9 +28,16 @@ export type ChuckEStreamEvent =
   | { type: 'done'; sessionId: string; intent: ChuckEIntent; message: ChuckEChatMessage }
   | { type: 'error'; error: string }
 
+export interface ChuckECliffNotesBullet {
+  text: string
+  /** 1-based footnote indices into `citations` (same message–scoped pairing). */
+  noteIds: number[]
+}
+
 export interface ChuckECliffNotes {
   title: string
-  bullets: string[]
+  bullets: ChuckECliffNotesBullet[]
+  /** Ordered footnote list — index 0 is note [1]. */
   citations: Citation[]
   aiBanner: string
   footer: string

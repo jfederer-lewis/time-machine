@@ -19,6 +19,10 @@ import { citationTier, parseQueryDate, toDisplayDate, isCitationAllowed, isCitat
 import { assembleDateQuery, type Env } from './assemble'
 import { chatWithChuckE, enrichChuckEDateSignificance, researchChuckETopic, type ClaimCandidate } from '../providers/gemini'
 import { searchAllowlistedCiteForClaim } from '../providers/archives'
+import {
+  fetchWikipediaExternalLinks,
+  fetchWikipediaSummary,
+} from '../providers/wikipedia-summary'
 import { claimCiteRelevance } from './upgrade-claim'
 import { isLandmarkDefiningEvent } from './interest'
 import {
@@ -90,7 +94,8 @@ export interface ChuckECliffNotesRequest {
 
 export interface ChuckECliffNotesResponse {
   title: string
-  bullets: string[]
+  bullets: Array<{ text: string; noteIds: number[] }>
+  /** Ordered footnote list — index 0 is note [1]. */
   citations: Citation[]
   aiBanner: string
   footer: string
@@ -862,18 +867,138 @@ async function citationsFromPerplexityClaimSearch(opts: {
 /** Curated pack / History first, then Tier A/B press, then the rest — never drop curated for live. */
 function orderCitationsCuratedFirst(citations: Citation[]): Citation[] {
   const rank = (c: Citation): number => {
-    if (c.provider === 'brand-timeline') return 3
+    if (c.provider === 'brand-timeline') return 4
     const tier = c.url ? citationTier(c.url) : 'unknown'
-    if (tier === 'A') return 2
-    if (tier === 'B') return 1
+    if (tier === 'A') return 3
+    if (tier === 'B') return 2
+    if (tier === 'bridge' || c.provider === 'wikipedia-summary') return 0
+    if (tier === 'C') return 1
     return 0
   }
   return [...citations].sort((a, b) => rank(b) - rank(a))
 }
 
+/** Prefer a Converse-relevant wiki page when the ask is brand-shaped. */
+function wikipediaBridgeSearchTerm(userQuestion: string): string {
+  const q = userQuestion.replace(/\s+/g, ' ').trim()
+  if (!q) return 'Chuck Taylor All-Stars'
+  if (/\bweapon\b/i.test(q)) return 'Converse Weapon'
+  if (/\bone\s+star\b/i.test(q)) return 'Chuck Taylor All-Stars'
+  if (/\bchuck\s+taylor\b|\ball[\s-]?stars?\b|\bconverse\b|\bchucks?\b/i.test(q)) {
+    return 'Chuck Taylor All-Stars'
+  }
+  return q.slice(0, 120)
+}
+
+/**
+ * Sparse-Sources bridge: pull allowlisted footnote hosts from a Wikipedia article,
+ * then the Wikipedia page itself if still needed. Never prefer Wiki over curated / Tier A/B.
+ */
+async function citationsFromWikipediaBridge(opts: {
+  userQuestion: string
+  replyContent: string
+  max?: number
+  excludeUrls?: Set<string>
+}): Promise<Citation[]> {
+  const { userQuestion, replyContent, max = 3, excludeUrls } = opts
+  if (max <= 0) return []
+
+  const term = wikipediaBridgeSearchTerm(userQuestion)
+  let wiki = await fetchWikipediaSummary(term)
+  if (!wiki && term !== userQuestion.trim()) {
+    wiki = await fetchWikipediaSummary(userQuestion.slice(0, 120))
+  }
+  if (!wiki?.url) return []
+
+  const accessedAt = new Date().toISOString().slice(0, 10)
+  const out: Citation[] = []
+  const seen = new Set<string>(excludeUrls ? [...excludeUrls] : [])
+  const claimText = `${userQuestion} ${replyContent} ${wiki.title} ${wiki.extract}`.slice(0, 600)
+
+  const ext = await fetchWikipediaExternalLinks(wiki.title)
+  const footnoteCandidates = ext
+    .filter((url) => {
+      if (!url || seen.has(url.toLowerCase())) return false
+      if (isCitationBlocked(url) || !isCitationAllowed(url)) return false
+      if (/wikipedia\.org/i.test(url)) return false
+      const tier = citationTier(url)
+      return tier === 'A' || tier === 'B' || tier === 'C'
+    })
+    .map((url) => {
+      const entry = findRegistryEntry(url)
+      return {
+        url,
+        title: entry?.label || 'Source',
+        snippet: wiki.extract || '',
+        publisher: entry?.label || 'Source',
+        relevance: claimCiteRelevance(claimText, {
+          title: entry?.label || url,
+          snippet: `${wiki.title} ${wiki.extract}`,
+          url,
+        }),
+        tierRank: citationTier(url) === 'A' ? 3 : citationTier(url) === 'B' ? 2 : 1,
+      }
+    })
+    .sort((a, b) => {
+      // Prefer any claim-token overlap; then tier
+      if (b.relevance !== a.relevance) return b.relevance - a.relevance
+      return b.tierRank - a.tierRank
+    })
+
+  for (const f of footnoteCandidates) {
+    if (out.length >= max) break
+    // Keep zero-relevance Tier A/B footnotes as map when really sparse (wiki page may still be better)
+    if (f.relevance <= 0 && f.tierRank < 2) continue
+    const key = f.url.toLowerCase()
+    if (seen.has(key)) continue
+    seen.add(key)
+    const entry = findRegistryEntry(f.url)
+    out.push(
+      withHarvard({
+        title: entry?.label || f.title,
+        url: f.url,
+        publisher: entry?.label || f.publisher,
+        accessedAt,
+        sourceQuality: 'trusted-source-snippet',
+        evidenceKind: 'paraphrase',
+        reference: `Allowlisted host linked from Wikipedia footnotes (${wiki.title}).`,
+        provider: 'wikipedia-summary',
+        isExactQuote: false,
+        tier: citationTier(f.url),
+      }),
+    )
+  }
+
+  // Still sparse → ship the Wikipedia page as a bridge Source
+  if (out.length === 0 || (out.length < 2 && max > out.length)) {
+    const wikiKey = wiki.url.toLowerCase()
+    if (!seen.has(wikiKey) && isCitationAllowed(wiki.url) && !isCitationBlocked(wiki.url)) {
+      seen.add(wikiKey)
+      out.push(
+        withHarvard({
+          title: wiki.title || 'Wikipedia',
+          url: wiki.url,
+          publisher: 'Wikipedia',
+          accessedAt,
+          sourceQuality: 'needs-human-review',
+          evidenceKind: 'paraphrase',
+          reference:
+            wiki.extract ||
+            'Wikipedia bridge — prefer underlying footnote hosts when available.',
+          provider: 'wikipedia-summary',
+          isExactQuote: false,
+          tier: 'bridge',
+        }),
+      )
+    }
+  }
+
+  return out.slice(0, max)
+}
+
 /**
  * Merge Sources for heritage/general: keep all curated pack cites, add Gemini grounding,
- * and fill with Perplexity press when empty or thin so multiple corroborators can ship.
+ * fill with Perplexity when empty/thin, then Wikipedia footnotes / page when still sparse.
  */
 async function mergeChatCitations(
   citations: Citation[],
@@ -886,20 +1011,34 @@ async function mergeChatCitations(
   const others = citations.filter((c) => c.provider !== 'brand-timeline')
   let merged = dedupeCitationsByUrl([...curated, ...others])
 
-  const slots = CHUCK_E_MAX_CHAT_SOURCES - merged.length
+  const excludeOf = () =>
+    new Set(merged.map((c) => (c.url || '').trim().toLowerCase()).filter(Boolean))
+
+  let slots = CHUCK_E_MAX_CHAT_SOURCES - merged.length
   // Empty, or only one cite: look for additional allowlisted press that backs the claim.
   const wantsLive =
     Boolean(opts.apiKey) && slots > 0 && (merged.length === 0 || merged.length < 3)
   if (wantsLive) {
-    const exclude = new Set(merged.map((c) => (c.url || '').trim().toLowerCase()).filter(Boolean))
     const live = await citationsFromPerplexityClaimSearch({
       apiKey: opts.apiKey,
       userQuestion: opts.userQuestion,
       replyContent: opts.replyContent,
       max: Math.min(slots, 3),
-      excludeUrls: exclude,
+      excludeUrls: excludeOf(),
     })
     if (live.length) merged = dedupeCitationsByUrl([...merged, ...live])
+  }
+
+  slots = CHUCK_E_MAX_CHAT_SOURCES - merged.length
+  // Really sparse after curated + press search → Wikipedia footnotes, then Wiki page.
+  if (slots > 0 && merged.length < 2) {
+    const wikiCites = await citationsFromWikipediaBridge({
+      userQuestion: opts.userQuestion,
+      replyContent: opts.replyContent,
+      max: Math.min(slots, 3),
+      excludeUrls: excludeOf(),
+    })
+    if (wikiCites.length) merged = dedupeCitationsByUrl([...merged, ...wikiCites])
   }
 
   return orderCitationsCuratedFirst(merged).slice(0, CHUCK_E_MAX_CHAT_SOURCES)
@@ -1348,30 +1487,53 @@ export function handleChuckECliffNotes(body: ChuckECliffNotesRequest): ChuckECli
 
   const citations: Citation[] = []
   const seenUrls = new Set<string>()
-  const bulletCandidates: string[] = []
+  const bulletCandidates: { text: string; citeUrls: string[] }[] = []
+
+  const pushCite = (c: Citation) => {
+    const url = (c.url || '').trim()
+    if (!url || seenUrls.has(url)) return
+    seenUrls.add(url)
+    citations.push(c)
+  }
+
+  const mergeBullet = (text: string, citeUrls: string[]) => {
+    const existing = bulletCandidates.find((b) => b.text === text)
+    if (existing) {
+      for (const url of citeUrls) {
+        if (url && !existing.citeUrls.includes(url)) existing.citeUrls.push(url)
+      }
+      return
+    }
+    if (bulletCandidates.length >= CHUCK_E_KNOBS.cliffNotesMaxBullets) return
+    bulletCandidates.push({
+      text,
+      citeUrls: citeUrls.filter(Boolean),
+    })
+  }
 
   for (const m of messages) {
     if (m.role !== 'assistant' || m.isDisclosure) continue
+    const msgCiteUrls: string[] = []
     if (m.citations) {
       for (const c of m.citations) {
-        if (c.url && !seenUrls.has(c.url)) {
-          seenUrls.add(c.url)
-          citations.push(c)
-        }
+        const url = (c.url || '').trim()
+        if (!url) continue
+        pushCite(c)
+        if (!msgCiteUrls.includes(url)) msgCiteUrls.push(url)
       }
     }
     const fromMsg = coerceToCliffNotesBullets(m.content, CHUCK_E_KNOBS.cliffNotesMaxBullets)
     for (const b of fromMsg) {
-      if (bulletCandidates.length >= CHUCK_E_KNOBS.cliffNotesMaxBullets) break
-      if (!bulletCandidates.includes(b)) bulletCandidates.push(b)
+      mergeBullet(b, msgCiteUrls)
     }
   }
 
   // If conversation is thin, seed from heritage timeline so export isn't empty
   if (bulletCandidates.length === 0) {
     for (const moment of brand.timeline.slice(0, 4)) {
-      bulletCandidates.push(`${moment.date}: ${moment.title} — ${moment.synopsis}`)
-      citations.push(citationFromBrandMoment(moment))
+      const cite = citationFromBrandMoment(moment)
+      pushCite(cite)
+      mergeBullet(`${moment.date}: ${moment.title} — ${moment.synopsis}`, [cite.url])
     }
   }
 
@@ -1379,28 +1541,61 @@ export function handleChuckECliffNotes(body: ChuckECliffNotesRequest): ChuckECli
     body.title?.trim() ||
     `${brand.name} · ${CHUCK_E_KNOBS.agentName} editorial cliff notes`
 
+  const orderedCitations = dedupeCitationsByUrl(citations)
+  const urlToNote = new Map<string, number>()
+  orderedCitations.forEach((c, i) => {
+    const url = (c.url || '').trim()
+    if (url) urlToNote.set(url, i + 1)
+  })
+
+  const structuredBullets = bulletCandidates
+    .slice(0, CHUCK_E_KNOBS.cliffNotesMaxBullets)
+    .map((b) => {
+      const noteIds = [
+        ...new Set(
+          b.citeUrls
+            .map((url) => urlToNote.get(url))
+            .filter((n): n is number => typeof n === 'number'),
+        ),
+      ].sort((a, b) => a - b)
+      return { text: b.text, noteIds }
+    })
+
   const draft = withCliffNotesMarking({
     title,
-    bullets: bulletCandidates.slice(0, CHUCK_E_KNOBS.cliffNotesMaxBullets),
-    citations: dedupeCitationsByUrl(citations),
+    bullets: structuredBullets.map((b) => b.text),
+    citations: orderedCitations,
   })
+
+  const formatNoteMarker = (ids: number[]) =>
+    ids.length ? ids.map((n) => `[${n}]`).join('') : ''
 
   const plainText = [
     draft.aiBanner,
     '',
     draft.title,
     '',
-    ...draft.bullets.map((b) => `• ${b}`),
+    ...structuredBullets.map((b) => {
+      const marks = formatNoteMarker(b.noteIds)
+      return marks ? `• ${b.text} ${marks}` : `• ${b.text}`
+    }),
     '',
-    'Sources',
-    ...draft.citations.map((c) => `- ${c.harvard || `${c.publisher}: ${c.url}`}`),
-    '',
+    ...(orderedCitations.length
+      ? [
+          'Notes',
+          ...orderedCitations.map(
+            (c, i) =>
+              `[${i + 1}] ${c.harvard || `${c.publisher}: ${c.url}`}`,
+          ),
+          '',
+        ]
+      : []),
     draft.footer,
   ].join('\n')
 
   return {
     title: draft.title,
-    bullets: draft.bullets,
+    bullets: structuredBullets,
     citations: draft.citations,
     aiBanner: draft.aiBanner!,
     footer: draft.footer!,
