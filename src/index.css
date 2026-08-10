@@ -1022,7 +1022,8 @@ a {
   font-family: var(--font-ui);
   font-size: calc(var(--chuck-e-font-size) * 0.92);
   line-height: 1.4;
-  min-height: 2.5rem;
+  /* Tall enough for the empty placeholder (“Ask about the new Chuck…”) without scroll */
+  min-height: 3.9rem;
   max-height: 10rem;
   field-sizing: content;
 }

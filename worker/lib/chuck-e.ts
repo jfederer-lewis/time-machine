@@ -41,6 +41,7 @@ import {
   rejectYearGlosses,
   cleanGlossSnippet,
   shortOutletLabel,
+  wikiPartnerSeedsFromMoments,
 } from './chuck-e-glosses'
 import { attachWikipediaGlossesForProse, isYearLikeTerm } from './gloss-service'
 
@@ -1005,19 +1006,38 @@ function sourceGlossFromEvent(event: CulturalEvent): Gloss[] {
 async function finalizeChuckEGlosses(
   content: string,
   sourceGlosses: Gloss[],
+  opts: { preferWikiTerms?: string[] } = {},
 ): Promise<Gloss[]> {
   const sources = preferGlossesPresentInContent(content, rejectYearGlosses(sourceGlosses))
-  // Wikipedia entity glosses: people / venues / iconic events — quiet, helpful, not brand noise.
-  // Skip terms already covered by curated source glosses (those open the press cite).
+  // Partners / houses → Wikipedia. Collab titles / drops / outlets → curated article cites.
+  // Don’t exclude partner names just because a longer “Converse x …” title cite exists.
+  const excludeForWiki = sources
+    .map((g) => g.term)
+    .filter((term) => {
+      // Full collab titles stay excluded as wiki candidates; bare partner names must not.
+      if (/^converse\s*[x×]/i.test(term)) return true
+      if (sources.some((s) => s.matchMode === 'exact' && s.term === term && /chuck|star|ten|program|turbodrk|ghosting|weapon|swooshed|non-skid|collab|play|red|by you/i.test(term))) {
+        return true
+      }
+      // Outlet names are cite glosses, not wiki
+      if (/^(gq|forbes|hypebeast|highsnobiety|complex|vogue|wwd|dazed|surface|bof|ad age)/i.test(term)) {
+        return true
+      }
+      return false
+    })
+
   const wiki = await attachWikipediaGlossesForProse(content, {
-    excludeTerms: sources.map((g) => g.term),
-    max: 3,
+    excludeTerms: excludeForWiki,
+    preferTerms: opts.preferWikiTerms,
+    max: 4,
   })
   const seen = new Set(sources.map((g) => g.term.toLowerCase()))
   const merged = [...sources]
   for (const g of wiki) {
     const key = g.term.toLowerCase()
     if (seen.has(key)) continue
+    // Don’t let a wiki gloss steal a curated exact title of the same string
+    if (sources.some((s) => s.term.toLowerCase() === key && s.source === 'curated')) continue
     seen.add(key)
     merged.push(g)
   }
@@ -1592,7 +1612,9 @@ export async function handleChuckEChat(
             role: 'assistant',
             content,
             citations: heritage.citations,
-            glosses: await finalizeChuckEGlosses(content, heritage.glosses),
+            glosses: await finalizeChuckEGlosses(content, heritage.glosses, {
+              preferWikiTerms: wikiPartnerSeedsFromMoments(moments),
+            }),
             intent: 'heritage',
           },
         }
@@ -1659,10 +1681,14 @@ export async function handleChuckEChat(
             role: 'assistant',
             content,
             citations,
-            glosses: await finalizeChuckEGlosses(content, [
-              ...glossesFromBrandMoments(moments),
-              ...glossesFromCitations(citations, content),
-            ]),
+            glosses: await finalizeChuckEGlosses(
+              content,
+              [
+                ...glossesFromBrandMoments(moments),
+                ...glossesFromCitations(citations, content),
+              ],
+              { preferWikiTerms: wikiPartnerSeedsFromMoments(moments) },
+            ),
             intent,
           },
         }
@@ -1670,12 +1696,10 @@ export async function handleChuckEChat(
     }
 
     // Offline / research miss — pack-only fallback (may soft-fill)
-    const formatted = formatHeritageReply(
-      moments.length
-        ? moments
-        : matchHeritageMoments(lastUser.content, brandId, 5, { softFallback: true }),
-      { query: lastUser.content },
-    )
+    const fallbackMoments = moments.length
+      ? moments
+      : matchHeritageMoments(lastUser.content, brandId, 5, { softFallback: true })
+    const formatted = formatHeritageReply(fallbackMoments, { query: lastUser.content })
     const content = coerceChatAwayFromStory(formatted.content)
     await onDelta?.(content)
     const citations = await mergeChatCitations(formatted.citations, {
@@ -1691,10 +1715,11 @@ export async function handleChuckEChat(
         role: 'assistant',
         content,
         citations,
-        glosses: await finalizeChuckEGlosses(content, [
-          ...formatted.glosses,
-          ...glossesFromCitations(citations, content),
-        ]),
+        glosses: await finalizeChuckEGlosses(
+          content,
+          [...formatted.glosses, ...glossesFromCitations(citations, content)],
+          { preferWikiTerms: wikiPartnerSeedsFromMoments(fallbackMoments) },
+        ),
         intent,
       },
     }
@@ -1763,6 +1788,7 @@ export async function handleChuckEChat(
       ...(replyLooksHeritage ? grounded.glosses : []),
       ...glossesFromCitations(citations, content),
     ],
+    { preferWikiTerms: wikiPartnerSeedsFromMoments(groundedMoments) },
   )
 
   return {

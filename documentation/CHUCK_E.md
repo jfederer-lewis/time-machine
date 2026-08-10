@@ -154,13 +154,15 @@ When the chat mentions music, scenes, collabs, humanitarian / (PRODUCT) RED, fil
 
 | Role | Anchors on | Popover is | Example |
 |------|------------|------------|---------|
-| Citation / provenance | Beat **title** (+ short aliases), people/houses, named drops, outlet names in the reply | One clear sentence → quiet source link (article / History) | **Swooshed** · **Virgil Abloh** · **The Ten** · **GQ** → Forbes / GQ / History |
-| Entity (Wikipedia) | People, venues, iconic events, obscure brands/houses **not** already covered by a cite gloss | Short Wikipedia summary — quiet help, not noise | **Chuck Taylor** when no pack cite is attached |
+| Citation / provenance | Collab / beat **title**, named drops, outlet names in the reply | One clear sentence → press / History link | **The Ten** · **One Star** · **GQ** → Forbes / GQ article |
+| Entity (Wikipedia) | Collab **partners / houses** (and other people, venues, obscure brands) | Short Wikipedia summary | **Virgil Abloh** · **Tyler, the Creator** · **GOLF le FLEUR** · **Maison Margiela** |
 | Publisher establishment | Lesser-known outlets with no article cite this turn | Who they are + homepage | **Footwear News** → trade title homepage |
 
-Skip household brands (Nike, Converse, …), countries, bare product words, and years — prefer silence over underlines people already understand. Obscure fashion / streetwear houses named in the reply may gloss. Person names resolve via Wikipedia summary + OpenSearch when the exact title misses — but curated cite glosses win when the pack already backs that name. Cap entity glosses per reply so the text stays calm.
+**Do not conflate:** the artist/house gets Wikipedia; the shoe/collab drop gets the article. Example: **Virgil Abloh** → Wikipedia; **The Ten** / **Converse x Virgil Abloh** → Forbes.
 
-**In-text sources:** prefer dotted citation glosses on named people, houses, releases, and press outlets so desks can open the source from the sentence — Read more stays the inventory, not the only path to the URL.
+Skip household brands (Nike, Converse, …), countries, bare product words, and years — prefer silence over underlines people already understand. Cap entity glosses per reply so the text stays calm.
+
+**In-text sources:** dotted citation glosses on drops / outlets open the press URL; dotted Wikipedia glosses on partners explain who they are. Read more stays the inventory.
 
 **Collab / culture theme spreads:** prefer **~4** landmark beats with dedicated press (Abloh / The Ten, Tyler / GOLF le FLEUR*, Margiela, CDG, Cobain One Star, Owens…) over a long list of History-only stubs. Soft-bold lane labels are OK; `###` is not. Offline pack replies use the same handful + “ask by name” closer.
 
@@ -368,6 +370,7 @@ Runtime: wire stable framing into product packs before treating it as auto-shipp
 | 2026-08-10 | Converse-affiliated “who is X?” / “what is Y?” → include brand involvement (e.g. Bird → Weapon), never invent ties | Desks asking about ambassadors / collabs / History figures need Converse framing, not generic bios |
 | 2026-08-10 | Collab/culture themes: ~4 press-led landmark beats (Abloh, Tyler/Golf…); soft lane labels; entity gloss anchors on people/houses | History stubs were crowding out dedicated cites; desks prefer depth + glosses over long thin lists |
 | 2026-08-10 | Citation glosses also on people, releases, and outlet names in reply text → article URL | Desks should open the source from the sentence, not only Read more |
+| 2026-08-10 | Split gloss roles: partner/house → Wikipedia; collab title / drop / outlet → article | Avoid both “Virgil Abloh” and “The Ten” opening the same Forbes cite |
 
 ---
 

@@ -176,8 +176,9 @@ export function ChuckEWidget({ brand }: ChuckEWidgetProps) {
     const el = inputRef.current
     if (!el) return
     el.style.height = 'auto'
+    const min = 62 // ~2 lines — matches empty placeholder without inner scroll
     const max = 160 // ~10rem — grow with text, then scroll
-    el.style.height = `${Math.min(Math.max(el.scrollHeight, 40), max)}px`
+    el.style.height = `${Math.min(Math.max(el.scrollHeight, min), max)}px`
   }, [])
 
   useEffect(() => {
@@ -351,7 +352,7 @@ export function ChuckEWidget({ brand }: ChuckEWidgetProps) {
                 <textarea
                   ref={inputRef}
                   className="chuck-e-composer__input"
-                  rows={1}
+                  rows={2}
                   placeholder={
                     listening
                       ? 'Listening… pause when finished'

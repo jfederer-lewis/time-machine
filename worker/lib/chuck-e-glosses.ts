@@ -145,7 +145,7 @@ function citationProvenanceBody(c: Citation): string {
   return cleanGlossSnippet(title || pub || 'Sourced press coverage.', GLOSS_BODY_MAX)
 }
 
-/** Beat title + short aliases so “Virgil Abloh” still hits when Gemini drops “Converse x”. */
+/** Beat title for citation gloss — keep the collab/product name, not a bare person alias. */
 function titleGlossAnchors(title: string): string[] {
   const t = title.replace(/\s+/g, ' ').trim()
   if (!t) return []
@@ -154,18 +154,46 @@ function titleGlossAnchors(title: string): string[] {
     .replace(/^converse\s*[x×]\s*/i, '')
     .replace(/\s*[—–-]\s*the\s+ten\s*$/i, '')
     .trim()
-  if (stripped && stripped.toLowerCase() !== t.toLowerCase() && stripped.length >= 4) {
+  // “Converse x Virgil Abloh” → don’t also cite-gloss bare “Virgil Abloh” (that’s Wikipedia).
+  if (
+    stripped &&
+    stripped.toLowerCase() !== t.toLowerCase() &&
+    stripped.length >= 4 &&
+    !looksLikeCollabPartnerName(stripped)
+  ) {
     out.push(stripped)
   }
   return out
 }
 
+/** True when a phrase is the partner / house, not the shoe or drop name. */
+export function looksLikeCollabPartnerName(term: string): boolean {
+  const t = term.replace(/\s+/g, ' ').trim()
+  if (!t || t.length < 3) return false
+  if (
+    /\b(chuck|star|weapon|ten|program|collab|all\s*star|purcell|non[\s-]?skid|swooshed|turbodrk|turbowpn|ghosting|1908|by\s+you|one\s+star|jack\s+purcell|pro\s+bb|pro\s+leather|pro\s+stars?)\b/i.test(
+      t,
+    )
+  ) {
+    return false
+  }
+  if (/^(maison|comme(\s+des)?|golf(\s+le)?|off[\s-]?white|vaquera|cdg)\b/i.test(t)) return true
+  const words = t.split(/\s+/).filter(Boolean)
+  if (words.length >= 2 && words.length <= 5) {
+    if (/^(the|a|an)\b/i.test(t) && !/,/.test(t)) return false
+    // “Tyler, the Creator” / “Virgil Abloh” / “Rick Owens”
+    if (words.every((w) => /^[A-Z]/.test(w) || /^(de|van|von|da|di|la|le|of|y|the)$/i.test(w))) {
+      return true
+    }
+  }
+  return false
+}
+
 /**
- * People / houses named in a beat — secondary gloss anchors so “Virgil Abloh” /
- * “GOLF le FLEUR*” underline even when the reply doesn’t use the exact beat title.
+ * Collab partners / houses → Wikipedia entity glosses (who / what they are).
+ * Not citation anchors — the collab article attaches to the drop / title instead.
  */
-function entityGlossAnchors(m: BrandMoment): string[] {
-  const hay = `${m.title} ${m.synopsis}`
+export function wikiPartnerSeedsFromMoments(moments: BrandMoment[]): string[] {
   const out: string[] = []
   const push = (term: string) => {
     const t = term.replace(/\s+/g, ' ').trim()
@@ -174,40 +202,35 @@ function entityGlossAnchors(m: BrandMoment): string[] {
     out.push(t)
   }
 
-  if (/virgil\s+abloh|abloh/i.test(hay)) {
-    push('Virgil Abloh')
-    if (/off[\s-]?white/i.test(hay)) push('Off-White')
+  for (const m of moments) {
+    const hay = `${m.title} ${m.synopsis}`
+    if (/virgil\s+abloh|abloh/i.test(hay)) {
+      push('Virgil Abloh')
+      if (/off[\s-]?white/i.test(hay)) push('Off-White')
+    }
+    if (/tyler|golf\s+le\s+fleur|le\s*fleur|1908\s+program/i.test(hay)) {
+      push('Tyler, the Creator')
+      push('GOLF le FLEUR')
+    }
+    if (/margiela|maison\s+martin\s+margiela/i.test(hay)) push('Maison Margiela')
+    if (/comme\s+des\s+gar|cdg\s+play|play\s+comme/i.test(hay)) push('Comme des Garçons')
+    if (/rick\s+owens/i.test(hay)) push('Rick Owens')
+    if (/kurt\s+cobain|cobain/i.test(hay)) push('Kurt Cobain')
+    if (/billie\s+eilish|eilish/i.test(hay)) push('Billie Eilish')
+    if (/john\s+richmond/i.test(hay)) push('John Richmond')
+    if (/john\s+varvatos/i.test(hay)) push('John Varvatos')
+    if (/vaquera/i.test(hay)) push('Vaquera')
+    if (/larry\s+bird/i.test(hay)) push('Larry Bird')
+    if (/magic\s+johnson/i.test(hay)) push('Magic Johnson')
+    if (/chuck\s+taylor/i.test(hay) && !/all\s+star/i.test(m.title)) push('Chuck Taylor')
+    if (/\bthe\s+simpsons\b/i.test(hay)) push('The Simpsons')
   }
-  if (/tyler|golf\s+le\s+fleur|le\s*fleur|1908\s+program/i.test(hay)) {
-    push('Tyler, the Creator')
-    push('Tyler the Creator')
-    push('GOLF le FLEUR')
-    push('Golf Le Fleur')
-  }
-  if (/margiela|maison\s+martin\s+margiela/i.test(hay)) {
-    push('Maison Margiela')
-    push('Maison Martin Margiela')
-  }
-  if (/comme\s+des\s+gar|cdg\s+play|play\s+comme/i.test(hay)) {
-    push('Comme des Garçons')
-    push('CDG PLAY')
-  }
-  if (/rick\s+owens/i.test(hay)) push('Rick Owens')
-  if (/kurt\s+cobain|cobain/i.test(hay)) push('Kurt Cobain')
-  if (/billie\s+eilish|eilish/i.test(hay)) push('Billie Eilish')
-  if (/john\s+richmond/i.test(hay)) push('John Richmond')
-  if (/john\s+varvatos/i.test(hay)) push('John Varvatos')
-  if (/vaquera/i.test(hay)) push('Vaquera')
-  if (/larry\s+bird/i.test(hay)) push('Larry Bird')
-  if (/magic\s+johnson/i.test(hay)) push('Magic Johnson')
-  if (/chuck\s+taylor/i.test(hay) && !/all\s+star/i.test(m.title)) push('Chuck Taylor')
-
   return out
 }
 
 /**
- * Release / silhouette phrases — dotted underlines that open the beat’s source.
- * Exact match so short tokens don’t steal unrelated sentences.
+ * Release / silhouette / drop phrases — dotted underlines that open the collab article.
+ * Exact match. Partner / house names are intentionally omitted (Wikipedia instead).
  */
 function releasePhraseAnchors(m: BrandMoment): string[] {
   const hay = `${m.title} ${m.synopsis}`
@@ -225,7 +248,7 @@ function releasePhraseAnchors(m: BrandMoment): string[] {
     [/\bturbodrk\b/i, 'TURBODRK'],
     [/\bturbowpn\b/i, 'TURBOWPN'],
     [/\b1908\s+program\b/i, '1908 Program'],
-    [/\bgolf\s+le\s+fleur\*?\b/i, 'GOLF le FLEUR'],
+    [/\bgolf\s+le\s+fleur\*?\s+one\s+star\b/i, 'GOLF le FLEUR* One Star'],
     [/\bone\s+star\b/i, 'One Star'],
     [/\bnon[\s-]?skid\b/i, 'Non-Skid'],
     [/\bswooshed\b/i, 'Swooshed'],
@@ -234,10 +257,10 @@ function releasePhraseAnchors(m: BrandMoment): string[] {
     [/\bpro\s+stars?\b/i, 'Pro Stars'],
     [/\bpro\s+leather\b/i, 'Pro Leather'],
     [/\bjack\s+purcell\b/i, 'Jack Purcell'],
+    [/\bcdg\s+play\b|play\s+comme/i, 'CDG PLAY'],
     [/\b\(product\)\s*red\b|product\s+red|hund\(red\)/i, '(PRODUCT) RED'],
     [/\bfirst fashion collab\b/i, 'First fashion collab'],
     [/\bbillie\s+by\s+you\b|\bby\s+you\b/i, 'By You'],
-    [/\bthe\s+simpsons\b/i, 'The Simpsons'],
     [/\bstranger\s+things\b/i, 'Stranger Things'],
   ]
 
@@ -250,9 +273,9 @@ function releasePhraseAnchors(m: BrandMoment): string[] {
 /**
  * Source / provenance glosses for Chuck-E.
  *
- * - Citation gloss → beat title (+ short aliases)
- * - Entity / release anchors → people, houses, named drops (same cite body + URL)
- * - Publisher establishment → lesser-known outlets when no article cite this turn
+ * - Citation gloss → beat title (+ product aliases) and named drops → article URL
+ * - Partner / house names are NOT citation glosses — Wikipedia covers those
+ * - Publisher in prose → article cite when we have one this turn
  */
 export function glossesFromBrandMoments(moments: BrandMoment[]): Gloss[] {
   const glosses: Gloss[] = []
@@ -280,17 +303,6 @@ export function glossesFromBrandMoments(moments: BrandMoment[]): Gloss[] {
         source: 'curated',
         sourceLabel,
         matchMode: 'exact',
-      })
-    }
-
-    for (const term of entityGlossAnchors(m)) {
-      push({
-        term,
-        gloss: body,
-        url: m.citation.url,
-        source: 'curated',
-        sourceLabel,
-        // Default — surname / short form can still underline
       })
     }
 

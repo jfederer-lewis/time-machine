@@ -469,7 +469,7 @@ export function isYearLikeTerm(term: string): boolean {
  */
 export async function attachWikipediaGlossesForProse(
   prose: string,
-  opts: { excludeTerms?: string[]; max?: number } = {},
+  opts: { excludeTerms?: string[]; max?: number; preferTerms?: string[] } = {},
 ): Promise<Gloss[]> {
   const text = String(prose || '').trim()
   if (!text) return []
@@ -497,11 +497,25 @@ export async function attachWikipediaGlossesForProse(
     citations: [],
   }
 
-  // Prefer person-shaped candidates first so familiar desk names aren't crowded out by phrases
-  const candidates = collectCandidates(scanWindow, stub)
+  const preferred: GlossCandidate[] = []
+  const seenPref = new Set<string>()
+  for (const raw of opts.preferTerms || []) {
+    const term = String(raw || '').replace(/\s+/g, ' ').trim()
+    const key = normalizeGlossKey(term)
+    if (!term || !key || excluded.has(key) || seenPref.has(key)) continue
+    if (!termAppearsIn(plain, term)) continue
+    seenPref.add(key)
+    preferred.push({ term, wikipediaTitle: term })
+  }
+
+  // Prefer seeded collab partners first, then person-shaped extract from prose
+  const extracted = collectCandidates(scanWindow, stub)
     .filter((c) => !isYearLikeTerm(c.term))
     .filter((c) => !excluded.has(normalizeGlossKey(c.term)))
+    .filter((c) => !seenPref.has(normalizeGlossKey(c.term)))
     .sort((a, b) => Number(looksLikePersonName(b.term)) - Number(looksLikePersonName(a.term)))
+
+  const candidates = [...preferred, ...extracted]
 
   const resolved: Gloss[] = []
   for (const candidate of candidates) {
