@@ -939,6 +939,23 @@ a {
   margin: 0;
 }
 
+.chuck-e-msg__cursor {
+  display: inline-block;
+  width: 0.45em;
+  height: 1em;
+  margin-left: 0.08em;
+  vertical-align: text-bottom;
+  background: currentColor;
+  opacity: 0.55;
+  animation: chuck-e-cursor-blink 1s steps(1) infinite;
+}
+
+@keyframes chuck-e-cursor-blink {
+  50% {
+    opacity: 0;
+  }
+}
+
 .chuck-e-error {
   margin: 0;
   font-size: 0.82rem;

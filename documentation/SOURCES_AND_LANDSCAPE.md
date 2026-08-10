@@ -3,7 +3,7 @@
 > Companion to `VISION.md`, `PIPELINE.md`, and `EDITORIAL_SCHEMA.md`. Agents must follow the citation rules here.  
 > **Canonical host lists:** `shared/source-registry.ts` (`CITATION_ALLOWLIST` / `CITATION_BLOCKLIST`).  
 > Tables below summarise intent; if a host is missing from the registry, it is **not** allowlisted yet.  
-> **Last updated:** 2026-08-07 (basketball: Weapon Highsnobiety + All Star Pro BB Forbes)  
+> **Last updated:** 2026-08-10 (block LinkedIn; Perplexity claim search uses press-first domains)  
 > **Visual note:** Existing “on this day” products are functional references only — **do not copy their UI.**
 
 ---
@@ -88,6 +88,7 @@ Registered in `CITATION_BLOCKLIST` (discovery-only or blocked):
 - onthisday.com  
 - history.com  
 - reddit.com / old.reddit.com  
+- linkedin.com  
 
 Also never: AI chat answers as bibliographic host, unsourced social, SEO farms, forum / UGC dumps; Gemini / Perplexity as the Source **host** (they may retrieve).
 
@@ -251,3 +252,4 @@ UI shows the full Harvard string + URL link — not a compact `open hostname →
 | 2026-08-07 | Register si.com, vergemagazine.co.uk, highxtar.com; Billie Eilish By You → dedicated SI / Verge / HIGHXTAR | Collab press over History-only + wrong Wikipedia “Billie” gloss |
 | 2026-08-07 | Tyler / GOLF le FLEUR* → GQ + British Vogue + Highsnobiety (1908 Program) | Dedicated partnership coverage already on allowlisted hosts |
 | 2026-08-07 | Chuck-E basketball bookshelf: Highsnobiety Weapon history + Forbes All Star Pro BB (2019) | Court / Weapon / performance-return colour already on allowlisted hosts |
+| 2026-08-10 | Block linkedin.com; Perplexity claim / date search uses press-first domain profile (cap 20) | UGC out; cite upgrade + Chuck-E live Sources hit papers / culture press not museum-only slice |

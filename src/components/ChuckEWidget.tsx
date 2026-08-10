@@ -69,6 +69,7 @@ export function ChuckEWidget({ brand }: ChuckEWidgetProps) {
   const {
     messages,
     loading,
+    streamStatus,
     error,
     cliffNotes,
     cliffLoading,
@@ -118,7 +119,7 @@ export function ChuckEWidget({ brand }: ChuckEWidgetProps) {
     if (!open) return
     const el = listRef.current
     if (el) el.scrollTop = el.scrollHeight
-  }, [messages, open, cliffNotes, loading])
+  }, [messages, open, cliffNotes, loading, streamStatus])
 
   useEffect(() => {
     if (open) {
@@ -165,6 +166,12 @@ export function ChuckEWidget({ brand }: ChuckEWidgetProps) {
 
   const showPromptHints = !loading && !messages.some((m) => m.role === 'user')
   const sizeCopy = sizeControlCopy(size)
+  const statusLabel =
+    streamStatus === 'writing'
+      ? 'Writing'
+      : streamStatus === 'researching'
+        ? 'Looking that up'
+        : 'Looking that up'
 
   const sendHint = (text: string) => {
     abortVoice()
@@ -247,7 +254,11 @@ export function ChuckEWidget({ brand }: ChuckEWidgetProps) {
 
           <div className="chuck-e-panel__body" ref={listRef}>
             {messages.map((m, i) => (
-              <ChuckEMessage key={`${m.role}-${i}-${m.content.slice(0, 24)}`} message={m} />
+              <ChuckEMessage
+                key={`${m.role}-${i}${m.isDisclosure ? '-disclosure' : ''}`}
+                message={m}
+                statusLabel={m.streaming ? statusLabel : undefined}
+              />
             ))}
             {showPromptHints ? (
               <div className="chuck-e-hints" aria-label={CHUCK_E_KNOBS.promptHintsLabel}>
@@ -265,12 +276,6 @@ export function ChuckEWidget({ brand }: ChuckEWidgetProps) {
                     </li>
                   ))}
                 </ul>
-              </div>
-            ) : null}
-            {loading ? (
-              <div className="chuck-e-msg chuck-e-msg--assistant chuck-e-msg--pending">
-                <p className="chuck-e-msg__label">{CHUCK_E_KNOBS.agentName}</p>
-                <LoadingIndicator compact label="Looking that up" />
               </div>
             ) : null}
             {cliffLoading ? (

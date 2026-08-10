@@ -18,6 +18,8 @@ import { calendarDateUtc, isFutureQueryDate } from '../../shared/date-bounds'
 import { citationTier, parseQueryDate, toDisplayDate, isCitationAllowed, isCitationBlocked, findRegistryEntry } from '../../shared/source-registry'
 import { assembleDateQuery, type Env } from './assemble'
 import { chatWithChuckE, enrichChuckEDateSignificance, researchChuckETopic, type ClaimCandidate } from '../providers/gemini'
+import { searchAllowlistedCiteForClaim } from '../providers/archives'
+import { claimCiteRelevance } from './upgrade-claim'
 import { isLandmarkDefiningEvent } from './interest'
 import {
   buildDisclosureMessage,
@@ -52,6 +54,8 @@ export interface ChuckEChatRequest {
   messages: ChuckEChatMessage[]
   sessionId?: string
   brandId?: string
+  /** When true, Worker responds with SSE (`status` / `delta` / `done`). */
+  stream?: boolean
 }
 
 export interface ChuckEChatResponse {
@@ -62,6 +66,21 @@ export interface ChuckEChatResponse {
   /** When date intent hit the pipeline, include the spotlight event. */
   spotlight?: CulturalEvent | null
 }
+
+/** Live typing / phase updates for the SSE chat path. */
+export type ChuckEStreamStatus = 'researching' | 'writing'
+
+export type ChuckEStreamSink = {
+  status?: (status: ChuckEStreamStatus) => void | Promise<void>
+  /** Incremental visible reply text (Gemini tokens, or one-shot for pack replies). */
+  delta?: (text: string) => void | Promise<void>
+}
+
+export type ChuckEStreamEvent =
+  | { type: 'status'; status: ChuckEStreamStatus }
+  | { type: 'delta'; text: string }
+  | { type: 'done'; sessionId: string; intent: ChuckEIntent; message: ChuckEChatMessage }
+  | { type: 'error'; error: string }
 
 export interface ChuckECliffNotesRequest {
   messages: ChuckEChatMessage[]
@@ -737,6 +756,110 @@ function citationsFromGroundedSources(
   return out
 }
 
+/**
+ * Live allowlisted press cites via Perplexity when pack + Gemini grounding left Sources empty.
+ * Perplexity is never the public citation host — only discovery.
+ */
+async function citationsFromPerplexityClaimSearch(opts: {
+  apiKey?: string
+  userQuestion: string
+  replyContent: string
+  max?: number
+}): Promise<Citation[]> {
+  const { apiKey, userQuestion, replyContent, max = 3 } = opts
+  if (!apiKey) return []
+
+  const yearMatch = userQuestion.match(/\b(19\d{2}|20[0-2]\d)\b/)
+  const year = yearMatch ? Number(yearMatch[1]) : new Date().getUTCFullYear()
+  const title = userQuestion.trim().slice(0, 160) || 'Converse cultural claim'
+  const synopsis = replyContent.trim().slice(0, 400)
+
+  const hits = await searchAllowlistedCiteForClaim({
+    apiKey,
+    year,
+    title,
+    synopsis,
+    domainProfile: 'press',
+  })
+  if (!hits.length) return []
+
+  const claimText = `${year} ${title} ${synopsis}`
+  const scored = hits
+    .filter((h) => {
+      if (!h.url || isCitationBlocked(h.url) || !isCitationAllowed(h.url)) return false
+      const tier = citationTier(h.url)
+      return tier === 'A' || tier === 'B'
+    })
+    .map((h) => ({
+      hit: h,
+      relevance: claimCiteRelevance(claimText, {
+        title: h.title,
+        snippet: h.snippet,
+        url: h.url,
+      }),
+      tier: citationTier(h.url) === 'A' ? 2 : 1,
+    }))
+    .filter((row) => row.relevance > 0)
+    .sort((a, b) => {
+      if (b.relevance !== a.relevance) return b.relevance - a.relevance
+      return b.tier - a.tier
+    })
+
+  // If relevance scoring wipes everything (short / abstract asks), keep top Tier A/B hits.
+  const pool = scored.length
+    ? scored.map((s) => s.hit)
+    : hits.filter((h) => {
+        if (!h.url || isCitationBlocked(h.url) || !isCitationAllowed(h.url)) return false
+        const tier = citationTier(h.url)
+        return tier === 'A' || tier === 'B'
+      })
+
+  const out: Citation[] = []
+  const seen = new Set<string>()
+  const accessedAt = new Date().toISOString().slice(0, 10)
+  for (const h of pool) {
+    const url = h.url.trim()
+    if (seen.has(url.toLowerCase())) continue
+    seen.add(url.toLowerCase())
+    const entry = findRegistryEntry(url)
+    out.push(
+      withHarvard({
+        title: h.title || entry?.label || 'Source',
+        url,
+        publisher: entry?.label || h.publisher || 'Source',
+        accessedAt,
+        sourceQuality: 'trusted-source-snippet',
+        evidenceKind: 'paraphrase',
+        reference:
+          h.snippet?.trim() ||
+          h.title ||
+          'Allowlisted press source from live search for the Chuck-E claim.',
+        provider: 'perplexity-search',
+        isExactQuote: false,
+        tier: citationTier(url),
+      }),
+    )
+    if (out.length >= max) break
+  }
+  return out
+}
+
+/** Fill empty Sources via Perplexity press search when curated + Gemini cites are missing. */
+async function withLivePressCitesIfEmpty(
+  citations: Citation[],
+  opts: { apiKey?: string; userQuestion: string; replyContent: string; intent?: ChuckEIntent },
+): Promise<Citation[]> {
+  // Product facts stay pack-only — never invent launch specs from live web search.
+  if (opts.intent === 'product') return citations
+  if (citations.length > 0 || !opts.apiKey) return citations
+  const live = await citationsFromPerplexityClaimSearch({
+    apiKey: opts.apiKey,
+    userQuestion: opts.userQuestion,
+    replyContent: opts.replyContent,
+  })
+  return live.length ? dedupeCitationsByUrl([...citations, ...live]) : citations
+}
+
 function buildSystemContext(brandId: string): string {
   const brand = getBrand(brandId)
   const pack = getProductPack()
@@ -793,10 +916,13 @@ export function openingPayload(sessionId?: string): ChuckEChatResponse {
 export async function handleChuckEChat(
   body: ChuckEChatRequest,
   env: Env,
+  stream?: ChuckEStreamSink,
 ): Promise<ChuckEChatResponse> {
   const brandId = body.brandId || env.BRAND_ID || 'converse'
   const sessionId = body.sessionId || newSessionId()
   const messages = ensureDisclosure(body.messages || [])
+  const onDelta = stream?.delta
+  const emitStatus = stream?.status
 
   const lastUser = [...messages].reverse().find((m) => m.role === 'user')
   if (!lastUser?.content?.trim()) {
@@ -813,17 +939,20 @@ export async function handleChuckEChat(
     const date = extractDateFromMessage(lastUser.content)
     if (date) {
       if (isFutureQueryDate(date, calendarDateUtc())) {
+        const content =
+          'That day hasn’t happened yet — this Time Machine looks at settled dates. Try a past day, or ask about Converse heritage.'
+        await onDelta?.(content)
         return {
           sessionId,
           message: {
             role: 'assistant',
-            content:
-              'That day hasn’t happened yet — this Time Machine looks at settled dates. Try a past day, or ask about Converse heritage.',
+            content,
           },
           intent: 'date',
         }
       }
       try {
+        await emitStatus?.('researching')
         const result = await assembleDateQuery(date, env, {
           brandId,
           // Calendar-day fan-out so universe anchors (e.g. Chuck’s birthday) + cultural news can compete
@@ -859,6 +988,7 @@ export async function handleChuckEChat(
 
           // Converse-framed date asks: lead with History beat + Gemini-researched colour on that day only
           if (allowConverseTie && preferBrand && brandSpotlight && env.GEMINI_API_KEY) {
+            await emitStatus?.('writing')
             const enriched = await enrichChuckEDateSignificance({
               apiKey: env.GEMINI_API_KEY,
               queryDate: date,
@@ -869,6 +999,7 @@ export async function handleChuckEChat(
                 synopsis: brandSpotlight.synopsis,
                 whyItMatters: brandSpotlight.whyItMatters,
               },
+              onDelta,
             })
             if (enriched?.content) {
               content = ensureCompleteChatReply(
@@ -920,7 +1051,9 @@ export async function handleChuckEChat(
             }
           }
 
-          const glosses = await finalizeChuckEGlosses(content, sourceGlosses)
+          const finalContent = coerceChatAwayFromStory(content)
+          if (!streamedEnrich) await onDelta?.(finalContent)
+          const glosses = await finalizeChuckEGlosses(finalContent, sourceGlosses)
 
           return {
             sessionId,
@@ -928,7 +1061,7 @@ export async function handleChuckEChat(
             spotlight,
             message: {
               role: 'assistant',
-              content: coerceChatAwayFromStory(content),
+              content: finalContent,
               citations: dedupeCitationsByUrl(citations),
               glosses,
               intent,
@@ -936,13 +1069,15 @@ export async function handleChuckEChat(
           }
         }
 
+        const miss = `No sourced fact on record for ${toDisplayDate(date)} in the Time Machine yet. Try another date, or ask about Converse heritage (1917 Non-Skid, 1922 Chuck Taylor joins, etc.).`
+        await onDelta?.(miss)
         return {
           sessionId,
           intent,
           spotlight: null,
           message: {
             role: 'assistant',
-            content: `No sourced fact on record for ${toDisplayDate(date)} in the Time Machine yet. Try another date, or ask about Converse heritage (1917 Non-Skid, 1922 Chuck Taylor joins, etc.).`,
+            content: miss,
             intent,
           },
         }
@@ -966,6 +1101,7 @@ export async function handleChuckEChat(
         const content = coerceChatAwayFromStory(
           `${formatted.content}\n\nMeanwhile, from the heritage timeline:\n${heritage.content}`,
         )
+        await onDelta?.(content)
         return {
           sessionId,
           intent: 'heritage',
@@ -978,14 +1114,16 @@ export async function handleChuckEChat(
           },
         }
       }
+      const productContent = coerceChatAwayFromStory(formatted.content)
+      await onDelta?.(productContent)
       return {
         sessionId,
         intent,
         message: {
           role: 'assistant',
-          content: coerceChatAwayFromStory(formatted.content),
+          content: productContent,
           citations: formatted.citations,
-          glosses: await finalizeChuckEGlosses(formatted.content, formatted.glosses),
+          glosses: await finalizeChuckEGlosses(productContent, formatted.glosses),
           intent,
         },
       }
@@ -999,6 +1137,7 @@ export async function handleChuckEChat(
     const specificCollab = SPECIFIC_COLLAB_RE.test(lastUser.content)
 
     if (env.GEMINI_API_KEY) {
+      await emitStatus?.('writing')
       const researched = await researchChuckETopic({
         apiKey: env.GEMINI_API_KEY,
         userQuestion: lastUser.content,
@@ -1010,17 +1149,26 @@ export async function handleChuckEChat(
           synopsis: m.synopsis,
           citeUrl: m.citation.url,
         })),
+        onDelta,
       })
       if (researched?.content) {
         const content = ensureCompleteChatReply(
           coerceChatAwayFromStory(researched.content),
         )
-        const citations = dedupeCitationsByUrl([
-          ...moments.map((m) => citationFromBrandMoment(m)),
-          ...citationsFromGroundedSources(researched.groundedSources, {
-            demoteCollabRoundups: specificCollab,
-          }),
-        ])
+        const citations = await withLivePressCitesIfEmpty(
+          dedupeCitationsByUrl([
+            ...moments.map((m) => citationFromBrandMoment(m)),
+            ...citationsFromGroundedSources(researched.groundedSources, {
+              demoteCollabRoundups: specificCollab,
+            }),
+          ]),
+          {
+            apiKey: env.PERPLEXITY_API_KEY,
+            userQuestion: lastUser.content,
+            replyContent: content,
+            intent,
+          },
+        )
         return {
           sessionId,
           intent,
@@ -1046,14 +1194,24 @@ export async function handleChuckEChat(
       { query: lastUser.content },
     )
     const content = coerceChatAwayFromStory(formatted.content)
+    await onDelta?.(content)
+    const citations = await withLivePressCitesIfEmpty(formatted.citations, {
+      apiKey: env.PERPLEXITY_API_KEY,
+      userQuestion: lastUser.content,
+      replyContent: content,
+      intent,
+    })
     return {
       sessionId,
       intent,
       message: {
         role: 'assistant',
         content,
-        citations: formatted.citations,
-        glosses: await finalizeChuckEGlosses(content, formatted.glosses),
+        citations,
+        glosses: await finalizeChuckEGlosses(content, [
+          ...formatted.glosses,
+          ...glossesFromCitations(citations, content),
+        ]),
         intent,
       },
     }
@@ -1063,8 +1221,10 @@ export async function handleChuckEChat(
   const systemContext = buildSystemContext(brandId)
   let reply: string | null = null
   let chatGrounded: ClaimCandidate[] = []
+  let streamedChat = false
 
   if (env.GEMINI_API_KEY) {
+    await emitStatus?.('writing')
     const chat = await chatWithChuckE({
       apiKey: env.GEMINI_API_KEY,
       systemContext,
@@ -1073,10 +1233,12 @@ export async function handleChuckEChat(
         .map((m) => ({ role: m.role, content: m.content })),
       // Web search OK for general / date-nudge turns — not for inventing product specs
       useSearch: intent !== 'product',
+      onDelta,
     })
     if (chat) {
       reply = chat.content
       chatGrounded = chat.groundedSources
+      streamedChat = Boolean(onDelta)
     }
   }
 
@@ -1091,6 +1253,7 @@ export async function handleChuckEChat(
   const content = ensureCompleteChatReply(
     checked.ok ? reply : coerceChatAwayFromStory(reply),
   )
+  if (!streamedChat) await onDelta?.(content)
 
   // Attach Converse History cites for any heritage beats the reply (or query) touches
   const groundedMoments = matchHeritageMoments(`${lastUser.content}\n${content}`, brandId, 4, {
@@ -1099,10 +1262,18 @@ export async function handleChuckEChat(
   const grounded = formatHeritageReply(groundedMoments, { query: lastUser.content })
   const replyLooksHeritage = groundedMoments.length > 0
 
-  const citations = dedupeCitationsByUrl([
-    ...(replyLooksHeritage ? grounded.citations : []),
-    ...citationsFromGroundedSources(chatGrounded),
-  ])
+  const citations = await withLivePressCitesIfEmpty(
+    dedupeCitationsByUrl([
+      ...(replyLooksHeritage ? grounded.citations : []),
+      ...citationsFromGroundedSources(chatGrounded),
+    ]),
+    {
+      apiKey: env.PERPLEXITY_API_KEY,
+      userQuestion: lastUser.content,
+      replyContent: content,
+      intent,
+    },
+  )
   const glosses = await finalizeChuckEGlosses(
     content,
     [

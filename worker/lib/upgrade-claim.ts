@@ -189,6 +189,7 @@ export async function upgradeWikipediaClaim(
     title: event.title,
     synopsis: event.synopsis,
     category: event.category,
+    domainProfile: 'press',
   })
   if (pplxCandidates.length) providersUsed.push('perplexity-search')
 

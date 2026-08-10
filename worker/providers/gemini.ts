@@ -633,7 +633,7 @@ export async function verifyClaimWithGemini(opts: {
 }
 
 /**
- * Chuck-E chat turn — non-streaming, persona-guarded.
+ * Chuck-E chat turn — persona-guarded; optional token streaming via onDelta.
  * Never a public citation host.
  * Product Q&A must stay pack-only (no search). Heritage / general / theme may use
  * Google Search when the supplied pack is thin or off-topic.
@@ -644,8 +644,10 @@ export async function chatWithChuckE(opts: {
   messages: Array<{ role: 'user' | 'assistant'; content: string }>
   /** Web search for heritage / culture colour — off for product specs. */
   useSearch?: boolean
+  /** Incremental visible text (excludes model “thought” parts). */
+  onDelta?: (textDelta: string) => void | Promise<void>
 }): Promise<{ content: string; groundedSources: ClaimCandidate[] } | null> {
-  const { apiKey, systemContext, messages, useSearch = false } = opts
+  const { apiKey, systemContext, messages, useSearch = false, onDelta } = opts
   if (!messages.length) return null
 
   const history = messages
@@ -679,6 +681,7 @@ export async function chatWithChuckE(opts: {
       maxOutputTokens: CHUCK_E_KNOBS.chatMaxOutputTokens,
       json: false,
       useSearch,
+      onDelta,
     })
     const content = text?.trim()
     if (!content) return null
@@ -700,6 +703,7 @@ export async function researchChuckETopic(opts: {
   packBeats?: Array<{ date: string; title: string; synopsis: string; citeUrl?: string }>
   /** When the ask names a house / model, steer search toward dedicated coverage. */
   preferDedicatedCollabCoverage?: boolean
+  onDelta?: (textDelta: string) => void | Promise<void>
 }): Promise<{ content: string; groundedSources: ClaimCandidate[] } | null> {
   const {
     apiKey,
@@ -707,6 +711,7 @@ export async function researchChuckETopic(opts: {
     systemContext,
     packBeats = [],
     preferDedicatedCollabCoverage = false,
+    onDelta,
   } = opts
 
   const beatBlock =
@@ -756,6 +761,7 @@ export async function researchChuckETopic(opts: {
       maxOutputTokens: CHUCK_E_KNOBS.chatMaxOutputTokens,
       json: false,
       useSearch: true,
+      onDelta,
     })
     const content = text?.trim()
     if (!content) return null
@@ -776,8 +782,9 @@ export async function enrichChuckEDateSignificance(opts: {
   displayDate: string
   userQuestion: string
   beat: { title: string; synopsis: string; whyItMatters?: string }
+  onDelta?: (textDelta: string) => void | Promise<void>
 }): Promise<{ content: string; groundedSources: ClaimCandidate[] } | null> {
-  const { apiKey, queryDate, displayDate, userQuestion, beat } = opts
+  const { apiKey, queryDate, displayDate, userQuestion, beat, onDelta } = opts
 
   const prompt = [
     ...CHUCK_E_KNOBS.personaGuardrails,
@@ -813,6 +820,7 @@ export async function enrichChuckEDateSignificance(opts: {
       maxOutputTokens: CHUCK_E_KNOBS.chatMaxOutputTokens,
       json: false,
       useSearch: true,
+      onDelta,
     })
     const content = text?.trim()
     if (!content) return null
@@ -833,6 +841,56 @@ async function generateGeminiText(opts: {
   return text
 }
 
+type GeminiGroundingChunk = { web?: { uri?: string; title?: string } }
+type GeminiPart = { text?: string; thought?: boolean }
+
+function groundedSourcesFromChunks(chunks: GeminiGroundingChunk[] | undefined): ClaimCandidate[] {
+  return (chunks ?? [])
+    .map((chunk) => {
+      const url = chunk.web?.uri?.trim()
+      if (!url) return null
+      return {
+        url,
+        title: chunk.web?.title?.trim() || url,
+      }
+    })
+    .filter((c): c is ClaimCandidate => Boolean(c))
+}
+
+/** Visible reply text only — skip hidden model “thought” parts. */
+function visibleTextFromParts(parts: GeminiPart[] | undefined): string {
+  return (parts ?? [])
+    .filter((p) => Boolean(p.text) && !p.thought)
+    .map((p) => p.text || '')
+    .join('')
+}
+
+function buildGeminiRequestBody(opts: {
+  prompt: string
+  temperature: number
+  maxOutputTokens: number
+  json?: boolean
+  useSearch?: boolean
+}): Record<string, unknown> {
+  const { prompt, temperature, maxOutputTokens, json = false, useSearch = true } = opts
+  const body: Record<string, unknown> = {
+    contents: [{ role: 'user', parts: [{ text: prompt }] }],
+    generationConfig: {
+      temperature,
+      maxOutputTokens,
+      ...(json ? { responseMimeType: 'application/json' } : {}),
+    },
+  }
+  if (useSearch) {
+    body.tools = [{ google_search: {} }]
+  }
+  return body
+}
+
+/**
+ * Stream Gemini tokens when onDelta is set; otherwise one-shot generateContent.
+ * JSON mode stays non-streaming (callers need a complete object).
+ */
 async function generateGeminiGrounded(opts: {
   apiKey: string
   prompt: string
@@ -840,31 +898,42 @@ async function generateGeminiGrounded(opts: {
   maxOutputTokens: number
   json?: boolean
   useSearch?: boolean
+  onDelta?: (textDelta: string) => void | Promise<void>
 }): Promise<{ text: string; groundedSources: ClaimCandidate[] }> {
-  const { apiKey, prompt, temperature, maxOutputTokens, json = false, useSearch = true } = opts
+  const {
+    apiKey,
+    prompt,
+    temperature,
+    maxOutputTokens,
+    json = false,
+    useSearch = true,
+    onDelta,
+  } = opts
+
+  if (onDelta && !json) {
+    return streamGeminiGrounded({
+      apiKey,
+      prompt,
+      temperature,
+      maxOutputTokens,
+      useSearch,
+      onDelta,
+    })
+  }
+
   let lastError = ''
 
   for (const model of GEMINI_MODELS) {
     const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`
-    const body: Record<string, unknown> = {
-      contents: [{ role: 'user', parts: [{ text: prompt }] }],
-      generationConfig: {
-        temperature,
-        maxOutputTokens,
-        ...(json ? { responseMimeType: 'application/json' } : {}),
-      },
-    }
-    if (useSearch) {
-      body.tools = [{ google_search: {} }]
-    }
-
     const res = await fetch(endpoint, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         'x-goog-api-key': apiKey,
       },
-      body: JSON.stringify(body),
+      body: JSON.stringify(
+        buildGeminiRequestBody({ prompt, temperature, maxOutputTokens, json, useSearch }),
+      ),
     })
 
     if (!res.ok) {
@@ -874,26 +943,16 @@ async function generateGeminiGrounded(opts: {
 
     const data = (await res.json()) as {
       candidates?: Array<{
-        content?: { parts?: Array<{ text?: string }> }
-        groundingMetadata?: {
-          groundingChunks?: Array<{ web?: { uri?: string; title?: string } }>
-        }
+        content?: { parts?: GeminiPart[] }
+        groundingMetadata?: { groundingChunks?: GeminiGroundingChunk[] }
       }>
     }
 
     const candidate = data.candidates?.[0]
-    const parts = candidate?.content?.parts ?? []
-    const text = parts.map((p) => p.text || '').join('').trim()
-    const groundedSources: ClaimCandidate[] = (candidate?.groundingMetadata?.groundingChunks ?? [])
-      .map((chunk) => {
-        const url = chunk.web?.uri?.trim()
-        if (!url) return null
-        return {
-          url,
-          title: chunk.web?.title?.trim() || url,
-        }
-      })
-      .filter((c): c is ClaimCandidate => Boolean(c))
+    const text = visibleTextFromParts(candidate?.content?.parts).trim()
+    const groundedSources = groundedSourcesFromChunks(
+      candidate?.groundingMetadata?.groundingChunks,
+    )
 
     if (text || groundedSources.length) {
       return { text, groundedSources }
@@ -901,6 +960,96 @@ async function generateGeminiGrounded(opts: {
   }
 
   throw new Error(lastError || 'Empty Gemini response')
+}
+
+/** SSE streamGenerateContent — yields visible text deltas; collects grounding as it arrives. */
+async function streamGeminiGrounded(opts: {
+  apiKey: string
+  prompt: string
+  temperature: number
+  maxOutputTokens: number
+  useSearch?: boolean
+  onDelta: (textDelta: string) => void | Promise<void>
+}): Promise<{ text: string; groundedSources: ClaimCandidate[] }> {
+  const { apiKey, prompt, temperature, maxOutputTokens, useSearch = true, onDelta } = opts
+  let lastError = ''
+
+  for (const model of GEMINI_MODELS) {
+    const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${model}:streamGenerateContent?alt=sse`
+    const res = await fetch(endpoint, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-goog-api-key': apiKey,
+      },
+      body: JSON.stringify(
+        buildGeminiRequestBody({ prompt, temperature, maxOutputTokens, json: false, useSearch }),
+      ),
+    })
+
+    if (!res.ok || !res.body) {
+      lastError = `${model} ${res.status} ${await res.text().catch(() => '')}`
+      continue
+    }
+
+    const reader = res.body.getReader()
+    const decoder = new TextDecoder()
+    let buffer = ''
+    let text = ''
+    let groundedSources: ClaimCandidate[] = []
+
+    while (true) {
+      const { done, value } = await reader.read()
+      if (done) break
+      buffer += decoder.decode(value, { stream: true })
+      const lines = buffer.split('\n')
+      buffer = lines.pop() ?? ''
+
+      for (const line of lines) {
+        const trimmed = line.trim()
+        if (!trimmed.startsWith('data:')) continue
+        const payload = trimmed.slice(5).trim()
+        if (!payload || payload === '[DONE]') continue
+
+        let data: {
+          candidates?: Array<{
+            content?: { parts?: GeminiPart[] }
+            groundingMetadata?: { groundingChunks?: GeminiGroundingChunk[] }
+          }>
+        }
+        try {
+          data = JSON.parse(payload) as typeof data
+        } catch {
+          continue
+        }
+
+        const candidate = data.candidates?.[0]
+        const piece = visibleTextFromParts(candidate?.content?.parts)
+        if (piece) {
+          // Some responses send incremental deltas; others re-send the full text so far.
+          let addition = piece
+          if (text && piece.startsWith(text)) {
+            addition = piece.slice(text.length)
+            text = piece
+          } else {
+            text += piece
+          }
+          if (addition) await onDelta(addition)
+        }
+        const nextGrounded = groundedSourcesFromChunks(
+          candidate?.groundingMetadata?.groundingChunks,
+        )
+        if (nextGrounded.length) groundedSources = nextGrounded
+      }
+    }
+
+    text = text.trim()
+    if (text || groundedSources.length) {
+      return { text, groundedSources }
+    }
+  }
+
+  throw new Error(lastError || 'Empty Gemini stream response')
 }
 
 function parseVerificationJson(text: string): Omit<ClaimVerification, 'groundedSources'> | null {

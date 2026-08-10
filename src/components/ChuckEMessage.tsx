@@ -2,6 +2,7 @@ import { useId, useState } from 'react'
 import type { ChuckEChatMessage } from '../hooks/chuck-e-types'
 import type { Citation } from '../../shared/provenance'
 import { GlossableText } from './GlossableText'
+import { LoadingIndicator } from './LoadingIndicator'
 
 /** Same source URL only once in the chat footer. */
 function dedupeCitationsForDisplay(citations: Citation[]): Citation[] {
@@ -117,11 +118,20 @@ function MessageSources({ citations }: { citations: Citation[] }) {
   )
 }
 
-export function ChuckEMessage({ message }: { message: ChuckEChatMessage }) {
+export function ChuckEMessage({
+  message,
+  statusLabel,
+}: {
+  message: ChuckEChatMessage
+  /** Shown while waiting for the first streamed token. */
+  statusLabel?: string
+}) {
   const isUser = message.role === 'user'
   const isDisclosure = Boolean(message.isDisclosure)
+  const isStreaming = Boolean(message.streaming)
   const cites = message.citations ? dedupeCitationsForDisplay(message.citations) : []
-  const showSources = !isUser && !isDisclosure && cites.length > 0
+  const showSources = !isUser && !isDisclosure && !isStreaming && cites.length > 0
+  const waitingForTokens = isStreaming && !message.content.trim()
 
   return (
     <article
@@ -129,10 +139,13 @@ export function ChuckEMessage({ message }: { message: ChuckEChatMessage }) {
         'chuck-e-msg',
         isUser ? 'chuck-e-msg--user' : 'chuck-e-msg--assistant',
         isDisclosure ? 'chuck-e-msg--disclosure' : '',
+        isStreaming ? 'chuck-e-msg--streaming' : '',
+        waitingForTokens ? 'chuck-e-msg--pending' : '',
       ]
         .filter(Boolean)
         .join(' ')}
       aria-label={isUser ? 'You' : isDisclosure ? 'AI disclosure' : 'Chuck-E'}
+      aria-busy={isStreaming || undefined}
     >
       {!isUser && !isDisclosure ? (
         <p className="chuck-e-msg__label">Chuck-E</p>
@@ -140,11 +153,18 @@ export function ChuckEMessage({ message }: { message: ChuckEChatMessage }) {
       {isDisclosure ? (
         <p className="chuck-e-msg__disclosure-label">About this assistant</p>
       ) : null}
-      <div className="chuck-e-msg__body">
-        {isUser || isDisclosure
-          ? renderContent(message.content, undefined)
-          : renderContent(message.content, message.glosses)}
-      </div>
+      {waitingForTokens ? (
+        <LoadingIndicator compact label={statusLabel || 'Looking that up'} />
+      ) : (
+        <div className="chuck-e-msg__body">
+          {isUser || isDisclosure
+            ? renderContent(message.content, undefined)
+            : renderContent(message.content, isStreaming ? undefined : message.glosses)}
+          {isStreaming && message.content ? (
+            <span className="chuck-e-msg__cursor" aria-hidden="true" />
+          ) : null}
+        </div>
+      )}
       {showSources ? <MessageSources citations={cites} /> : null}
     </article>
   )

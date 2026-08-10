@@ -5,6 +5,7 @@ import {
   openingPayload,
   type ChuckEChatRequest,
   type ChuckECliffNotesRequest,
+  type ChuckEStreamEvent,
 } from './lib/chuck-e'
 import { getBrand, listBrands } from '../shared/brands'
 import { calendarDateUtc, isFutureQueryDate } from '../shared/date-bounds'
@@ -18,6 +19,56 @@ function json(data: unknown, status = 200): Response {
       'Access-Control-Allow-Origin': '*',
     },
   })
+}
+
+function sseResponse(stream: ReadableStream<Uint8Array>): Response {
+  return new Response(stream, {
+    headers: {
+      'Content-Type': 'text/event-stream; charset=utf-8',
+      'Cache-Control': 'no-cache',
+      Connection: 'keep-alive',
+      'Access-Control-Allow-Origin': '*',
+    },
+  })
+}
+
+/** Chuck-E chat as SSE: status → delta* → done (or error). */
+function streamChuckEChat(body: ChuckEChatRequest, env: Env): Response {
+  const encoder = new TextEncoder()
+  let closed = false
+
+  const stream = new ReadableStream<Uint8Array>({
+    async start(controller) {
+      const send = (event: ChuckEStreamEvent) => {
+        if (closed) return
+        controller.enqueue(encoder.encode(`data: ${JSON.stringify(event)}\n\n`))
+      }
+
+      try {
+        const result = await handleChuckEChat(body, env, {
+          status: (status) => send({ type: 'status', status }),
+          delta: (text) => send({ type: 'delta', text }),
+        })
+        send({
+          type: 'done',
+          sessionId: result.sessionId,
+          intent: result.intent,
+          message: result.message,
+        })
+      } catch (err) {
+        console.error('[chuck-e] stream failed', err)
+        send({
+          type: 'error',
+          error: err instanceof Error ? err.message : 'Chuck-E failed',
+        })
+      } finally {
+        closed = true
+        controller.close()
+      }
+    },
+  })
+
+  return sseResponse(stream)
 }
 
 async function readJsonBody<T>(request: Request): Promise<T | null> {
@@ -101,6 +152,7 @@ export default {
       }
       const body = await readJsonBody<ChuckEChatRequest>(request)
       if (!body) return json({ error: 'Invalid JSON body' }, 400)
+      if (body.stream) return streamChuckEChat(body, env)
       const result = await handleChuckEChat(body, env)
       return json(result)
     }

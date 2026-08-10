@@ -10,7 +10,10 @@ import { cleanPressText, clipToShortProse, looksLikeHeadlineDump } from '../lib/
 
 const PERPLEXITY_SEARCH_URL = 'https://api.perplexity.ai/search'
 
-/** Tier B/A news domains only — never aggregators. Cap 20 for Perplexity. */
+/**
+ * Legacy registry-order slice (mostly archives/museums once Tier A leads the list).
+ * Prefer `PERPLEXITY_PRESS_DOMAINS` for claim upgrade / Chuck-E / date press search.
+ */
 const PERPLEXITY_DOMAINS = CITATION_ALLOWLIST.filter(
   (e) =>
     e.role === 'citation' &&
@@ -24,16 +27,80 @@ const PERPLEXITY_DOMAINS = CITATION_ALLOWLIST.filter(
   .map((e) => e.host)
   .slice(0, 20)
 
+/**
+ * Press-first hosts for Perplexity (cap 20). Papers + culture/fashion first so
+ * claim search and Chuck-E live cites hit NYT / Guardian / Vogue / Highsnobiety
+ * rather than the first 20 registry museums.
+ */
+const PERPLEXITY_PRESS_PRIORITY = [
+  'nytimes.com',
+  'theguardian.com',
+  'bbc.co.uk',
+  'bbc.com',
+  'reuters.com',
+  'apnews.com',
+  'ft.com',
+  'wsj.com',
+  'washingtonpost.com',
+  'vogue.co.uk',
+  'vogue.com',
+  'dazeddigital.com',
+  'highsnobiety.com',
+  'hypebeast.com',
+  'businessoffashion.com',
+  'wwd.com',
+  'gq.com',
+  'forbes.com',
+  'smithsonianmag.com',
+  'hoophall.com',
+] as const
+
+const PERPLEXITY_PRESS_DOMAINS = (() => {
+  const allowed = new Set(
+    CITATION_ALLOWLIST.filter((e) => e.role === 'citation' && (e.tier === 'A' || e.tier === 'B')).map(
+      (e) => e.host,
+    ),
+  )
+  const out: string[] = []
+  for (const host of PERPLEXITY_PRESS_PRIORITY) {
+    if (allowed.has(host) && !out.includes(host)) out.push(host)
+    if (out.length >= 20) return out
+  }
+  for (const e of CITATION_ALLOWLIST) {
+    if (e.role !== 'citation' || (e.tier !== 'A' && e.tier !== 'B')) continue
+    if (
+      e.host.includes('officialcharts') ||
+      e.host.includes('billboard') ||
+      e.host.includes('moma') ||
+      e.host.includes('vam.ac') ||
+      e.host.includes('si.edu')
+    ) {
+      continue
+    }
+    if (!out.includes(e.host)) out.push(e.host)
+    if (out.length >= 20) break
+  }
+  return out
+})()
+
 const CHART_CITE_DOMAINS = ['officialcharts.com', 'billboard.com']
 
-function domainsForClaim(category?: string, title = '', synopsis = ''): string[] {
+export type PerplexityDomainProfile = 'default' | 'press'
+
+function domainsForClaim(
+  category?: string,
+  title = '',
+  synopsis = '',
+  domainProfile: PerplexityDomainProfile = 'press',
+): string[] {
+  const base = domainProfile === 'press' ? PERPLEXITY_PRESS_DOMAINS : PERPLEXITY_DOMAINS
   const chartish =
     category === 'charts' ||
     category === 'music' ||
     /#\s*1|chart|billboard|official charts|number[\s-]one/i.test(`${title} ${synopsis}`)
-  if (!chartish) return PERPLEXITY_DOMAINS
+  if (!chartish) return base
   // Charts: put Official Charts / Billboard first; still allow press, drop unrelated museums.
-  return [...new Set([...CHART_CITE_DOMAINS, ...PERPLEXITY_DOMAINS])].slice(0, 20)
+  return [...new Set([...CHART_CITE_DOMAINS, ...base])].slice(0, 20)
 }
 
 export async function fetchNytForDate(_date: string, _apiKey?: string): Promise<CulturalEvent[]> {
@@ -80,7 +147,7 @@ export async function fetchPerplexityForDate(
     max_results: 10,
     search_after_date_filter: after,
     search_before_date_filter: before,
-    search_domain_filter: PERPLEXITY_DOMAINS,
+    search_domain_filter: PERPLEXITY_PRESS_DOMAINS,
   }
 
   let res: Response
@@ -177,8 +244,10 @@ export async function searchAllowlistedCiteForClaim(opts: {
   title: string
   synopsis: string
   category?: string
+  /** Prefer press hosts (default). Use `default` only for registry-order experiments. */
+  domainProfile?: PerplexityDomainProfile
 }): Promise<Array<{ url: string; title: string; snippet: string; publisher: string }>> {
-  const { apiKey, year, title, synopsis, category } = opts
+  const { apiKey, year, title, synopsis, category, domainProfile = 'press' } = opts
   if (!apiKey) return []
 
   const claim = `${year}: ${title}. ${synopsis}`.slice(0, 400)
@@ -201,7 +270,7 @@ export async function searchAllowlistedCiteForClaim(opts: {
       body: JSON.stringify({
         query,
         max_results: 8,
-        search_domain_filter: domainsForClaim(category, title, synopsis),
+        search_domain_filter: domainsForClaim(category, title, synopsis, domainProfile),
       }),
     })
   } catch (err) {

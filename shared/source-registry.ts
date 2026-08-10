@@ -57,6 +57,13 @@ export const CITATION_BLOCKLIST: SourceRegistryEntry[] = [
     tier: 'blocked',
     role: 'blocked',
   },
+  {
+    host: 'linkedin.com',
+    label: 'LinkedIn',
+    tier: 'blocked',
+    role: 'blocked',
+    notes: 'Professional UGC / posts — not a citable cultural publisher.',
+  },
 ]
 
 export const CITATION_ALLOWLIST: SourceRegistryEntry[] = [

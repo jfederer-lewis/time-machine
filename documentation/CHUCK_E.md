@@ -2,7 +2,7 @@
 
 > Living document. Agents: read this before changing Chuck-E persona, disclosure, cliff notes, or routing.  
 > Companion docs: `VISION.md`, `PIPELINE.md`, **`EDITORIAL_SCHEMA.md`** (ranking / landmarks / universe), `COPY_CONTRACT.md`, `SOURCES_AND_LANDSCAPE.md`, **`CHUCK_ECOSYSTEM_KB.md`** (Chuck franchise product / strategy KB).  
-> **Last updated:** 2026-08-10 (panel size cycles default → tall → full page)  
+> **Last updated:** 2026-08-10 (SSE token streaming for Gemini-backed chat turns)  
 
 ---
 
@@ -113,7 +113,7 @@ When the chat mentions sports, basketball, Olympics, NCAA, etc., prefer a **spre
 | **2019-04-18** | All Star Pro BB — return to performance basketball | [Forbes](https://www.forbes.com/sites/timnewcomb/2019/04/18/converse-returns-to-performance-basketball-with-history-reimagined/) (Tim Newcomb) — Non-Skid → Pro BB lineage; Kelly Oubre Jr.; Nike tech under the vintage silhouette (+ History “Back to basketball”) |
 | 2021 | Weapon CX return; Draymond Green / Tokyo Olympic gold | Converse History (+ Highsnobiety Weapon history for CX / ambassadors arc) |
 
-Enrich replies from the History LP first; pull the Forbes / Highsnobiety basketball features when the ask is about court lineage, Weapon, Bird–Magic, or the performance return. **Web search** may add claim-relevant colour or fill gaps when the pack is thin / off-topic. Prefer allowlisted premium press when those URLs surface; Gemini is never the public citation host. Never let blogs overwrite official signature / join years (1934 / 1922).
+Enrich replies from the History LP first; pull the Forbes / Highsnobiety basketball features when the ask is about court lineage, Weapon, Bird–Magic, or the performance return. **Web search** may add claim-relevant colour or fill gaps when the pack is thin / off-topic. When curated + Gemini grounding still leave Sources empty, **Perplexity** searches allowlisted press hosts and attaches Tier A/B cites. Prefer allowlisted premium press when those URLs surface; Gemini and Perplexity are never the public citation host. Never let blogs overwrite official signature / join years (1934 / 1922).
 
 ### Music / collabs / humanitarian / global influence (go deeper)
 
@@ -209,11 +209,11 @@ ChuckEWidget (floating launcher)
 |--------|-----------|
 | `date` | Parse date → `assembleDateQuery` → Converse-framed + History beat → Gemini **grounded enrich** on that day only (no world backdrop). World-only days → optional light Converse bridge if sourced |
 | `product` | Match `shared/products/new-chuck.ts` facts; if placeholder/empty, refuse to invent |
-| `heritage` | Match History KB beats as anchors → Gemini **web search** for more colour / when pack is thin → cites + glosses. Pack-only fallback if offline. |
-| `general` | `chatWithChuckE()` with persona guardrails + web search (not for inventing product specs); attach History cites when reply touches pack beats |
+| `heritage` | Match History KB beats as anchors → Gemini **web search** for more colour / when pack is thin → cites + glosses. If still **no allowlisted Source**, Perplexity claim-search on press hosts → attach Tier A/B cites. Pack-only fallback if offline. |
+| `general` | `chatWithChuckE()` with persona guardrails + web search (not for inventing product specs); attach History cites when reply touches pack beats; same Perplexity **empty-Sources** fallback as heritage |
 | cliff notes action | Separate endpoint; extracts bullets from the conversation + cites |
 
-Gemini is **never** the public citation host. Historical world claims go through the Time Machine pipeline. Shoe facts come from the product pack only. Heritage beats cite **Converse History** (`landing-converse-history`). Chat and cliff-notes footers list each source URL **once** (same History LP across several beats is not repeated).
+Gemini is **never** the public citation host. Perplexity is **never** the public citation host — only discovery (`provider: 'perplexity-search'`). Historical world claims go through the Time Machine pipeline. Shoe facts come from the product pack only. Heritage beats cite **Converse History** (`landing-converse-history`). Chat and cliff-notes footers list each source URL **once** (same History LP across several beats is not repeated). Reddit, LinkedIn, and similar UGC stay blocked.
 
 **Never ship mid-sentence chat cuts.** Chuck-E `chatMaxOutputTokens` is **4096** (Flash “thoughts” eat smaller budgets). Soft length aim is ~900 chars — concise and sharp; never hard-truncate. Report-shaped scaffolding (`###` headings, Pointers to Cite, etc.) is stripped before ship. Replies that still look abruptly cut are salvaged to the last complete sentence/line or replaced with a short retry cue — never left dangling (e.g. “…from our”).
 
@@ -267,15 +267,15 @@ Runtime: wire stable framing into product packs before treating it as auto-shipp
 | `worker/lib/chuck-e.ts` | Intent router + chat / cliff-notes handlers |
 | `worker/lib/chuck-e-contract.ts` | Disclosure / no-finished-story / cliff-notes guards |
 | `worker/lib/chuck-e-glosses.ts` | Citation gloss builders (History / pack / cites) |
-| `worker/providers/gemini.ts` | `chatWithChuckE()` |
-| `worker/index.ts` | `/api/chuck-e/chat`, `/api/chuck-e/cliff-notes` |
+| `worker/providers/gemini.ts` | `chatWithChuckE()` (+ optional `onDelta` streaming) |
+| `worker/index.ts` | `/api/chuck-e/chat` (JSON or SSE when `stream: true`), `/api/chuck-e/cliff-notes` |
 | `src/components/ChuckEWidget.tsx` | Floating launcher + panel (size cycles default → tall → full page) |
-| `src/components/ChuckEMessage.tsx` | Message bubbles + cites + glosses |
+| `src/components/ChuckEMessage.tsx` | Message bubbles + cites + glosses + live typing cursor |
 | `shared/brands/converse.ts` | Curated Timeline surface + `heritageKb` pointer |
 | `shared/brands/converse-heritage-kb.ts` | Full Converse History landing text for Chuck-E / date attach |
 | `shared/brands/converse-heritage-media.ts` | History LP image deep-links (KB visuals; Timeline stays text-forward) |
 | `src/components/CliffNotesPanel.tsx` | Export UI with AI banner |
-| `src/hooks/useChuckEChat.ts` | Request/response chat state |
+| `src/hooks/useChuckEChat.ts` | SSE chat state (`status` / `delta` / `done`) |
 | `src/hooks/useSpeechDictation.ts` | Optional Web Speech mic → composer (Chromium; no API key) |
 
 ---
@@ -286,6 +286,7 @@ Runtime: wire stable framing into product packs before treating it as auto-shipp
 |------|----------|-----|
 | 2026-08-06 | Floating overlay widget (not a third nav tab) | Available on Lookup + Timeline for launch desk use |
 | 2026-08-06 | Request/response (no streaming) | Matches `/api/query`; simpler Worker surface for v1 |
+| 2026-08-10 | Chuck-E chat POST may SSE-stream (`stream: true`): status → delta → done | Desks see Gemini tokens as they arrive; date assemble still waits with “Looking that up”; glosses/cites attach on `done` |
 | 2026-08-06 | Hardcoded first-message disclosure; no persistent “AI” input tag | Art. 50 first-interaction disclosure; keep UI calm |
 | 2026-08-06 | Cliff notes = bullets + Harvard + AI banner — never finished story | Editorial line + synthetic-content marking |
 | 2026-08-06 | Product facts only from `new-chuck` pack; dates via `assembleDateQuery` | Same provenance rules as Time Machine |
@@ -332,6 +333,7 @@ Runtime: wire stable framing into product packs before treating it as auto-shipp
 | 2026-08-07 | Tyler / GOLF le FLEUR* → GQ One Star (2017) + British Vogue + Highsnobiety 1908 Program | Long partnership needs dedicated press, not History-only “Tyler team-up” |
 | 2026-08-07 | Basketball / Weapon / Pro BB → Highsnobiety Weapon history + Forbes All Star Pro BB (2019) | Court theme needs ambassador + performance-return press beside History beats |
 | 2026-08-10 | Chuck-E: English → plain English; other-language prompt → that language; English “reply in X” requests honoured (`replyLanguageRule`) | Usual desk path stays plain English; multilingual + explicit language asks still work |
+| 2026-08-10 | Heritage/general empty Sources → Perplexity allowlisted press search (`domainProfile: press`); LinkedIn blocked | Asks without a curated bookshelf cite (e.g. running × Converse) can still ship a credible news Source; UGC stays out |
 | 2026-08-10 | Chuck-E panel size button cycles default → tall → full page (same control) | Desks sometimes want a full-viewport research surface without a second control |
 
 ---
