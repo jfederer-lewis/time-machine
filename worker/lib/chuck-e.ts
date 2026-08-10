@@ -377,6 +377,12 @@ function looksLikeCollabRoundup(url: string, title = ''): boolean {
  */
 function specificCollabFocus(query: string): string | null {
   const q = query.toLowerCase()
+  if (
+    /\b(acquir|acquisition|purchas|bought|buyout|swooshed)\b/.test(q) ||
+    (/\bnike\b/.test(q) && /\b(buy|bought|purchase|deal|takeover|acquir)\b/.test(q))
+  ) {
+    return 'nike-deal'
+  }
   if (/abloh|virgil|off[\s-]?white|(?:^|\b)the\s+ten\b/.test(q)) return 'abloh'
   if (/golf\s+le\s+fleur|le\s*fleur|tyler|1908\s+program|naut-?1|coach\s+jogger/.test(q))
     return 'tyler'
@@ -395,6 +401,8 @@ function specificCollabFocus(query: string): string | null {
 }
 
 const COLLAB_FOCUS_HAY: Record<string, RegExp> = {
+  'nike-deal':
+    /nike|acquir|purchas|buy\s+converse|to\s+buy|blacktop|swooshed|305\s*million|\$305|wsj|wall\s+street|new\s+york\s+times|wwd|women.?s\s+wear/,
   abloh: /abloh|virgil|ghosting|the\s+ten|off[\s-]?white/,
   tyler: /tyler|golf|le\s*fleur|1908|gianno|flower\s*boy|naut-?1|coach\s+jogger/,
   margiela: /margiela/,
@@ -411,6 +419,8 @@ const COLLAB_FOCUS_HAY: Record<string, RegExp> = {
 
 /** Tight Perplexity query for a named partnership (allowlisted press discovery). */
 const COLLAB_FOCUS_SEARCH: Record<string, string> = {
+  'nike-deal':
+    'Nike acquires Converse 2003 $305 million New York Times Wall Street Journal WWD',
   abloh: 'Virgil Abloh Converse Chuck 70 The Ten Ghosting collaboration',
   tyler: 'Tyler the Creator Converse GOLF le FLEUR collaboration',
   margiela: 'Maison Margiela Converse Chuck Taylor collaboration',
@@ -429,6 +439,14 @@ function citationMatchesCollabFocus(c: Citation, focus: string): boolean {
   const re = COLLAB_FOCUS_HAY[focus]
   if (!re) return true
   const hay = `${c.title || ''} ${c.publisher || ''} ${c.reference || ''} ${c.url || ''}`.toLowerCase()
+  if (focus === 'nike-deal') {
+    // Keep deal press + close-day History; drop unrelated collab articles.
+    if (/nytimes\.com|wsj\.com|wwd\.com/i.test(hay) && /nike|acquir|purchas|buy|blacktop/i.test(hay))
+      return true
+    if (/swooshed|completes?\s+acquisition|landing-converse-history/i.test(hay) && /nike|acquir|swooshed|converse/i.test(hay))
+      return true
+    return re.test(hay)
+  }
   // Generic History LP alone is not enough for a named-partner dig
   if (/converse\.com.*landing-converse-history|converse history/i.test(hay) && !re.test(hay)) {
     return false
@@ -442,6 +460,31 @@ function filterCitationsToCollabFocus(query: string, citations: Citation[]): Cit
   if (!focus || !citations.length) return citations
   const kept = citations.filter((c) => citationMatchesCollabFocus(c, focus))
   return kept.length ? kept : citations
+}
+
+/** NYT + WSJ + WWD (+ Swooshed) — multi-cite pack for the Nike purchase story. */
+function nikeDealCorroboratingCitations(brandId: string): Citation[] {
+  const brand = getBrand(brandId)
+  return heritageMoments(brand)
+    .filter((m) => {
+      if (m.storyCluster === 'nike-announce-2003') return true
+      if (/^swooshed$/i.test(m.title.trim())) return true
+      const url = m.citation.url || ''
+      const hay = `${m.title} ${m.synopsis}`.toLowerCase()
+      return (
+        /nytimes\.com|wsj\.com|wwd\.com/i.test(url) &&
+        /nike|acquir|purchas|buy converse|blacktop/.test(hay)
+      )
+    })
+    .map((m) => citationFromBrandMoment(m))
+}
+
+function looksLikeNikeDealBeat(event: { title?: string; synopsis?: string; id?: string } | null): boolean {
+  if (!event) return false
+  const hay = `${event.title || ''} ${event.synopsis || ''} ${event.id || ''}`.toLowerCase()
+  return /swooshed|nike.*acquir|acquir.*converse|purchas.*converse|buy\s+converse|\$305|305\s*million/.test(
+    hay,
+  )
 }
 
 /**
@@ -589,6 +632,8 @@ function matchHeritageMoments(
     ? Math.min(limit, 2)
     : specificCollab
       ? Math.max(limit, 4)
+      : nikeDealAsk || nikeTechAsk
+        ? Math.max(limit, 5)
       : sportsTheme || cultureTheme
         ? // Fewer well-sourced beats beat a long History stub dump (desks follow up by name).
           Math.min(Math.max(limit, 4), 4)
@@ -739,13 +784,24 @@ function matchHeritageMoments(
       (specificCollab || nikeTechAsk || nikeDealAsk || sportsTheme || cultureTheme) && !datedFocus,
     // Lane-diverse overview only for broad culture themes — not named-house digs.
     cultureTheme: cultureTheme && !specificCollab && !datedFocus,
-    preferDedicatedPress: (specificCollab || cultureTheme) && !datedFocus,
-    // Theme overviews: one beat per cluster. Named asks may keep a couple of dedicated cites.
+    preferDedicatedPress: (specificCollab || cultureTheme || nikeDealAsk || nikeTechAsk) && !datedFocus,
+    // Theme overviews: one beat per cluster. Named asks / deal digs may keep several dedicated cites.
     maxPerCluster: specificCollab || nikeDealAsk || nikeTechAsk ? 3 : 1,
   }
   if (datedFocus && hits.length && queryDate) {
     const exact = hits.filter((x) => x.m.date === queryDate)
     if (exact.length) return pickHeritageHits(exact, effectiveLimit, pickOpts)
+  }
+  // Nike purchase dig: keep NYT + WSJ + WWD (+ Swooshed), not a single History-only cite.
+  if (nikeDealAsk && !datedFocus && hits.length) {
+    const dealHits = hits.filter(({ m }) => {
+      if (m.storyCluster === 'nike-announce-2003') return true
+      if (/^swooshed$/i.test(m.title.trim())) return true
+      const url = m.citation.url || ''
+      const hay = `${m.title} ${m.synopsis}`.toLowerCase()
+      return /nytimes\.com|wsj\.com|wwd\.com/i.test(url) && /nike|acquir|purchas|buy|blacktop/.test(hay)
+    })
+    if (dealHits.length) return pickHeritageHits(dealHits, effectiveLimit, pickOpts)
   }
   // Named house / partner: stay on that partnership’s dedicated cites when we have them.
   if (specificCollab && !datedFocus && hits.length) {
@@ -1633,6 +1689,37 @@ export async function handleChuckEChat(
                 ...glossesFromCitations(citations, content),
               ]
             }
+            // Nike close / acquisition day: also ship NYT + WSJ + WWD deal press in Read more
+            // (History alone is not enough for the purchase story).
+            if (looksLikeNikeDealBeat(brandSpotlight)) {
+              citations.push(...nikeDealCorroboratingCitations(brandId))
+              sourceGlosses.push(
+                ...glossesFromCitations(citations, content),
+                ...glossesFromBrandMoments(
+                  heritageMoments(getBrand(brandId)).filter(
+                    (m) =>
+                      m.storyCluster === 'nike-announce-2003' || /^swooshed$/i.test(m.title.trim()),
+                  ),
+                ),
+              )
+            }
+          } else if (
+            allowConverseTie &&
+            preferBrand &&
+            brandSpotlight &&
+            looksLikeNikeDealBeat(brandSpotlight)
+          ) {
+            // Offline / no Gemini: still attach deal press beside History close cite.
+            citations.push(...nikeDealCorroboratingCitations(brandId))
+            sourceGlosses.push(
+              ...glossesFromCitations(citations, content),
+              ...glossesFromBrandMoments(
+                heritageMoments(getBrand(brandId)).filter(
+                  (m) =>
+                    m.storyCluster === 'nike-announce-2003' || /^swooshed$/i.test(m.title.trim()),
+                ),
+              ),
+            )
           }
 
           // Already on a Converse beat (framed ask or brand spotlight) → stay there.

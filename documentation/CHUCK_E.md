@@ -374,6 +374,7 @@ Runtime: wire stable framing into product packs before treating it as auto-shipp
 | 2026-08-10 | Split gloss roles: partner/house → Wikipedia; collab title / drop / outlet → article | Avoid both “Virgil Abloh” and “The Ten” opening the same Forbes cite |
 | 2026-08-10 | Named-collab Read more: filter cites to that partner; don’t import other houses from reply/Gemini | Tyler digs were shipping Abloh / Simpsons / bare History in the footer |
 | 2026-08-10 | Named-collab digs: Perplexity searches that partnership on allowlisted press, then focus-filters hits | Live discovery should find Tyler/Abloh articles — not pad with unrelated houses |
+| 2026-08-10 | Nike acquisition Read more: always multi-cite NYT + WSJ + WWD (+ Swooshed); Perplexity may add more deal press | Desks were only seeing Converse History on purchase / 4 Sep close asks |
 
 ---
 
