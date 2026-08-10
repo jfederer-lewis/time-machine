@@ -47,7 +47,7 @@ export const CHUCK_E_KNOBS = {
     'Thinking',
     'Pulling my sources',
     'Checking the History trail',
-    'Tracing the cite',
+    'Checking sources',
   ] as const,
   /** How long each status line stays before rotating (ms). */
   streamStatusRotateMs: 2200,
