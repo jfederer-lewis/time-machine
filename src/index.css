@@ -473,11 +473,13 @@ a {
 }
 
 .date-field--day {
-  width: 7rem;
+  flex: 0 0 7.75rem;
+  width: 7.75rem;
 }
 
 .date-field--month {
-  width: 8.5rem;
+  flex: 0 0 10rem;
+  width: 10rem;
 }
 
 .date-field--year {
