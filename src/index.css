@@ -339,7 +339,7 @@ a {
 
 .hero {
   padding: clamp(3.5rem, 14vh, 7rem) 0 1.5rem;
-  max-width: 28rem;
+  max-width: 34rem;
   margin: 0 auto;
   width: 100%;
   animation: rise 900ms ease both;
@@ -391,8 +391,9 @@ a {
   display: flex;
   flex-wrap: nowrap;
   gap: 0.45rem;
-  flex: 1;
-  min-width: 0;
+  flex: 1 1 auto;
+  width: max-content;
+  max-width: 100%;
 }
 
 .date-field {
