@@ -1142,7 +1142,7 @@ function formatHeritageReply(
       }
       lines.push('')
     }
-    lines.push('Ask about any of these by name for dedicated coverage and cites.')
+    lines.push('Want more on any of these by name — happy to dig in.')
   } else if (themeSpread) {
     lines.push(themeHeritageLeadIn(q))
     lines.push('')
@@ -1153,7 +1153,7 @@ function formatHeritageReply(
       citations.push(citationFromBrandMoment(m))
     }
     lines.push('')
-    lines.push('Ask about any of these by name for more depth.')
+    lines.push('Ask about any one of these if you want a deeper pull.')
   } else {
     for (const m of moments) {
       const flag = m.precision === 'period-estimate' ? ' _(period estimate — contested)_' : ''

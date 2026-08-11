@@ -664,6 +664,7 @@ export async function chatWithChuckE(opts: {
     'Reply as Chuck-E only — conversational prose, optional simple bullets. Not a memo, brief, or day-card.',
     'No markdown headings (#), no section labels (Beat Summary, Pointers to Cite, etc.), no sources block in the body.',
     'Do not write a finished press story, dateline, or byline-ready narrative.',
+    'Prefer a short chat turn: often one tight paragraph that answers the ask, then invite the desk to dig into a specific name, drop, or angle from that paragraph. Only expand to a longer map when they clearly want a spread or already asked for detail.',
     'Finish every sentence. Never trail off mid-clause or end on a dangling word (of / the / our / from…).',
     `Keep it concise (soft ~${CHUCK_E_KNOBS.chatReplySoftMaxChars} chars): sharp, no jargon, no padding or repetition. Finish cleanly — never truncate mid-thought.`,
     CHUCK_E_KNOBS.replyLanguageRule,
@@ -727,12 +728,12 @@ export async function researchChuckETopic(opts: {
 
   const collabGuidance = preferDedicatedCollabCoverage
     ? [
-        'This question names a specific collaboration, house, or model.',
+        'This question names a specific collaboration, house, or model — go deeper than a theme map: a tight paragraph (or two) of dedicated colour is appropriate.',
         'Prefer dedicated coverage of that release (feature, exclusive, history of that partnership) over roundup listicles (“most iconic collaborations”, “best Converse collabs”).',
         'Roundups are only a map — dig for the underlying article with interesting detail (materials, paint/wear story, silhouette variants, retail moment). Prefer the supplied prefer-cite URLs when they match.',
-        'Name people and houses clearly (e.g. Virgil Abloh, Tyler the Creator, GOLF le FLEUR*) so source glosses can attach.',
+        'Name people and houses clearly (e.g. Virgil Abloh, Tyler the Creator, GOLF le FLEUR*) so source glosses can attach. You may still offer one optional follow-up angle at the end.',
       ].join(' ')
-    : 'For named collabs or models, prefer dedicated features over “best collaborations” roundups when search surfaces both. On broad collab / music / fashion themes: write a short prose overview, then at most ~4 well-sourced examples (prefer Virgil Abloh / The Ten, Tyler / GOLF le FLEUR*, Margiela, CDG PLAY, Cobain One Star, Rick Owens when relevant) — not an 8-item History stub list. Soft bold lane labels (Fashion houses / Music partners) are OK; never ### headings. Invite the desk to ask for more on any name.'
+    : 'For named collabs or models, prefer dedicated features over “best collaborations” roundups when search surfaces both. On broad collab / music / fashion themes: prefer a short conversational map — one grounding paragraph naming 2–3 landmarks, then invite the desk to ask for more on a specific name — not an 8-item History stub list. Only expand to ~4 labeled examples when the ask clearly wants a spread. Soft bold lane labels are OK when listing; never ### headings.'
 
   const prompt = [
     ...CHUCK_E_KNOBS.personaGuardrails,
@@ -745,12 +746,12 @@ export async function researchChuckETopic(opts: {
     'Prefer the supplied pack beats when they are on-topic. Use Google Search to find additional claim-relevant colour, corroboration, or answers when the pack is thin or off-topic.',
     collabGuidance,
     'Do not invent partnerships, launch specs, or quotations. If search does not support a detail, omit it.',
-    'Shape: one short grounding paragraph, then a handful of named sourced moments (optional soft bold lane labels for categories) — never a bare dump of 6–8 thin bullets, and not a research memo. Four well-cited examples beat eight without cites.',
+    'Shape: conversational and often short — one tight paragraph (optionally 2–3 named examples), then a natural invite to dig into a specific part (“Want more on Tyler / GOLF le FLEUR*, or Margiela?”). Not a research memo. Four well-cited examples beat eight without cites; a short map + invite beats a long dump.',
     'Use exact beat titles from the pack when you lean on them (so citation glosses attach), spell person / house / release names in full (Virgil Abloh, GOLF le FLEUR*, The Ten, One Star…), and when you lean on a press piece you may name the outlet once (GQ, Forbes…) so a source gloss can attach — still no sources block in the body.',
     'No ### headings, no Pointers to Cite / sources block in the body.',
     'Past tense. Never cite yourself, Gemini, or AI as a source.',
     CHUCK_E_KNOBS.replyLanguageRule,
-    `Soft length ~${Math.min(CHUCK_E_KNOBS.chatReplySoftMaxChars, 1100)} chars.`,
+    `Soft length ~${Math.min(CHUCK_E_KNOBS.chatReplySoftMaxChars, 900)} chars.`,
     '',
     `User question: ${userQuestion}`,
   ].join('\n')
@@ -796,14 +797,14 @@ export async function enrichChuckEDateSignificance(opts: {
     'Stay on the queried calendar day only. Do not introduce sibling milestone dates for the same deal',
     '(e.g. do not mention an announcement day when the query is the close day, or vice versa) unless the user explicitly asked about that other date.',
     'Do not invent strategy, quotations, or post-History outcomes. If search does not support a detail, omit it.',
-    'Shape: 1 short paragraph (optionally 2–4 plain bullets for distinct facts). Weave the beat title into the opening — do NOT open with the calendar date, “On [date]…”, or a titled report header.',
+    'Shape: 1 short paragraph that covers the day and why it mattered — conversational, not a brief. Optionally end by inviting a follow-up on one concrete angle (e.g. deal press, what changed for the silhouette) without listing sibling dates. Weave the beat title into the opening — do NOT open with the calendar date, “On [date]…”, or a titled report header.',
     'Never use ### headings or labelled sections. Never add Pointers to Cite / Source Anchor / Desk Guidance — the UI handles cites.',
     'Sharp plain prose only (plain English when the reply language is English). Skip corporate jargon and repeated themes (identity preserved / global reach / cultural pillar said three ways).',
     CHUCK_E_KNOBS.replyLanguageRule,
     'The user already asked about this day; weave the date into prose only if needed for clarity.',
     'Do not mention other years or related deal dates unless the user asked about them.',
     'Past tense. Never cite yourself, Gemini, or AI as a source.',
-    `Soft length ~${Math.min(CHUCK_E_KNOBS.chatReplySoftMaxChars, 700)} chars.`,
+    `Soft length ~${Math.min(CHUCK_E_KNOBS.chatReplySoftMaxChars, 650)} chars.`,
     '',
     `Queried date (context only — do not lead with it): ${displayDate} (ISO ${queryDate})`,
     `User question: ${userQuestion}`,

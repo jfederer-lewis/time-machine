@@ -2,7 +2,7 @@
 
 > Living document. Agents: read this before changing Chuck-E persona, disclosure, cliff notes, or routing.  
 > Companion docs: `VISION.md`, `PIPELINE.md`, **`EDITORIAL_SCHEMA.md`** (ranking / landmarks / universe), `COPY_CONTRACT.md`, `SOURCES_AND_LANDSCAPE.md`, **`CHUCK_ECOSYSTEM_KB.md`** (Chuck franchise product / strategy KB).  
-> **Last updated:** 2026-08-10 (Perplexity live press always)  
+> **Last updated:** 2026-08-10 (conversational short replies)  
 
 ---
 
@@ -29,11 +29,11 @@ Chuck-E helps media **pull data** and, when asked, **extract editorial cliff not
 
 | Surface | Shape |
 |---------|--------|
-| **Chuck-E chat** | Conversational: 1–2 short paragraphs and optional plain bullets — like a sharp ChatGPT reply. Theme answers open with a short grounding line, then **~4 well-sourced** named examples (soft bold lane labels OK for category asks: Fashion houses / Music partners) — not a bare 6–8 History-stub dump. No `###` headings, no “Beat Summary / Pointers to Cite”, no jargon padding. Cites live in glosses / **Read more**, not in the body. Prefer **multiple Read more cites** when the pack has them; when a reply names several partnerships / beats, attach **at least one source per named topic**. Invite follow-up by name. **Language:** English prompts → sharp plain English; other-language prompts → that language; English prompts that ask for another language → honour the request (`replyLanguageRule`). Latest user turn only. Keep brand proper nouns in usual forms. |
+| **Chuck-E chat** | Conversational: often **one short paragraph** that answers the ask, then a natural invite to dig into a specific name / drop / angle — like a sharp ChatGPT reply, not a brief every turn. Theme maps can stay light (2–3 named landmarks + “want more on X?”); expand to ~4 labeled examples only when the desk wants a spread. Optional plain bullets when listing distinct facts helps. No `###` headings, no “Beat Summary / Pointers to Cite”, no jargon padding. Cites live in glosses / **Read more**, not in the body. Prefer **multiple Read more cites** when the pack has them; when a reply names several partnerships / beats, attach **at least one source per named topic**. **Language:** English prompts → sharp plain English; other-language prompts → that language; English prompts that ask for another language → honour the request (`replyLanguageRule`). Latest user turn only. Keep brand proper nouns in usual forms. |
 | **Cliff notes export** | Separate action — bullets with **[n]** markers + numbered Harvard **Notes** + AI banner. |
 | **Lookup day cards** | Curated title / synopsis / Context / Source — different product surface. |
 
-Soft length aim for chat: ~900 chars (`chatReplySoftMaxChars`). Theme spreads may run a little longer; never hard-truncate mid-sentence. Art. 50 disclosure stays English (hardcoded). Deterministic pack/date templates stay English when Gemini is unavailable; model paths must follow `replyLanguageRule`.
+Soft length aim for chat: ~750 chars (`chatReplySoftMaxChars`). Prefer shorter conversational turns over packing everything into one message; theme spreads may run a little longer; never hard-truncate mid-sentence. Art. 50 disclosure stays English (hardcoded). Deterministic pack/date templates stay English when Gemini is unavailable; model paths must follow `replyLanguageRule`.
 
 ### Provenance line (non-negotiable)
 
@@ -377,6 +377,7 @@ Runtime: wire stable framing into product packs before treating it as auto-shipp
 | 2026-08-10 | Nike acquisition Read more: always force-merge NYT + WSJ + WWD (+ Swooshed) — including dated / 4 Sep close paths (don’t collapse `nike-announce-2003` to one cite; don’t require preferBrand) | Desks were still only seeing Converse History on purchase / close-day asks |
 | 2026-08-10 | Read more: same topic-coverage logic for all named beats — ≥1 pack cite per topic in multi-topic replies; named digs keep 2 press cites when available; cap 8 | One-cite footers when answers named several houses / drops |
 | 2026-08-10 | Perplexity live press: always run when keyed (per-topic on multi-topic; partnership search on digs); pack minimum → live → pack depth; date path uses same merge | Live news was gated to “thin Sources only” so pack-heavy answers never got fresh allowlisted press |
+| 2026-08-10 | Chat voice: prefer short conversational turns (one paragraph + invite to dig on a named angle); soft max ~750; theme maps can stay light | Felt like briefs every time instead of chat |
 
 ---
 
